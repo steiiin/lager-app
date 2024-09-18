@@ -1,0 +1,35 @@
+/* @tailwind base;
+@tailwind components;
+@tailwind utilities; */
+
+:root {
+
+  --lc-main-background: #FFFFFF;
+  --lc-main-text: #000000;
+
+  --lc-primary-accent-background: #007BFF;
+  --lc-primary-accent-text: var(--lc-main-background);
+
+  --lc-secondary-accent-background: #E1F5FE;
+  --lc-secondary-accent-text: var(--lc-main-text);
+
+}
+
+#app {
+
+  width: 100vw;
+  height: 100vh;
+
+}
+
+kbd {
+  outline: 1px solid #ddd;
+  background: #eee;
+  padding: .2rem .4rem .1rem .2rem;
+  text-transform: uppercase;
+  box-shadow: 2px 2px #aaa;
+  margin: 0 .5rem;
+}
+kbd[sym] {
+  font-size: 1.5em;
+}
