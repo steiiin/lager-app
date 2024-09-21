@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BookInController;
 use App\Http\Controllers\BookOutController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WhereIsController;
@@ -48,6 +49,7 @@ Route::post('/', function(Illuminate\Http\Request $request) {
 
 Route::resource('/whereis', WhereIsController::class);
 Route::resource('/bookout', BookOutController::class);
+Route::resource('/bookin', BookInController::class);
 
 require(dirname(__FILE__).'/config.php');
 require(dirname(__FILE__).'/api.php');

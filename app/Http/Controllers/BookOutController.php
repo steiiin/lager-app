@@ -21,7 +21,7 @@ class BookOutController extends Controller
         $usageId = $request->query('usageId', null);
         $usageId = !$usageId ? null : intval($usageId);
 
-        $items = Item::with(['demand', 'sizes', 'basesize'])->get();
+        $items = Item::withAll()->get();
         $usages = Usage::all(['id', 'name', 'is_locked']);
 
         return Inertia::render('BookOut', [

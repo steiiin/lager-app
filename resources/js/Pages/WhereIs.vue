@@ -60,8 +60,8 @@
     <div class="app-WhereIs--page">
 
       <LcItemInput 
-        :items="items" :result-pos="{ w: 800, i: 11 }"
-        :allowNew="false" :allowScan="false" 
+        :items="items" :result-pos="{ w: 850, i: 11 }"
+        :allowScan="false" 
         @select-item="selectItem">
       </LcItemInput>
 

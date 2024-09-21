@@ -1,0 +1,41 @@
+[90m= [39m[34;4mIlluminate\Database\Eloquent\Collection[39;24m {#6067
+    [34mall[39m: [
+      [34;4mApp\Models\Item[39;24m {#6059
+        [34mid[39m: [35m1[39m,
+        [34mcreated_at[39m: "[32m2024-09-18 12:08:37[39m",
+        [34mupdated_at[39m: "[32m2024-09-18 12:23:15[39m",
+        [34mname[39m: "[32madrenalin[39m",
+        [34msearch_altnames[39m: [36mnull[39m,
+        [34msearch_tags[39m: [36mnull[39m,
+        [34mdemand_id[39m: [35m1[39m,
+        [34mlocation[39m: "[32m{"room":"Lagerraum","cab":null,"exact":null}[39m",
+        [34mmin_stock[39m: [35m8[39m,
+        [34mmax_stock[39m: [35m24[39m,
+        [34mcurrent_expiry[39m: "[32m2024-09-29T22:00:00.000Z[39m",
+        [34mcurrent_quantity[39m: [35m-9[39m,
+        +[1mbarcodes[22m: [
+          "[34mLC-1000001002[39m" => [35m8[39m,
+          "[34mLC-1000001001[39m" => [35m1[39m,
+        ],
+      },
+      [34;4mApp\Models\Item[39;24m {#6062
+        [34mid[39m: [35m2[39m,
+        [34mcreated_at[39m: "[32m2024-09-18 12:21:56[39m",
+        [34mupdated_at[39m: "[32m2024-09-18 12:23:15[39m",
+        [34mname[39m: "[32martikel[39m",
+        [34msearch_altnames[39m: [36mnull[39m,
+        [34msearch_tags[39m: [36mnull[39m,
+        [34mdemand_id[39m: [35m1[39m,
+        [34mlocation[39m: "[32m{"room":"Lagerraum","cab":null,"exact":null}[39m",
+        [34mmin_stock[39m: [35m0[39m,
+        [34mmax_stock[39m: [35m0[39m,
+        [34mcurrent_expiry[39m: "[32m2024-09-29T22:00:00.000Z[39m",
+        [34mcurrent_quantity[39m: [35m-3[39m,
+        +[1mbarcodes[22m: [
+          "[34mLC-1000002004[39m" => [35m2[39m,
+          "[34mLC-1000002003[39m" => [35m1[39m,
+        ],
+      },
+    ],
+  }
+

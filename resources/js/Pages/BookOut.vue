@@ -225,7 +225,7 @@ onMounted(() => {
 
     <LcPagebar title="Ausbuchen" :disabled="bookingsForm.processing" @back="openWelcome"></LcPagebar>
 
-    <div class="app-BookOut--page">
+    <div class="app-BookOut--page app-BookOut--usagepane">
 
       <LcUsageInput v-if="!hasUsage"
         :usages="usages" :is-unlocked="isUnlocked"
@@ -248,12 +248,11 @@ onMounted(() => {
 
     </div>
 
-    <div class="app-BookOut--page" v-if="hasUsage">
+    <div class="app-BookOut--page app-BookOut--inputpane" v-if="hasUsage">
 
       <LcItemInput 
         :items="items" :booking="bookingsForm.entries"
-        :result-pos="{ w: 850, i: 21 }"
-        :allow-new="false" 
+        :result-pos="{ w: 850, i: 19 }"
         :disabled="amountCalc.isVisible || bookingsForm.processing"
         @select-item="selectItem"
         @ctrl-finish="sendBooking">
@@ -261,7 +260,7 @@ onMounted(() => {
 
     </div>
 
-    <div class="app-BookOut--page" v-if="hasUsage && hasAnyBookings">
+    <div class="app-BookOut--page app-BookOut--resultpane" v-if="hasUsage && hasAnyBookings">
 
       <LcButton v-if="hasAnyBookings"
         class="app-BookOut--finishBlock" :loading="bookingsForm.processing"
@@ -272,7 +271,7 @@ onMounted(() => {
       <v-data-table v-if="!bookingsForm.processing"
         :items="preparedBooking" :headers="bookingsHeaders" :sort-by="bookingsSortBy"
         density="compact" :items-per-page="999"
-        hide-default-footer>
+        hide-default-footer class="app-BookOut--resultpane-table">
         <template v-slot:item.action="{ item }">
           <v-btn variant="flat" class="app-BookOut--reduceBlock" @click="reduceItem(item)">
             <v-icon icon="mdi-delete"></v-icon>
@@ -298,6 +297,9 @@ onMounted(() => {
 </template>
 <style lang="scss" scoped>
 .app-BookOut {
+
+  height: 100%;
+  overflow: hidden;
 
   &--page {
     max-width: 850px;
@@ -356,5 +358,16 @@ onMounted(() => {
       border-left: none;
     }
   }
+
+  &--resultpane {
+
+    height: calc(100% - 19.5rem);
+    &-table {
+      height: calc(100% - 6.5rem);
+      overflow-y: scroll;
+    }
+
+  }
+
 }
 </style>

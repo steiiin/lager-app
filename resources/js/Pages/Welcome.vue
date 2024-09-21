@@ -88,7 +88,8 @@
     </lc-button>
 
     <lc-button class="app-Welcome--BookIn"
-      icon="mdi-basket-outline">Lieferung
+      icon="mdi-basket-outline"
+      @click="openBookIn">Lieferung
     </lc-button>
 
     <lc-button class="app-Welcome--Login" v-if="isUnlocked"

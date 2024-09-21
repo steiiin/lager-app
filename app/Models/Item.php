@@ -15,6 +15,11 @@ class Item extends Model
         'location' => 'array',  // Automatically cast 'location' to/from array (JSON)
     ];
 
+    public function scopeWithAll($query)
+    {
+        return $query->withSum('openOrders', 'amount_desired')->with(['demand', 'sizes', 'basesize', 'ordersize']);
+    }
+
     public function demand()
     {
         return $this->belongsTo(Demand::class, 'demand_id');
@@ -35,8 +40,13 @@ class Item extends Model
         return $this->hasOne(Itemsize::class, 'item_id')->where('is_default', true);
     }
 
-    protected $appends = ['barcodes'];
+    public function openOrders()
+    {
+        return $this->hasMany(Order::class, 'item_id')->where('is_order_open', true);
+    }
 
+    protected $appends = ['barcodes', 'demanded_quantity'];
+    
     public function getBarcodesAttribute() 
     {
         $sizes = $this->sizes;
@@ -46,6 +56,12 @@ class Item extends Model
             $codes[BarcodeGenerator::generateItem($this->id, $size->id)] = $size->amount;
         }
         return $codes;
+    }
+
+    public function getDemandedQuantityAttribute()
+    {
+        $openOrdersTotal = $this->open_orders_sum_amount_desired ?? 0;
+        return $this->current_quantity + $openOrdersTotal;
     }
 
 }

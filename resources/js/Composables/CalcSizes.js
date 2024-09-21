@@ -1,17 +1,50 @@
 // #region imports
 
-  import { computed, ref, watch } from 'vue'
+  import { computed, ref, toValue, watch } from 'vue'
 
 // #endregion
 
 export function useBaseSize(sizes) {
-  const baseSize = computed(() => sizes.value.find(size => size.amount === 1) ?? null)
-  const baseUnit = computed(() => !baseSize.value ? null : baseSize.value.unit)
+  const baseSize = computed(() => toValue(sizes).find(size => size.amount === 1) ?? null)
+  const baseUnit = computed(() => !toValue(baseSize) ? null : baseSize.value.unit)
   return { baseSize, baseUnit }
 }
 
+
+export function findOptimalSize(sizes, amount) {
+
+  // skip if empty
+  if (sizes.length === 0) { 
+    return null 
+  }
+
+  const result = { 
+    unit: sizes[sizes.length-1].unit,
+    amount: amount
+  }
+
+  // set smallest as default
+  if (amount === 0) { return result }
+
+  // search "least common multiple" (or 0.5)
+  for (let size of sizes) {
+    const sizeAmount = size.amount
+    const divResult = amount / sizeAmount
+    if (Number.isInteger(divResult) || (divResult % 1 === 0.5)) {
+      result.unit = size.unit
+      result.amount = divResult
+      break
+    }
+  }
+
+  result.text = `${result.amount} ${result.unit}`
+  return result
+  
+}
+
 export function useSizesCalc(sizes, amount) {
-  const sortedSizes = computed(() => sizes.value.slice().sort((a, b) => b.amount - a.amount))
+  
+  const sortedSizes = computed(() => toValue(sizes).slice().sort((a, b) => b.amount - a.amount))
   
   const lcmUnit = ref(null)
   const lcmAmount = ref(0)
@@ -44,6 +77,7 @@ export function useSizesCalc(sizes, amount) {
   
   watch(sortedSizes, (value) => { findOptimalSize(value, amount.value) })
   watch(amount, (value) => { findOptimalSize(sortedSizes.value, value) })
+  findOptimalSize(toValue(sortedSizes), toValue(amount))
 
   const lcmText = computed(() => (!!lcmUnit.value) ? `${lcmAmount.value} ${lcmUnit.value}` : null)
 

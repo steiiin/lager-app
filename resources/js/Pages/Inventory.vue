@@ -396,6 +396,28 @@
 
   // #endregion
 
+  // #region table
+
+    // #region data-table
+
+      const tableheaders = ref([
+        { title: 'Name', key: 'name' },
+        { title: 'Anforderung', key: 'demand' },
+        { title: 'Min', key: 'min_stock' },
+        { title: 'Max', key: 'max_stock' },
+        { title: 'Bestand', key: 'current_quantity' },
+        { title: 'Bestand (inkl.)', key: 'demanded_quantity' },
+        { title: 'Verfall', key: 'current_expiry' },
+      ])
+
+      const getExpiryText = (dstr) => {
+        return new Date(dstr).toLocaleDateString(undefined, { year: 'numeric', month: 'short' }).replace(' ', '-').replace('.', '');
+      }
+
+    // #endregion
+
+  // #endregion
+
 // #endregion
 
 </script>
@@ -419,12 +441,23 @@
 
     <div class="app-Inventory--page">
 
-      <LcItemInput v-if="!isItemSelected"
-        :items="items"
-        :result-pos="{ w: 850, i: 16.5 }"
-        :allow-new="true" :admin-mode="true" 
-        @create-new="createNew" @select-item="editItem">
-      </LcItemInput>
+      <template v-if="!isItemSelected">
+        <LcItemInput 
+          :items="items"
+          :result-pos="{ w: 850, i: 14.5 }"
+          :admin-mode="true" 
+          @create-new="createNew" @select-item="editItem">
+        </LcItemInput>
+        <v-data-table 
+          :items="items" :headers="tableheaders">
+          <template v-slot:item.demand="{ item }">
+            {{ item.demand.name }}
+          </template>
+          <template v-slot:item.current_expiry="{ item }">
+            {{ getExpiryText(item.current_expiry) }}
+          </template>
+        </v-data-table>
+      </template>
 
       <template v-else>
 
@@ -540,7 +573,7 @@
                     {{ minDefaultText }}
                   </v-col>
                   <v-col cols="2" class="app-Inventory--minmax-result" v-if="minSizesDiffer">
-                    ( {{ minLcmText }} )
+                    bzw. {{ minLcmText }}
                   </v-col>
                 </v-row>
                 <v-row class="mt-2">
@@ -554,7 +587,7 @@
                     {{ maxDefaultText }}
                   </v-col>
                   <v-col cols="2" class="app-Inventory--minmax-result" v-if="maxSizesDiffer">
-                    {{ maxLcmText }}
+                    bzw. {{ maxLcmText }}
                   </v-col>
                 </v-row>
               </v-form>

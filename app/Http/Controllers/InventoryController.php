@@ -15,7 +15,7 @@ class InventoryController extends Controller
     public function index()
     {
 
-        $items = Item::with(['demand', 'sizes', 'basesize'])->get();
+        $items = Item::withAll()->get();
         $demands = Demand::all(['id', 'name']);
 
         return Inertia::render('Inventory', [

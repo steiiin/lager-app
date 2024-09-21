@@ -18,11 +18,27 @@ class OrderController extends Controller
         $this->bookingService = $bookingService;
     }
 
-    public function index()
+    public function check()
     {
-        $orderData = $this->orderService->prepareData();
+        $hasSome = $this->orderService->hasSome();
         return response()->json([
-            'hasSome' => !empty($orderData),
+            'hasSome' => $hasSome
+        ]);
+    }
+
+    public function execute()
+    {
+        $orderData = $this->orderService->execute();
+        return response()->json([
+            'orderdata' => $orderData,
+        ]);
+    }
+
+    public function getlast()
+    {
+        $orderData = ""; //$this->orderService->getLatest();
+        return response()->json([
+            'has_some' => !empty($orderData),
             'orderdata' => $orderData,
         ]);
     }

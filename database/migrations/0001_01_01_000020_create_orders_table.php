@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('amount_desired');
             $table->integer('amount_delivered');
             $table->boolean('is_order_open')->default(true);
+            $table->json('log');
         });
     }
 

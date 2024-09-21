@@ -30,8 +30,8 @@
     sizesList.value = opts.sizes
     allowZero.value = opts.allowZero ?? false
 
-    currentSize.value = baseSize.value
-    currentAmount.value = 1
+    currentSize.value = opts.curSize ?? baseSize.value
+    currentAmount.value = opts.curAmount ?? 1
 
     isVisible.value = true
     return new Promise((resolve) => {

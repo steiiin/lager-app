@@ -223,8 +223,8 @@
     }
 
     const getQuantityColor = (item) => {
-      if (item.current_quantity <= item.min_stock) { return 'error' }
-      else if (item.current_quantity <= (item.min_stock + item.max_stock/2)) { return 'warning' }
+      if (item.demanded_quantity <= item.min_stock) { return 'error' }
+      else if (item.demanded_quantity <= (item.min_stock + item.max_stock/2)) { return 'warning' }
       else { return 'success' }
     }
 
@@ -232,8 +232,8 @@
       const daysDiff = Math.round(
         (new Date(item.current_expiry).getTime() - new Date().getTime()) / 
         (1000 * 60 * 60 * 24))
-      if (daysDiff > 30) { return 'success' }
-      else if (daysDiff > 0) { return 'warning' }
+      if (daysDiff > 21) { return 'success' }
+      else if (daysDiff > 14) { return 'warning' }
       else { return 'error' }
     }
 
@@ -284,7 +284,7 @@ onUnmounted(() => {
       </LcButton>
       <LcButton v-if="adminMode && !disabled"
         class="lc-picker--btn" type="secondary"icon="mdi-plus"
-        @click="createNew">Hinzufügen
+        @click="createNew">Neu
       </LcButton>
 
     </div>
@@ -345,7 +345,9 @@ onUnmounted(() => {
           <v-chip
             :color="item.expiryColor" variant="flat" label><b>{{ item.expiryText }}</b></v-chip>
           <v-chip
-            :color="item.quantityColor" variant="flat" label><b>{{ item.current_quantity }} {{ item.basesize.unit }}</b></v-chip>
+            :color="item.quantityColor" variant="flat" label><b>{{ item.demanded_quantity }} {{ item.basesize.unit }}</b></v-chip>
+          <v-chip v-if="item.current_quantity !== item.demanded_quantity"
+            variant="flat" label>Ohne Bestellung:&nbsp;<b>{{ item.current_quantity }} {{ item.basesize.unit }}</b></v-chip>
         </div>
         <template v-if="item.isOnBooking">
           <v-divider class="my-2"></v-divider>
@@ -375,8 +377,8 @@ onUnmounted(() => {
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 10rem;
-    height: 10rem;
+    width: 8rem;
+    height: 8rem;
   }
   &--scanner {
     background: var(--lc-secondary-accent-background);
@@ -406,7 +408,7 @@ onUnmounted(() => {
   &--search {
     flex: 1;
     border: .5rem solid var(--lc-secondary-accent-background);
-    padding: 2.75rem 2rem 2rem 2rem;
+    padding: 1.7rem;
     &-noscan {
       padding: 0;
     }
