@@ -92,7 +92,7 @@
                   <v-icon icon="mdi-fridge"></v-icon> 
                   {{ currentItem.location.cab }}
                 </div>
-                <div class="lc-calcamount--location-exact mt-2" v-if="!!currentItem.location.cab">
+                <div class="lc-calcamount--location-exact mt-2" v-if="!!currentItem.location.exact">
                   <v-icon icon="mdi-archive-marker-outline"></v-icon>
                   {{ currentItem.location.exact }}
                 </div>
