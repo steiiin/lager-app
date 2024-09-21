@@ -79,7 +79,7 @@
             <v-icon icon="mdi-fridge"></v-icon> 
             {{ selectedItem.location.cab }}
           </div>
-          <div class="app-WhereIs--selected-exact mt-2" v-if="!!selectedItem.location.cab">
+          <div class="app-WhereIs--selected-exact mt-2" v-if="!!selectedItem.location.exact">
             <v-icon icon="mdi-archive-marker-outline"></v-icon>
             {{ selectedItem.location.exact }}
           </div>
