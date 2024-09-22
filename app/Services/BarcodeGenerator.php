@@ -58,7 +58,10 @@ class BarcodeGenerator
       $codes = [];
       foreach (Usage::all() as $usage)
       {
-        $codes[self::generateUsage($usage->id)] = $usage->id;
+        $codes[self::generateUsage($usage->id)] = [
+          "id" => $usage->id,
+          "name" => $usage->name,
+        ];
       }
       return $codes;
     }
@@ -88,7 +91,8 @@ class BarcodeGenerator
         foreach ($item->sizes as $size)
         {
           $codes[self::generateItem($item->id, $size->id)] = [
-            "item" => $item->id,
+            "id" => $item->id,
+            "name" => $item->name,
             "amount" => $size->amount,
             "unit" => $size->unit,
           ];
