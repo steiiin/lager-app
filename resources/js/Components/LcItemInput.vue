@@ -423,7 +423,8 @@ onUnmounted(() => {
   z-index: 999;
   width: 850px;
   height: 100%;
-  overflow: scroll;
+  overflow-y: auto;
+  overflow-x: hidden;
 
   margin-top: .5rem;
   border-bottom: .5rem solid var(--lc-secondary-accent-background);

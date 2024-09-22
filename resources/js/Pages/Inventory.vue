@@ -10,7 +10,7 @@
   import { VNumberInput } from 'vuetify/labs/VNumberInput'
 
   // Local composables
-  import { useBaseSize, useSizesCalc } from '@/Composables/CalcSizes'
+  import { useBaseSize, useReadableSize } from '@/Composables/CalcSizes'
 
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
@@ -317,15 +317,15 @@
     // #region editor-minmax
 
       // computed 
-      const { baseSize, baseUnit } = useBaseSize(toRef(itemForm, 'sizes'))
-      const { lcmText: minLcmText } = useSizesCalc(toRef(itemForm, 'sizes'), toRef(itemForm, 'min_stock'))
-      const { lcmText: maxLcmText } = useSizesCalc(toRef(itemForm, 'sizes'), toRef(itemForm, 'max_stock'))
+      const { baseUnit } = useBaseSize(toRef(itemForm, 'sizes'))
+      const { text: mintext } = useReadableSize(toRef(itemForm, 'sizes'), toRef(itemForm, 'min_stock'))
+      const { text: maxtext } = useReadableSize(toRef(itemForm, 'sizes'), toRef(itemForm, 'max_stock'))
 
       const minDefaultText = computed(() => `${itemForm.min_stock} ${baseUnit.value}`)
       const maxDefaultText = computed(() => `${itemForm.max_stock} ${baseUnit.value}`)
       
-      const minSizesDiffer = computed(() => minLcmText.value != minDefaultText.value)
-      const maxSizesDiffer = computed(() => maxLcmText.value != maxDefaultText.value)
+      const minSizesDiffer = computed(() => mintext.value != minDefaultText.value)
+      const maxSizesDiffer = computed(() => maxtext.value != maxDefaultText.value)
 
       // dialog-methods
       const minmaxCalc = ref(null)
@@ -573,7 +573,7 @@
                     {{ minDefaultText }}
                   </v-col>
                   <v-col cols="2" class="app-Inventory--minmax-result" v-if="minSizesDiffer">
-                    bzw. {{ minLcmText }}
+                    bzw. {{ mintext }}
                   </v-col>
                 </v-row>
                 <v-row class="mt-2">
@@ -587,7 +587,7 @@
                     {{ maxDefaultText }}
                   </v-col>
                   <v-col cols="2" class="app-Inventory--minmax-result" v-if="maxSizesDiffer">
-                    bzw. {{ maxLcmText }}
+                    bzw. {{ maxtext }}
                   </v-col>
                 </v-row>
               </v-form>

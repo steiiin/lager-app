@@ -139,67 +139,65 @@
 
     <LcPagebar title="Lieferung" :disabled="ordersForm.processing" @back="openWelcome"></LcPagebar>
 
-    <div class="app-BookIn--page">
+    <div class="app-BookIn--emptypage" v-if="!hasAnyOpenOrders">
+      <v-empty-state 
+        icon="mdi-invoice-remove-outline"
+        title="Keine Bestellung auf dem Weg">
+        <template #text>
+          Es sind keine offenen Bestellungen im System. <br>
+          Einen Verlauf kannst du am Wachen-PC abrufen.
+        </template>
+      </v-empty-state>
+    </div>
+
+    <div class="app-BookIn--page" v-else>
 
       <div class="app-BookIn--table">
 
-        <v-empty-state v-if="!hasAnyOpenOrders"
-          icon="mdi-invoice-remove-outline"
-          title="Keine Bestellung auf dem Weg">
-          <template #text>
-            Es sind keine offenen Bestellungen im System. <br>
-            Einen Verlauf kannst du am Wachen-PC abrufen.
-          </template>
-        </v-empty-state>
+        <LcButton
+          class="app-BookIn--finishBlock" :loading="ordersForm.processing"
+          type="primary" prepend-icon="mdi-invoice-check"
+          @click="finishOrders">{{ ordersForm.processing ? 'Materialeingang buchen ...' : 'Materialmengen bestätigen' }}
+        </LcButton>
 
-        <template v-else>
+        <v-timeline class="ml-4"
+          side="end">
+      
+          <v-timeline-item
+            v-for="(orders, date) in groupedOpenOrders"
+            class="my-4">
+            <template v-slot:opposite>
+              <b>{{ getOoDate(date) }}</b>
+            </template>
+            <v-card class="rounded-0" variant="outlined">
+              <v-card-text>
+                <v-row
+                  v-for="order in orders" :key="order.id"
+                  class="app-BookIn--adapt-row" 
+                  justify="space-between" align="center" dense>
+                  <!-- Item Name -->
+                  <v-col cols="6">
+                    <span class="font-weight-bold">{{ order.item.name }}</span>
+                  </v-col>
+
+                  <!-- Ordered Amount -->
+                  <v-col cols="2" class="text-right" :class="{ 'text-red': order.changed }">
+                    <span class="font-weight-bold">{{ order.ooSizeText }}</span>
+                  </v-col>
+
+                  <!-- Cog Icon Button -->
+                  <v-col cols="3" class="text-right">
+                    <v-btn small variant="outlined" @click="adaptOrder(order)">
+                      <v-icon icon="mdi-cog"></v-icon>
+                    </v-btn>
+                  </v-col>
+                </v-row>
+              </v-card-text>
+            </v-card>
+          </v-timeline-item>
+
+        </v-timeline>
         
-          <LcButton
-            class="app-BookIn--finishBlock" :loading="ordersForm.processing"
-            type="primary" prepend-icon="mdi-invoice-check"
-            @click="finishOrders">{{ ordersForm.processing ? 'Materialeingang buchen ...' : 'Materialmengen bestätigen' }}
-          </LcButton>
-
-          <v-timeline class="ml-4"
-            side="end">
-        
-            <v-timeline-item
-              v-for="(orders, date) in groupedOpenOrders"
-              class="my-4">
-              <template v-slot:opposite>
-                <b>{{ getOoDate(date) }}</b>
-              </template>
-              <v-card class="rounded-0" variant="outlined">
-                <v-card-text>
-                  <v-row
-                    v-for="order in orders" :key="order.id"
-                    class="app-BookIn--adapt-row" 
-                    justify="space-between" align="center" dense>
-                    <!-- Item Name -->
-                    <v-col cols="6">
-                      <span class="font-weight-bold">{{ order.item.name }}</span>
-                    </v-col>
-
-                    <!-- Ordered Amount -->
-                    <v-col cols="2" class="text-right" :class="{ 'text-red': order.changed }">
-                      <span class="font-weight-bold">{{ order.ooSizeText }}</span>
-                    </v-col>
-
-                    <!-- Cog Icon Button -->
-                    <v-col cols="3" class="text-right">
-                      <v-btn small variant="outlined" @click="adaptOrder(order)">
-                        <v-icon icon="mdi-cog"></v-icon>
-                      </v-btn>
-                    </v-col>
-                  </v-row>
-                </v-card-text>
-              </v-card>
-            </v-timeline-item>
-
-          </v-timeline>
-          
-        </template>
-
       </div>
 
     </div>
@@ -218,6 +216,12 @@
   &--page {
     max-width: 850px;
     margin: 0.5rem auto;
+  }
+
+  &--emptypage {
+    position: absolute;
+    height: calc(100% - 6rem);
+    width: 100%;
   }
 
   &--finishBlock {
