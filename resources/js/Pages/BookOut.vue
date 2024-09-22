@@ -219,11 +219,11 @@ onMounted(() => {
 
 <template>
 
-  <Head title="Entnahme" />
+  <Head title="Verbrauch" />
 
   <div class="app-BookOut">
 
-    <LcPagebar title="Ausbuchen" :disabled="bookingsForm.processing" @back="openWelcome"></LcPagebar>
+    <LcPagebar title="Verbrauch" :disabled="bookingsForm.processing" @back="openWelcome"></LcPagebar>
 
     <div class="app-BookOut--page app-BookOut--usagepane">
 
