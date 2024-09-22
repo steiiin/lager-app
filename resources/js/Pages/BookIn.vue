@@ -45,13 +45,13 @@
 
   async function openWelcome() {
 
-    // if (hasAnyBookings.value) {
-    //   const confirmed = await confirmDialog.value.open({
-    //     title: 'Abbrechen?',
-    //     message: 'Du hast bereits Material hinzugefügt! <br>Willst du die Entnahme <b>wirklich abbrechen?</b>',
-    //   })
-    //   if (!confirmed) { return }
-    // }
+    if (props.openOrders.some(o => o.changed)) {
+      const confirmed = await confirmDialog.value.open({
+        title: 'Abbrechen?',
+        message: 'Du hast bereits etwas geändert! <br>Willst du <b>wirklich abbrechen?</b>',
+      })
+      if (!confirmed) { return }
+    }
     router.get('/')
 
   }
