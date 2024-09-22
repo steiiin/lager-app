@@ -10,7 +10,7 @@
   import { VNumberInput } from 'vuetify/labs/VNumberInput'
 
   // Local composables
-  import { useBaseSize, useReadableSize } from '@/Composables/CalcSizes'
+  import { useBaseSize, useSizesCalc } from '@/Composables/CalcSizes'
 
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
@@ -318,14 +318,14 @@
 
       // computed 
       const { baseUnit } = useBaseSize(toRef(itemForm, 'sizes'))
-      const { text: mintext } = useReadableSize(toRef(itemForm, 'sizes'), toRef(itemForm, 'min_stock'))
-      const { text: maxtext } = useReadableSize(toRef(itemForm, 'sizes'), toRef(itemForm, 'max_stock'))
+      const { text: minText } = useSizesCalc(toRef(itemForm, 'sizes'), toRef(itemForm, 'min_stock'))
+      const { text: maxText } = useSizesCalc(toRef(itemForm, 'sizes'), toRef(itemForm, 'max_stock'))
 
       const minDefaultText = computed(() => `${itemForm.min_stock} ${baseUnit.value}`)
       const maxDefaultText = computed(() => `${itemForm.max_stock} ${baseUnit.value}`)
       
-      const minSizesDiffer = computed(() => mintext.value != minDefaultText.value)
-      const maxSizesDiffer = computed(() => maxtext.value != maxDefaultText.value)
+      const minSizesDiffer = computed(() => minText.value != minDefaultText.value)
+      const maxSizesDiffer = computed(() => maxText.value != maxDefaultText.value)
 
       // dialog-methods
       const minmaxCalc = ref(null)
@@ -573,7 +573,7 @@
                     {{ minDefaultText }}
                   </v-col>
                   <v-col cols="2" class="app-Inventory--minmax-result" v-if="minSizesDiffer">
-                    bzw. {{ mintext }}
+                    bzw. {{ minText }}
                   </v-col>
                 </v-row>
                 <v-row class="mt-2">
@@ -587,7 +587,7 @@
                     {{ maxDefaultText }}
                   </v-col>
                   <v-col cols="2" class="app-Inventory--minmax-result" v-if="maxSizesDiffer">
-                    bzw. {{ maxtext }}
+                    bzw. {{ maxText }}
                   </v-col>
                 </v-row>
               </v-form>
