@@ -70,11 +70,17 @@
         if (!groups[date]) {
           groups[date] = []
         }
-        order.changed = order.amount_delivered>0 && order.amount_desired !== order.amount_delivered
-        const calc = findOptimalSize(order.item.sizes, order.changed ? order.amount_delivered : order.amount_desired)
-        order.ooSizeText = calc.text
-        order.ooSizeUnit = calc.unit
-        order.ooSizeAmount = calc.amount
+        order.changed = order.amount_desired !== order.amount_delivered
+        if (order.amount_delivered>0) {
+          const calc = findOptimalSize(order.item.sizes, order.amount_delivered)
+          order.ooSizeText = calc.text
+          order.ooSizeUnit = calc.unit
+          order.ooSizeAmount = calc.amount
+        } else {
+          order.ooSizeText = 'Nicht Geliefert'
+          order.ooSizeUnit = order.item.basesize.unit
+          order.ooSizeAmount = 0
+        }
         groups[date].push(order)
         return groups
       }, {})
@@ -176,12 +182,12 @@
                   class="app-BookIn--adapt-row" 
                   justify="space-between" align="center" dense>
                   <!-- Item Name -->
-                  <v-col cols="6">
+                  <v-col cols="5">
                     <span class="font-weight-bold">{{ order.item.name }}</span>
                   </v-col>
 
                   <!-- Ordered Amount -->
-                  <v-col cols="2" class="text-right" :class="{ 'text-red': order.changed }">
+                  <v-col cols="4" class="text-right" :class="{ 'text-red': order.changed }">
                     <span class="font-weight-bold">{{ order.ooSizeText }}</span>
                   </v-col>
 

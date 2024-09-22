@@ -20,6 +20,10 @@ class BookInController extends Controller
     {
 
         $openOrders = Order::open()->get();
+        $openOrders->each(function ($order) 
+        {
+            $order->amount_delivered = $order->amount_desired;
+        });
         return Inertia::render('BookIn', [
             'openOrders' => $openOrders,
             'isUnlocked' => Session::get('isUnlocked', false),
