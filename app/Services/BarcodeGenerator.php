@@ -93,6 +93,7 @@ class BarcodeGenerator
           $codes[self::generateItem($item->id, $size->id)] = [
             "id" => $item->id,
             "name" => $item->name,
+            "demand" => $item->demand->name,
             "amount" => $size->amount,
             "unit" => $size->unit,
           ];
