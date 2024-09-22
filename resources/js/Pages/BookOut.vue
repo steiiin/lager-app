@@ -299,7 +299,6 @@ onMounted(() => {
 .app-BookOut {
 
   height: 100%;
-  overflow: hidden;
 
   &--page {
     max-width: 850px;
@@ -364,7 +363,12 @@ onMounted(() => {
     height: calc(100% - 19.5rem);
     &-table {
       height: calc(100% - 6.5rem);
-      overflow-y: scroll;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    &::-webkit-scrollbar {
+      display: none;
     }
 
   }
