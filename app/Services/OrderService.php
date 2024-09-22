@@ -101,7 +101,7 @@ class OrderService
             'amount' => $booking->item_amount,
             'usage' => $booking->usage->name
           ];
-        });
+        })->values();
         
         // create order
         Order::create([
