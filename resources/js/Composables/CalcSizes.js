@@ -42,24 +42,24 @@ export function findOptimalSize(sizes, amount) {
   
 }
 
-export function useReadableSize(sizes, amount) {
+export function useSizesCalc(sizes, amount) {
   
   const sortedSizes = computed(() => toValue(sizes).slice().sort((a, b) => b.amount - a.amount))
   
-  const unit = ref(null)
-  const amount = ref(0)
+  const lcmUnit = ref(null)
+  const lcmAmount = ref(0)
   const findOptimalSize = (valSizes, valAmount) => {
     
     // skip if empty
     if (valSizes.length === 0) { 
-      unit.value = null
-      amount.value = null
+      lcmUnit.value = null
+      lcmAmount.value = null
       return 
     }
 
     // set smallest as default
-    unit.value = valSizes[valSizes.length-1].unit
-    amount.value = valAmount
+    lcmUnit.value = valSizes[valSizes.length-1].unit
+    lcmAmount.value = valAmount
     if (valAmount === 0) { return }
 
     // search "least common multiple" (or 0.5)
@@ -67,8 +67,8 @@ export function useReadableSize(sizes, amount) {
       const sizeAmount = size.amount
       const divResult = valAmount / sizeAmount
       if (Number.isInteger(divResult) || (divResult % 1 === 0.5)) {
-        unit.value = size.unit
-        amount.value = divResult
+        lcmUnit.value = size.unit
+        lcmAmount.value = divResult
         break
       }
     }
@@ -79,7 +79,7 @@ export function useReadableSize(sizes, amount) {
   watch(amount, (value) => { findOptimalSize(sortedSizes.value, value) })
   findOptimalSize(toValue(sortedSizes), toValue(amount))
 
-  const text = computed(() => (!!unit.value) ? `${amount.value} ${unit.value}` : null)
+  const lcmText = computed(() => (!!lcmUnit.value) ? `${lcmAmount.value} ${lcmUnit.value}` : null)
 
-  return { unit, amount, text }
+  return { unit: lcmUnit, amount: lcmAmount, text: lcmText }
 }
