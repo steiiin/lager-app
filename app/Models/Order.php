@@ -17,6 +17,9 @@ class Order extends Model
         'log'
     ];
     protected $with = ['item', 'item.ordersize', 'item.basesize'];
+    protected $casts = [
+        'log' => 'array',  // Automatically cast 'location' to/from array (JSON)
+    ];
 
     public function item()
     {
@@ -26,6 +29,11 @@ class Order extends Model
     public function scopeOpen($query)
     {
         return $query->where('is_order_open', true);
+    }
+
+    public function scopeClosed($query)
+    {
+        return $query->where('is_order_open', false);
     }
 
 }

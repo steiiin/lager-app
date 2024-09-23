@@ -80,7 +80,7 @@ class OrderService
         'bysize_times' => $order->timesOrdersize,
         'bysize_unit' => $order->ordersize->unit,
       ];
-    });
+    })->values();
 
     // create orders
     DB::transaction(function () use ($orderData) 
@@ -120,6 +120,28 @@ class OrderService
     });
 
     return $responseData->toArray();
+
+  }
+
+  public function fetchLogs()
+  {
+
+    $orders = Order::closed()->get();
+    $groupedData = $orders->groupBy(function ($order)
+    {
+      return $order->item->name;
+    })->map(function ($orders, $itemName) 
+    {
+
+      $allLogs = collect();
+      $amountSum = 0;
+
+      foreach ($orders as $order)
+      {
+        
+      }
+
+    });
 
   }
 
