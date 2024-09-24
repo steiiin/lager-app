@@ -12,5 +12,6 @@ class Demand extends Model
         'name',
         'sp_name',
     ];
+    public $timestamps = false;
 
 }

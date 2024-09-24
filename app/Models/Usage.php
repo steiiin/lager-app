@@ -10,7 +10,7 @@ class Usage extends Model
 
     protected $table = 'usages';
     protected $fillable = ['name', 'is_locked'];
-
+    public $timestamps = false;
     protected $appends = ['barcode'];
 
     public function getBarcodeAttribute() 
