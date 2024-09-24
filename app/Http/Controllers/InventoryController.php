@@ -106,6 +106,7 @@ class InventoryController extends Controller
 
                 // update item
                 $item = Item::findOrFail($id);
+                $item->update($request->except('sizes'));
 
                 // handle sizes
                 $this->handleSizes($request->input('sizes'), $item);
