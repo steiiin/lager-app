@@ -5,12 +5,15 @@ use App\Http\Controllers\BookOutController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\WhereIsController;
 use App\Http\Middleware\EnsureUnlocked;
+use App\Models\Item;
 use App\Models\Usage;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
+
+#region Welcome
 
 Route::get('/', function () {
 
@@ -47,7 +50,20 @@ Route::post('/', function(Illuminate\Http\Request $request) {
 
 });
 
-Route::resource('/whereis', WhereIsController::class);
+#endregion
+#region WhereIs
+
+Route::get('/whereis', function () {
+
+    $items = Item::with(['demand'])->get();
+    return Inertia::render('WhereIs', [
+        'items' => $items,
+    ]);
+
+})->name('whereis');
+
+#endregion
+
 Route::resource('/bookout', BookOutController::class);
 Route::resource('/bookin', BookInController::class);
 
