@@ -108,6 +108,8 @@
 
       sizes: [],
 
+      stockchangeReason: -1,
+
     })
     const itemFormOptions = {
       preserveScroll: true,
@@ -196,6 +198,7 @@
       itemForm.current_quantity = item.current_quantity
 
       itemForm.sizes = item.sizes
+      item.stockchangeReason = -1
 
       editActivePanel.value = [ 4 ]
       selectedItem.value = { edit: true }
@@ -415,6 +418,11 @@
         { name: "Nov", value: 11 },
         { name: "Dez", value: 12 },
       ])
+      const selectableStockChangeReasons = ref([
+        { name: "Abweichung", value: -1 },
+        { name: "Verfall", value: -2 },
+        { name: "Beschädigung", value: -3 },
+      ])
 
       // update
       const updateExpiry = () => {
@@ -511,7 +519,7 @@
 
           </v-card-text>
         </v-card>
-        <v-card title="In Bestellung" class="mt-2" variant="outlined">
+        <!-- <v-card title="In Bestellung" class="mt-2" variant="outlined">
           <v-card-text>
 
             <v-data-table 
@@ -528,7 +536,7 @@
             </v-data-table>
 
           </v-card-text>
-        </v-card>
+        </v-card> -->
 
       </template>
 
@@ -687,6 +695,17 @@
                       :min="0"
                       :max="999"
                     ></v-number-input>
+                  </v-col>
+                  <v-col cols="3">
+                    <v-select v-if="!isNewItem"
+                      v-model="itemForm.stockchangeReason"
+                      :items="selectableStockChangeReasons"
+                      label="Grund"
+                      item-title="name"
+                      item-value="value"
+                      required
+                      hide-details
+                    ></v-select> 
                   </v-col>
                 </v-row>
                 <v-row class="mt-2">

@@ -11,8 +11,7 @@ class OrderService
 
   public function getItemsNearExpiry()
   {
-    $thresholdDate = Carbon::now()->addDays(21); 
-    return Item::with(['demand'])->whereDate('current_expiry', '<=', $thresholdDate)->get();
+    
   }
 
   public function fetchLogs()

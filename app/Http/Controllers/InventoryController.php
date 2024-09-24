@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Booking;
 use App\Models\Demand;
 use App\Models\Item;
 use App\Models\Itemsize;
@@ -104,12 +105,25 @@ class InventoryController extends Controller
             DB::transaction(function () use ($request, $id) 
             {
 
-                // update item
+                // get item
                 $item = Item::findOrFail($id);
+                $stockChange = $item->current_quantity - $request->current_quantity;
+
+                // update item
                 $item->update($request->except('sizes'));
 
                 // handle sizes
                 $this->handleSizes($request->input('sizes'), $item);
+
+                // handle stockchange
+                if ($stockChange !== 0)
+                {
+                    Booking::create([
+                        'usage_id' => $request->stockchangeReason,
+                        'item_id' => $item->id,
+                        'item_amount' => $stockChange
+                    ]);
+                }
 
             });
 

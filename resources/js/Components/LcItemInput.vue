@@ -151,7 +151,7 @@
           isOnBooking, bookingAmount
         }
       })
-      .filter(item => item.score > 0 || props.adminMode)
+      .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score);
     
     return result

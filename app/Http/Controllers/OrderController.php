@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\Demand;
 use App\Models\Item;
 use App\Models\Order;
+use App\Models\Usage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -112,11 +113,17 @@ class OrderController extends Controller
 
         // create log
         $itemLog = $bookings->where('item_id', $orderDatum['item_id'])->map(function ($booking) {
+
+          $usageName = $booking->usage_id < 0 
+            ? Usage::getInternalUsageName($booking->usage_id)
+            : $booking->usage->name;
+
           return [
             'time' => $booking->updated_at,
             'amount' => $booking->item_amount,
-            'usage' => $booking->usage->name,
+            'usage' => $usageName,
           ];
+
         })->values();
         
         // create order
