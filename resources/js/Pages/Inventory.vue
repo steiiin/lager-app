@@ -54,6 +54,43 @@
 
 // #region items
 
+  // #region dashboard
+
+    const itemsNearExpiry = computed(() => {
+      const thresholdDate = (new Date()); thresholdDate.setDate(thresholdDate.getDate() + 21); thresholdDate.setHours(0, 0, 0, 0);
+      return props.items.filter(item => {
+        const expiryDate = new Date(item.current_expiry)
+        return !isNaN(expiryDate) && expiryDate <= thresholdDate
+      })
+    })
+
+    const tableExpiry = ref([
+      { title: 'Name', key: 'name' },
+      { title: 'Verfall', key: 'current_expiry' },
+      { title: '', key: 'action', sortable: false },
+    ])
+    const sortExpiry = ref([
+      { key: 'current_expiry', order: 'asc' }
+    ])
+
+    const itemsOrdered = computed(() => {
+      const thresholdDate = (new Date()); thresholdDate.setDate(thresholdDate.getDate() + 21); thresholdDate.setHours(0, 0, 0, 0);
+      return props.items.filter(item => {
+        return item.current_quantity < item.demanded_quantity
+      })
+    })
+
+    const tableOrdered = ref([
+      { title: 'Name', key: 'name' },
+      { title: 'Verfall', key: 'current_expiry' },
+      { title: '', key: 'action', sortable: false },
+    ])
+    const sortOrdered = ref([
+      { key: 'current_expiry', order: 'asc' }
+    ])
+
+  // #endregion
+
   // #region form-data
 
     const itemForm = useForm({
@@ -444,21 +481,55 @@
     <div class="app-Inventory--page">
 
       <template v-if="!isItemSelected">
+
         <LcItemInput 
           :items="items"
           :result-pos="{ w: 850, i: 14.5 }"
           :admin-mode="true" 
           @create-new="createNew" @select-item="editItem">
         </LcItemInput>
-        <v-data-table 
-          :items="items" :headers="tableheaders">
-          <template v-slot:item.demand="{ item }">
-            {{ item.demand.name }}
-          </template>
-          <template v-slot:item.current_expiry="{ item }">
-            {{ getExpiryText(item.current_expiry) }}
-          </template>
-        </v-data-table>
+
+        <!-- DashBoard -->
+        <v-card title="Verfall prüfen" class="mt-2" variant="outlined">
+          <v-card-text>
+
+            <v-data-table 
+              :items="itemsNearExpiry" :headers="tableExpiry" :sort-by="sortExpiry"
+              hide-default-footer :items-per-page="100">
+              <template v-slot:item.demand="{ item }">
+                {{ item.demand.name }}
+              </template>
+              <template v-slot:item.current_expiry="{ item }">
+                {{ getExpiryText(item.current_expiry) }}
+              </template>
+              <template v-slot:item.action="{ item }">
+                <v-btn small variant="outlined" @click="editItem(item)">
+                  <v-icon icon="mdi-cog"></v-icon>
+                </v-btn>
+              </template>
+            </v-data-table>
+
+          </v-card-text>
+        </v-card>
+        <v-card title="In Bestellung" class="mt-2" variant="outlined">
+          <v-card-text>
+
+            <v-data-table 
+              :items="itemsOrdered" :headers="tableOrdered" :sort-by="sortOrdered"
+              hide-default-footer :items-per-page="100">
+              <template v-slot:item.demand="{ item }">
+                {{ item.demand.name }}
+              </template>
+              <template v-slot:item.action="{ item }">
+                <v-btn small variant="outlined" @click="editItem(item)">
+                  <v-icon icon="mdi-cog"></v-icon>
+                </v-btn>
+              </template>
+            </v-data-table>
+
+          </v-card-text>
+        </v-card>
+
       </template>
 
       <template v-else>
@@ -686,6 +757,7 @@
 
       </template>
 
+      <!-- Dialog: PackageSize -->
       <v-dialog v-model="isEditSizeVisible" max-width="420px">
         <v-card prepend-icon="mdi-package-variant-closed" v-if="currentEditSizeItem" class="rounded-0"
           :title="isEditSizeNew ? 'Neue Packungsgröße' : 'Packungsgröße bearbeiten'">
@@ -738,9 +810,11 @@
         </v-card>
       </v-dialog>
 
+      <!-- Dialog: AmountInput -->
       <LcCalcMinMaxDialog ref="minmaxCalc" />
 
     </div>
+
   </div>
 
 </template>
