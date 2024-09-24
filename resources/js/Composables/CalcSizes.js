@@ -18,8 +18,12 @@ export function findOptimalSize(sizes, amount) {
     return null 
   }
 
+  // sort sizes
+  const sortedSizes = sizes.slice().sort((a, b) => b.amount - a.amount)
+
+  // init with basesize
   const result = { 
-    unit: sizes[sizes.length-1].unit,
+    unit: sortedSizes[sizes.length-1].unit,
     amount: amount
   }
 
@@ -27,7 +31,7 @@ export function findOptimalSize(sizes, amount) {
   if (amount === 0) { return result }
 
   // search "least common multiple" (or 0.5)
-  for (let size of sizes) {
+  for (let size of sortedSizes) {
     const sizeAmount = size.amount
     const divResult = amount / sizeAmount
     if (Number.isInteger(divResult) || (divResult % 1 === 0.5)) {
