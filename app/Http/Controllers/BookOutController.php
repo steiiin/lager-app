@@ -3,9 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
-use App\Models\Demand;
 use App\Models\Item;
-use App\Models\Itemsize;
 use App\Models\Usage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
