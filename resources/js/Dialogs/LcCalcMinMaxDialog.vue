@@ -72,6 +72,10 @@
     if (allowZero.value) { return 0 }
     return (currentSize.value.amount%2 === 0) ? 0.5 : 1
   })
+  const currentStep = computed(() => {
+    if (currentAmount.value % 1 === 0.5) { return 0.5 }
+    else { return 1 }
+  })
 
   watch(currentSize, (newSize, oldSize) => { 
     if (!oldSize || !newSize) { return }
@@ -118,7 +122,7 @@
           controlVariant="split"
           :hideInput="false"
           :inset="false" hide-details
-          :min="currentMin"
+          :min="currentMin" :step="currentStep"
         ></v-number-input>
 
         <v-select
