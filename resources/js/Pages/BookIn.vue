@@ -66,7 +66,7 @@
 
     const groupedOpenOrders = computed(() => {
       return props.openOrders.reduce((groups, order) => {
-        const date = order.updated_at //.split('T')[0]
+        const date = order.prepare_time //.split('T')[0]
         if (!groups[date]) {
           groups[date] = []
         }
@@ -87,7 +87,7 @@
     })
 
     const getOoDate = (dstr) => {
-      return new Date(dstr).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
+      return new Date(dstr*1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
     }
 
   // #endregion
