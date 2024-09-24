@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('itemsizes', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
             $table->foreignId('item_id')->constrained('items');
             $table->string('unit');
             $table->integer('amount');
             $table->boolean('is_default')->default(false);
 
-            $table->unique(['item_id', 'unit', 'amount']);
+            $table->unique(['item_id', 'unit']);
+            $table->unique(['item_id', 'amount']);
         });
     }
 

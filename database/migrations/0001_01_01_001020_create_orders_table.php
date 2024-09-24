@@ -13,12 +13,14 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
+            $table->integer('prepare_time');
             $table->foreignId('item_id')->constrained('items');
             $table->integer('amount_desired');
             $table->integer('amount_delivered');
             $table->boolean('is_order_open')->default(true);
             $table->json('log');
+            
+            $table->unique(['item_id', 'prepare_time']);
         });
     }
 
