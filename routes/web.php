@@ -63,8 +63,11 @@ Route::get('/whereis', function () {
 })->name('whereis');
 
 #endregion
+#region Booking
 
 Route::resource('/bookout', BookOutController::class);
 Route::resource('/bookin', BookInController::class);
+
+#endregion
 
 require(dirname(__FILE__).'/config.php');
