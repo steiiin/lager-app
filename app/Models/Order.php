@@ -11,11 +11,14 @@ class Order extends Model
     protected $table = 'orders';
     protected $fillable = [
         'item_id',
+        'prepare_time',
         'amount_desired',
         'amount_delivered',
         'is_order_open',
         'log'
     ];
+    public $timestamps = false;
+
     protected $with = ['item', 'item.ordersize', 'item.basesize'];
     protected $casts = [
         'log' => 'array',  // Automatically cast 'location' to/from array (JSON)

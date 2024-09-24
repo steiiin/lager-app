@@ -52,4 +52,3 @@ Route::resource('/bookout', BookOutController::class);
 Route::resource('/bookin', BookInController::class);
 
 require(dirname(__FILE__).'/config.php');
-require(dirname(__FILE__).'/api.php');

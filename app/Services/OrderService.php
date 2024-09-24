@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Booking;
+use App\Models\Demand;
 use App\Models\Item;
 use App\Models\Order;
 use App\Models\Usage;
@@ -12,75 +13,31 @@ use Illuminate\Support\Facades\DB;
 class OrderService
 {
 
-  public function getItemsBelowMinStock()
-  {
-    $items = Item::withAll()->where('current_quantity', '<=', 'min_stock')->get();
-    return $items->filter(function ($item)
-    {
-      return ($item->demanded_quantity <= $item->min_stock) && ($item->demanded_quantity < $item->max_stock);
-    });
-  }
+  
 
   public function getItemsNearExpiry()
   {
-    /** 
-     * @disregard 
-     */
     $thresholdDate = Carbon::now()->addDays(21); 
     return Item::with(['demand'])->whereDate('current_expiry', '<=', $thresholdDate)->get();
   }
 
   public function hasSome()
   {
-    $items = $this->getItemsBelowMinStock();
-    return $items->count() > 0;
+    
+  }
+
+  public function prepare()
+  {
+
+
   }
 
   public function execute()
   {
 
-    // check if there are items to order
-    $items = $this->getItemsBelowMinStock();
-    if ($items->count() === 0) {
-      return [];
-    }
 
     // create orderdata
-    $orderData = $items->map(function ($item)
-    {
-
-      $order = (object)[];
-
-      $ordersize = $item->ordersize;
-      $basesize = $item->basesize;
-
-      $needForMaxStock = ($item->max_stock - $item->demanded_quantity);
-
-      $order->item = $item;
-      $order->baseunit = $basesize->unit;
-      $order->ordersize = $ordersize;
-
-      $order->timesOrdersize = floor($needForMaxStock / $ordersize->amount);
-      $order->amount_desired = $order->timesOrdersize * $ordersize->amount;
-
-      return $order;
-      
-    });
-
-    // create response data
-    $responseData = $orderData->map(function ($order)
-    {
-      return [
-        'item_name' => $order->item->name,
-        'current_quantity' => $order->item->current_quantity,
-        'min_stock' => $order->item->min_stock,
-        'max_stock' => $order->item->max_stock,
-        'baseunit' => $order->baseunit,
-        'amount' => $order->amount_desired,
-        'bysize_times' => $order->timesOrdersize,
-        'bysize_unit' => $order->ordersize->unit,
-      ];
-    })->values();
+    $orderData = collect();
 
     // create orders
     DB::transaction(function () use ($orderData) 
