@@ -3,7 +3,7 @@
 // #region imports
 
   // Vue composables
-  import { ref, computed } from 'vue'
+  import { ref, computed, watch, nextTick } from 'vue'
 
   // Vuetify components
   import { VNumberInput } from 'vuetify/labs/VNumberInput'
@@ -29,6 +29,9 @@
 
     sizesList.value = opts.sizes
     allowZero.value = opts.allowZero ?? false
+
+    currentSize.value = null
+    await nextTick()
 
     currentSize.value = opts.curSize ?? baseSize.value
     currentAmount.value = opts.curAmount ?? 1
@@ -68,6 +71,26 @@
   const currentMin = computed(() => {
     if (allowZero.value) { return 0 }
     return (currentSize.value.amount%2 === 0) ? 0.5 : 1
+  })
+
+  watch(currentSize, (newSize, oldSize) => { 
+    if (!oldSize || !newSize) { return }
+
+    if (newSize.amount < oldSize.amount) {
+      currentAmount.value = oldSize.amount * currentAmount.value
+    } else {
+      if ((currentAmount.value % newSize.amount) === 0) {
+        currentAmount.value = currentAmount.value / newSize.amount
+      } else if ((newSize.amount % 2 === 0) && ((currentAmount.value % newSize.amount) === (newSize.amount / 2))) {
+        currentAmount.value = currentAmount.value / newSize.amount
+      } else {
+        if (currentAmount.value / newSize.amount >= 1) {
+          currentAmount.value = Math.floor((currentAmount.value / newSize.amount) * 2) / 2
+        } else {
+          currentAmount.value = 1
+        }
+      }
+    }
   })
 
 // #endregion
