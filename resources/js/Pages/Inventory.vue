@@ -334,6 +334,7 @@
           title: 'Min-Bestand berechnen',
           message: 'Gib eine Packungsgröße und eine Menge ein, um einen neuen Min-Bestand zu errechnen.',
           sizes: itemForm.sizes,
+          curSize: itemForm.sizes.find(e=>e.is_default),
           allowZero: true,
         })
         if (newMin === null) { return }
@@ -344,6 +345,7 @@
           title: 'Max-Bestand berechnen',
           message: 'Gib eine Packungsgröße und eine Menge ein, um einen neuen Max-Bestand zu errechnen.',
           sizes: itemForm.sizes,
+          curSize: itemForm.sizes.find(e=>e.is_default),
           allowZero: true,
         })
         if (newMax === null) { return }
