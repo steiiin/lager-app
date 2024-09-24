@@ -2,12 +2,8 @@
 
 use App\Http\Controllers\BookInController;
 use App\Http\Controllers\BookOutController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\WhereIsController;
-use App\Http\Middleware\EnsureUnlocked;
 use App\Models\Item;
 use App\Models\Usage;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
