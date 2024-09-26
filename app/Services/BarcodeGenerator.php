@@ -96,6 +96,7 @@ class BarcodeGenerator
             "demand" => $item->demand->name,
             "amount" => $size->amount,
             "unit" => $size->unit,
+            "isdefault" => ($size->is_default === 1) ? true : false,
           ];
         }
 
