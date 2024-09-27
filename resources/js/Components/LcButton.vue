@@ -110,6 +110,11 @@
     &:focus-visible {
       color: var(--lc-main-text);
       background: var(--lc-main-background);
+      & :deep(kbd) {
+        outline: 2px solid var(--lc-main-text);
+        color: var(--lc-main-text);
+        box-shadow: 4px 4px var(--lc-main-text);
+      }
     }
     & .lc-button--icon {
       font-size: 5rem;
@@ -125,6 +130,11 @@
     &:focus-visible {
       color: var(--lc-primary-accent-background);
       background: var(--lc-primary-accent-text);
+      & :deep(kbd) {
+        outline: 2px solid var(--lc-primary-accent-background);
+        color: var(--lc-primary-accent-background);
+        box-shadow: 4px 4px var(--lc-primary-accent-background);
+      }
     }
     & .lc-button--icon {
       font-size: 3rem;
