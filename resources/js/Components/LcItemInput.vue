@@ -182,9 +182,9 @@
       emit('ctrlFinish')
       return
     }
-
+    
     // search item
-    const item = props.items.find(item => item.barcodes.hasOwnProperty("LC-1000001002")) ?? null
+    const item = props.items.find(item => item.barcodes.hasOwnProperty(code)) ?? null
     if (!item) { return }
 
     // find itemsize
