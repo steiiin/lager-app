@@ -88,6 +88,7 @@
   &--content {
     display: flex;
     gap: .5rem;
+    align-items: center;
 
     &-progress {
       height: 1.5rem;
@@ -142,6 +143,16 @@
     & .lc-button--icon {
       display: none;
     }
+  }
+
+  & :deep(kbd) {
+    font-size: 0.7em;
+    outline: 2px solid #fff;
+    color: #fff;
+    padding: .2rem;
+    height: 80%;
+    margin-left: .5rem;
+    box-shadow: 4px 4px #fff;
   }
 
 }

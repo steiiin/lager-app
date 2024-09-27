@@ -17,6 +17,7 @@ Route::get('/', function () {
     return Inertia::render('Welcome', [
         'usages' => $usages,
         'isUnlocked' => Session::get('isUnlocked', false),
+        'isTouchMode' => Config::get('app.app_touchmode', false),
     ]);
 
 })->name('welcome');

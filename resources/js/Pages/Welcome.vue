@@ -3,7 +3,7 @@
 // #region imports
 
   // Vue composables
-  import { ref, computed } from 'vue'
+  import { ref, computed, onMounted, onUnmounted } from 'vue'
   import { Head, router } from '@inertiajs/vue3'
 
   // Local components
@@ -26,6 +26,10 @@
       type: Boolean,
       required: true,
     },
+    isTouchMode: {
+      type: Boolean,
+      required: true,
+    }
   })
 
 // #endregion
@@ -70,6 +74,35 @@
 
 // #endregion
 
+// #region touchmode
+
+  const trackShortcuts = async (e) => {
+    if (e.key === 'F2') 
+    { 
+      e.stopImmediatePropagation()
+      openBookOut()
+    }
+    else if (e.key === 'F3') 
+    { 
+      e.stopImmediatePropagation()
+      openWhereIs()
+    }
+    else if (e.key === 'F4') 
+    { 
+      e.stopImmediatePropagation()
+      openBookIn()
+    }
+  }
+
+  onMounted(() => {
+    document.body.addEventListener('keydown', trackShortcuts)
+  })
+  onUnmounted(() => {
+    document.body.removeEventListener('keydown', trackShortcuts)
+  })
+
+// #endregion
+
 </script>
 <template>
 
@@ -79,17 +112,17 @@
 
     <lc-button class="app-Welcome--BookOut" 
       type="primary" icon="mdi-barcode-scan"
-      @click="openBookOut">Verbrauch
+      @click="openBookOut">Verbrauch<kbd v-if="!isTouchMode">F2</kbd>
     </lc-button>
 
     <lc-button class="app-Welcome--WhereIs"
       type="primary" icon="mdi-home-search-outline"
-      @click="openWhereIs">Wo ist ... ?
+      @click="openWhereIs">Wo ist ... ?<kbd v-if="!isTouchMode">F3</kbd>
     </lc-button>
 
     <lc-button class="app-Welcome--BookIn"
       icon="mdi-basket-outline"
-      @click="openBookIn">Lieferung
+      @click="openBookIn">Lieferung<kbd v-if="!isTouchMode">F4</kbd>
     </lc-button>
 
     <lc-button class="app-Welcome--Login" v-if="isUnlocked"

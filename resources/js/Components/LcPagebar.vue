@@ -1,4 +1,6 @@
 <script setup>
+import { onMounted, onUnmounted } from 'vue';
+
 
 // #region emit/props
 
@@ -20,6 +22,25 @@
       required: false,
       default: 850,
     },
+  })
+
+// #endregion
+
+// #region touchmode
+
+  const trackShortcuts = async (e) => {
+    if (e.key === 'Escape') 
+    { 
+      e.stopImmediatePropagation()
+      emit('back')
+    }
+  }
+
+  onMounted(() => {
+    document.body.addEventListener('keydown', trackShortcuts)
+  })
+  onUnmounted(() => {
+    document.body.removeEventListener('keydown', trackShortcuts)
   })
 
 // #endregion

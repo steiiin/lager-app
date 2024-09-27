@@ -22,14 +22,12 @@
 
 }
 
-kbd {
+kbd[sym] {
+  font-size: 1.5em;
   outline: 1px solid #ddd;
   background: #eee;
   padding: .2rem .4rem .1rem .2rem;
   text-transform: uppercase;
   box-shadow: 2px 2px #aaa;
   margin: 0 .5rem;
-}
-kbd[sym] {
-  font-size: 1.5em;
 }
