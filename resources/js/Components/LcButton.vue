@@ -159,7 +159,7 @@
     font-size: 0.7em;
     outline: 2px solid #fff;
     color: #fff;
-    padding: .2rem;
+    padding: .2rem .4rem;
     height: 80%;
     margin-left: .5rem;
     box-shadow: 4px 4px #fff;
