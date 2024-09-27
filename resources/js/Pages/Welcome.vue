@@ -77,20 +77,24 @@
 // #region touchmode
 
   const trackShortcuts = async (e) => {
-    if (e.key === 'F2') 
+    if (e.key === '1') 
     { 
       e.stopImmediatePropagation()
       openBookOut()
     }
-    else if (e.key === 'F3') 
+    else if (e.key === '2') 
     { 
       e.stopImmediatePropagation()
       openWhereIs()
     }
-    else if (e.key === 'F4') 
+    else if (e.key === '3') 
     { 
       e.stopImmediatePropagation()
       openBookIn()
+    }
+    else if (e.key === 'ö')
+    {
+      OpenKiosk.settings();
     }
   }
 
@@ -112,17 +116,17 @@
 
     <lc-button class="app-Welcome--BookOut" 
       type="primary" icon="mdi-barcode-scan"
-      @click="openBookOut">Verbrauch<kbd v-if="!isTouchMode">F2</kbd>
+      @click="openBookOut">Verbrauch<kbd v-if="!isTouchMode">1</kbd>
     </lc-button>
 
     <lc-button class="app-Welcome--WhereIs"
       type="primary" icon="mdi-home-search-outline"
-      @click="openWhereIs">Wo ist ... ?<kbd v-if="!isTouchMode">F3</kbd>
+      @click="openWhereIs">Wo ist ... ?<kbd v-if="!isTouchMode">2</kbd>
     </lc-button>
 
     <lc-button class="app-Welcome--BookIn"
       icon="mdi-basket-outline"
-      @click="openBookIn">Lieferung<kbd v-if="!isTouchMode">F4</kbd>
+      @click="openBookIn">Lieferung<kbd v-if="!isTouchMode">3</kbd>
     </lc-button>
 
     <lc-button class="app-Welcome--Login" v-if="isUnlocked"
