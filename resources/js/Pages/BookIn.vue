@@ -3,7 +3,7 @@
 // #region imports
 
   // Vue composables
-  import { ref, computed, onMounted,toRef } from 'vue'
+  import { ref, computed, onMounted,toRef, onUnmounted } from 'vue'
   import { Head, router, useForm } from '@inertiajs/vue3'
 
   // Local composables
@@ -11,12 +11,11 @@
 
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
-  import LcItemInput from '@/Components/LcItemInput.vue'
-  import LcUsageInput from '@/Components/LcUsageInput.vue'
   import LcButton from '@/Components/LcButton.vue'
   import LcCalcMinMaxDialog from '@/Dialogs/LcCalcMinMaxDialog.vue'
   import LcConfirm from '@/Dialogs/LcConfirm.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
+  import InputService from '@/Services/InputService'
 
 // #endregion
 
@@ -132,6 +131,17 @@
     }
 
   // #endregion
+
+// #endregion
+
+// #region touchmode
+
+  onMounted(() => {
+    InputService.registerEsc(openWelcome)
+  })
+  onUnmounted(() => {
+    InputService.unregisterEsc(openWelcome)
+  })
 
 // #endregion
 

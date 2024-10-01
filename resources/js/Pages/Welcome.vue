@@ -12,6 +12,7 @@
   import LcUnlockDialog from '@/Dialogs/LcUnlockDialog.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
   import LcUsageInput from '@/Components/LcUsageInput.vue'
+import InputService from '@/Services/InputService'
 
 // #endregion
 
@@ -76,33 +77,25 @@
 
 // #region touchmode
 
-  const trackShortcuts = async (e) => {
-    if (e.key === '1') 
-    { 
-      e.stopImmediatePropagation()
-      openBookOut()
-    }
-    else if (e.key === '2') 
-    { 
-      e.stopImmediatePropagation()
-      openWhereIs()
-    }
-    else if (e.key === '3') 
-    { 
-      e.stopImmediatePropagation()
-      openBookIn()
-    }
-    else if (e.key === 'ö')
-    {
-      OpenKiosk.settings();
+  const openKioskSettings = () => {
+    if (typeof OpenKiosk != 'undefined') {
+      OpenKiosk.settings()
+    } else {
+      console.warn('Lager-App: Not in OpenKiosk')
     }
   }
 
   onMounted(() => {
-    document.body.addEventListener('keydown', trackShortcuts)
+    InputService.registerK1(openBookOut)
+    InputService.registerK2(openWhereIs)
+    InputService.registerK3(openBookIn)
+    InputService.registerKl(openKioskSettings)
   })
   onUnmounted(() => {
-    document.body.removeEventListener('keydown', trackShortcuts)
+    InputService.unregisterK1(openBookOut)
+    InputService.unregisterK2(openWhereIs)
+    InputService.unregisterK3(openBookIn)
+    InputService.unregisterKl(openKioskSettings)
   })
 
 // #endregion

@@ -1,12 +1,5 @@
 <script setup>
 
-// #region imports
-
-  // Vue composables
-  import { ref, onMounted, onBeforeUnmount } from 'vue'
-
-// #endregion
-
 // #region props/emits
 
   const props = defineProps({
@@ -15,59 +8,6 @@
       required: true,
     },
   })
-  const emit = defineEmits([
-    'scan',
-  ])
-
-// #endregion
-
-// #region scanner-tracker
-
-  onMounted(() => {
-    document.body.addEventListener('keydown', trackKeyInput)
-  })
-  onBeforeUnmount(() => {
-    document.body.removeEventListener('keydown', trackKeyInput)
-  })
-
-  let trackerBuffer = ''
-  let trackerTimer = null
-  const trackKeyInput = (e) => {
-
-    if (e.key.length === 1) {
-      trackerBuffer += e.key
-    } else if (e.key === 'Enter') {
-
-      e.stopImmediatePropagation()
-
-      // check code
-      if (trackerBuffer.startsWith('LC-'))
-      {
-        emit('scan', trackerBuffer)
-      }
-
-      // reset tracker
-      trackerBuffer = ''
-      clearTimeout(trackerTimer)
-      return
-
-    }
-
-    // restart timeout
-    if (trackerTimer) {
-      clearTimeout(trackerTimer)
-    }
-    trackerTimer = setTimeout(() => {
-      trackerBuffer = ''
-    }, 50)
-
-  }
-
-// #endregion
-
-// #region expose
-
-  defineExpose({ trackKeyInput })
 
 // #endregion
 

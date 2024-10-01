@@ -3,7 +3,7 @@
 // #region imports
 
   // Vue composables
-  import { ref, computed, onMounted } from 'vue'
+  import { ref, computed, onMounted, onUnmounted } from 'vue'
   import { Head, router, useForm } from '@inertiajs/vue3'
 
   // Local components
@@ -14,6 +14,7 @@
   import LcCalcAmountDialog from '@/Dialogs/LcCalcAmountDialog.vue'
   import LcConfirm from '@/Dialogs/LcConfirm.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
+  import InputService from '@/Services/InputService'
 
 // #endregion
 
@@ -117,7 +118,8 @@
       }).filter(e => e)
     })
 
-    // dialog
+    // refs
+    const itemInput = ref(null)
     const amountCalc = ref(null)
 
     // methods
@@ -206,14 +208,31 @@
 
 // #endregion
 
-onMounted(() => {
+// #region touchmode
 
-  // set usage, if set by props
-  if (!!props.usageId) {
-    bookingsForm.usage_id = props.usageId
+  const handleEscape = () => {
+    const canExit = itemInput?.value?.handleEscape() ?? true
+    if (canExit) {
+      openWelcome()
+    }
   }
 
-})
+  onMounted(() => {
+
+    // set usage, if set by props
+    if (!!props.usageId) {
+      bookingsForm.usage_id = props.usageId
+    }
+    
+    // register input
+    InputService.registerEsc(handleEscape)
+
+  })
+  onUnmounted(() => {
+    InputService.unregisterEsc(handleEscape)
+  })
+
+// #endregion
 
 </script>
 
@@ -250,7 +269,7 @@ onMounted(() => {
 
     <div class="app-BookOut--page app-BookOut--inputpane" v-if="hasUsage">
 
-      <LcItemInput 
+      <LcItemInput ref="itemInput"
         :items="items" :booking="bookingsForm.entries"
         :result-pos="{ w: 850, i: 19 }"
         :disabled="amountCalc.isVisible || bookingsForm.processing"
@@ -286,9 +305,10 @@ onMounted(() => {
     <LcConfirm ref="confirmDialog" />
     <LcRouteOverlay v-show="isRouting" />
 
+
     <v-snackbar 
       v-model="isScanNotificationVisible" 
-      color="green" :height="100"
+      color="green" :height="100" centered
       :timeout="2000"><div class="text-center">{{ scanNotificationText }}</div>
     </v-snackbar>
 
@@ -360,7 +380,7 @@ onMounted(() => {
 
   &--resultpane {
 
-    height: calc(100% - 19.5rem);
+    height: calc(100% - 20rem);
     &-table {
       height: calc(100% - 6.5rem);
       overflow-y: auto;

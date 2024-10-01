@@ -8,6 +8,7 @@
   // Local components
   import LcButton from '@/Components/LcButton.vue'
   import LcScanIndicator from '@/Components/LcScanIndicator.vue'
+  import InputService from '@/Services/InputService'
 
 // #endregion
 
@@ -89,8 +90,8 @@
     searchText.value = ''
     currentMode.value = 'SCAN'
   }
-  const changeModeToText = async () => {
-    searchText.value = ''
+  const changeModeToText = async (text = '') => {
+    searchText.value = text
     currentMode.value = 'TEXT'
     await nextTick()
     document.getElementById('id-picker-searchbox')?.focus()
@@ -177,6 +178,10 @@
   }
   const findItem = (code) => {
 
+    if (!isInScanMode.value) {
+        changeModeToScan()
+      }
+
     // fetch ctrl codes
     if (code === 'LC-2000001000') {
       emit('ctrlFinish')
@@ -193,20 +198,35 @@
 
   }
   
-  // #region textbox
+  // #region input
 
-    const trackKeyInput = async (e) => {
-      if (props.disabled) { return }
-      if (e.key === 'Tab') { return }
-      if (isInScanMode.value) { return }
-      if (!isSearching.value) {
+    const receiveKeys = async (keys) => {
+      if (isInScanMode.value) {
         changeModeToText()
-      } 
-      else if (document.getElementById('id-picker-searchbox') !== document.activeElement) {
+      }
+      if (document.getElementById('id-picker-searchbox') !== document.activeElement) {
+        searchText.value += keys
         currentMode.value = 'TEXT'
         await nextTick()
         document.getElementById('id-picker-searchbox')?.focus()
       }
+    }
+    const receiveBackspace = async () => {
+      if (isInScanMode.value) {
+        return
+      }
+      if (document.getElementById('id-picker-searchbox') !== document.activeElement) {
+        await nextTick()
+        document.getElementById('id-picker-searchbox')?.focus()
+      }
+    }
+
+    const handleEscape = () => {
+      if (isInTextMode.value) {
+        changeModeToScan()
+        return false
+      } 
+      return true
     }
 
   // #endregion
@@ -247,20 +267,36 @@
 
 // #endregion
 
-onMounted(() => {
-  document.body.addEventListener('keydown', trackKeyInput)
+// #region mount/unmount
 
-  // init mode
-  if (props.allowScan) {
-    changeModeToScan()
-  } else {
-    changeModeToText()
-  }
+  onMounted(() => {
 
-})
-onUnmounted(() => {
-  document.body.removeEventListener('keydown', trackKeyInput)
-})
+    // init mode
+    if (props.allowScan) {
+      changeModeToScan()
+    } else {
+      changeModeToText()
+    }
+
+    // register inputs
+    InputService.registerScan(findItem)
+    InputService.registerKeys(receiveKeys)
+    InputService.registerBackspace(receiveBackspace)
+
+  })
+
+  onUnmounted(() => {
+    InputService.unregisterScan(findItem)
+    InputService.unregisterKeys(receiveKeys)
+    InputService.unregisterBackspace(receiveBackspace)
+  })
+
+// #endregion
+// #region expose
+
+  defineExpose({ handleEscape })
+
+// #endregion
 
 </script>
 <template>
@@ -269,8 +305,7 @@ onUnmounted(() => {
 
       <div class="lc-picker--scanner">
         <LcScanIndicator 
-          :active="hasAnyItems && !disabled"
-          @scan="findItem">
+          :active="hasAnyItems && !disabled">
         </LcScanIndicator>
       </div>
       <div class="lc-picker--description">
@@ -281,7 +316,7 @@ onUnmounted(() => {
 
       <LcButton v-if="hasAnyItems && !disabled"
         class="lc-picker--btn" type="secondary" icon="mdi-form-textbox"
-        @click="changeModeToText">Suchen
+        @click="changeModeToText()">Suchen
       </LcButton>
       <LcButton v-if="adminMode && !disabled"
         class="lc-picker--btn" type="secondary"icon="mdi-plus"
@@ -299,8 +334,7 @@ onUnmounted(() => {
       <div class="lc-picker--search" :class="{ 'lc-picker--search-noscan': !allowScan }">
         <v-text-field label="Suche nach Material ..." variant="outlined" hide-details
           id="id-picker-searchbox" v-model="searchText" :rounded="0"
-          @keyup.enter="selectItem"
-          @keyup.esc="changeModeToScan"></v-text-field>
+          @keyup.enter="selectItem"></v-text-field>
       </div>
 
     </div>

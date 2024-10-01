@@ -17,6 +17,11 @@ const vuetify = createVuetify({
   directives
 })
 
+// InputService
+import InputService from './Services/InputService'
+InputService.initialize()
+
+
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,

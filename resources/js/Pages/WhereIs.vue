@@ -3,13 +3,14 @@
 // #region imports
 
   // Vue composables
-  import { ref, computed } from 'vue'
+  import { ref, computed, onMounted, onUnmounted } from 'vue'
   import { Head, router } from '@inertiajs/vue3'
 
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
   import LcItemInput from '@/Components/LcItemInput.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
+  import InputService from '@/Services/InputService'
 
 // #endregion
 
@@ -44,6 +45,17 @@
   const selectItem = (item) => {
     selectedItem.value = item
   }
+
+// #endregion
+
+// #region touchmode
+
+  onMounted(() => {
+    InputService.registerEsc(openWelcome)
+  })
+  onUnmounted(() => {
+    InputService.unregisterEsc(openWelcome)
+  })
 
 // #endregion
 

@@ -169,8 +169,7 @@
         </p>
         <v-text-field
           v-model="editForm.name" id="id-editdemand-name"
-          label="Name" hide-details
-          @keydown.enter="saveEdit">
+          label="Name" hide-details>
         </v-text-field>
 
         <v-divider></v-divider>

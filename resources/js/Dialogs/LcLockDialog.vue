@@ -38,7 +38,7 @@
 </script>
 
 <template>
-  <v-dialog v-model="isVisible" max-width="450px" :persistent="true" @after-leave="cancel">
+  <v-dialog v-model="isVisible" max-width="450px" :persistent="true">
     <v-card prepend-icon="mdi-lock" class="rounded-0" title="Lagerverwaltung sperren">
       <v-divider></v-divider>
       <v-card-text class="d-flex justify-center">

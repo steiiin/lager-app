@@ -168,8 +168,7 @@
         </p>
         <v-text-field
           v-model="editForm.name" id="id-editusage-name"
-          label="Name" hide-details
-          @keydown.enter="saveEdit">
+          label="Name" hide-details>
         </v-text-field>
         <v-checkbox v-model="editForm.is_locked"
           label="Nur für den Verantwortlichen" hide-details></v-checkbox>

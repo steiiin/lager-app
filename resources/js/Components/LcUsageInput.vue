@@ -3,11 +3,12 @@
 // #region imports
 
   // Vue composables
-  import { computed } from 'vue'
+  import { computed, onMounted, onUnmounted } from 'vue'
 
   // Local components
   import LcButton from '@/Components/LcButton.vue'
   import LcScanIndicator from '@/Components/LcScanIndicator.vue'
+  import InputService from '@/Services/InputService'
 
 // #endregion
 
@@ -45,6 +46,18 @@
 
 // #endregion
 
+// #region mount/unmount
+
+  onMounted(() => {
+    InputService.registerScan(findUsage)
+  })
+
+  onUnmounted(() => {
+    InputService.unregisterScan(findUsage)
+  })
+
+// #endregion
+
 </script>
 <template>
 
@@ -52,8 +65,7 @@
 
       <div class="lc-picker--scanner">
         <LcScanIndicator 
-          :active="hasAnyUsages" 
-          @scan="findUsage">
+          :active="hasAnyUsages">
         </LcScanIndicator>
       </div>
       <div class="lc-picker--description">
