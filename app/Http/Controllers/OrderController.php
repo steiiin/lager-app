@@ -71,7 +71,8 @@ class OrderController extends Controller
 
       $order->orderunit = $item->ordersize->unit;
       $order->orderamount = floor($needForMaxStock / $item->ordersize->amount);
-      
+      if ($order->orderamount == 0) { $order->orderamount = 1; }
+
       $order->baseunit = $item->basesize->unit;
       $order->amount_desired = $order->orderamount * $item->ordersize->amount;
 
