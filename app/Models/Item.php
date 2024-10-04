@@ -63,4 +63,18 @@ class Item extends Model
         return $this->current_quantity + $openOrdersTotal;
     }
 
+    // ##################################################################################
+
+    public function closedOrders()
+    {
+        return $this->hasMany(Order::class, 'item_id')->where('is_order_open', false);
+    }
+
+    public function scopeWithStats($query)
+    {
+        return $query->withSum('closedOrders', 'amount_desired')
+            ->withSum('closedOrders', 'amount_des_usage')
+            ->withSum('closedOrders', 'amount_des_changed');
+    }
+
 }
