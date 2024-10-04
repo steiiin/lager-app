@@ -12,6 +12,8 @@ class Order extends Model
         'item_id',
         'prepare_time',
         'amount_desired',
+        'amount_des_usage',
+        'amount_des_changed',
         'amount_delivered',
         'is_order_open',
         'log'
@@ -27,6 +29,8 @@ class Order extends Model
     {
         return $this->belongsTo(Item::class, 'item_id');
     }
+
+    // ##################################################################################
 
     public function scopeOpen($query)
     {

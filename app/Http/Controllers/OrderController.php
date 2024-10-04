@@ -112,12 +112,22 @@ class OrderController extends Controller
       {
 
         // create log
-        $itemLog = $bookings->where('item_id', $orderDatum['item_id'])->map(function ($booking) {
+        $desUsage = $orderDatum['amount_desired'];
+        $desChanged = 0;
+        $itemLog = $bookings->where('item_id', $orderDatum['item_id'])->map(function ($booking) use (&$desUsage, &$desChanged) {
 
+          // get usage name
           $usageName = $booking->usage_id < 0 
             ? Usage::getInternalUsageName($booking->usage_id)
             : $booking->usage->name;
 
+          // increase stats values
+          if ($booking->usage_id < 0) {
+            $desUsage -= $booking->item_amount;
+            $desChanged += $booking->item_amount;
+          }
+
+          // return log entry
           return [
             'time' => $booking->updated_at,
             'amount' => $booking->item_amount,
@@ -131,11 +141,18 @@ class OrderController extends Controller
           'item_id' => $orderDatum['item_id'],
           'prepare_time' => $prepareTime,
           'amount_desired' => $orderDatum['amount_desired'],
+          'amount_des_usage' => $desUsage,
+          'amount_des_changed' => $desChanged,
           'amount_delivered' => 0,
           'is_order_open' => true,
           'log' => $itemLog,
         ]);
 
+      });
+
+      // delete bookings
+      $bookings->each(function ($booking) {
+        $booking->delete();
       });
 
       return response()->noContent();
