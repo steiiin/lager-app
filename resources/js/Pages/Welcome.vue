@@ -12,7 +12,7 @@
   import LcUnlockDialog from '@/Dialogs/LcUnlockDialog.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
   import LcUsageInput from '@/Components/LcUsageInput.vue'
-import InputService from '@/Services/InputService'
+  import InputService from '@/Services/InputService'
 
 // #endregion
 
