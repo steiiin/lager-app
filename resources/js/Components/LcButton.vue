@@ -156,12 +156,12 @@
   }
 
   & :deep(kbd) {
-    font-size: 0.7em;
+    font-size: 0.6em;
     outline: 2px solid #fff;
     color: #fff;
-    padding: .2rem .4rem;
-    height: 80%;
-    margin-left: .5rem;
+    padding: 0 .3rem;
+    height: 60%;
+    margin-left: .3rem;
     box-shadow: 4px 4px #fff;
   }
 
