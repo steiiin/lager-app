@@ -44,7 +44,7 @@ class Order extends Model
 
     public function scopeWithLogs($query)
     {
-        return $query->where('is_order_open', false)->whereNotNull('logs');
+        return $query->whereNotNull('logs');
     }
 
 }
