@@ -19,19 +19,32 @@ class StatisticController extends Controller
 
     public function logs()
     {
-        $orders = Order::withLogs()->get();
 
-        $mergedLogs = $orders->map(function ($order) {
-            return $order->log;
-        })->reduce(function ($carry, $item) {
-            return array_merge($carry, $item);
-        }, []);
-        $orderIds = $orders->pluck('id');
+        $mergedLogs = [];
+        $orderIds = [];
+
+        $orders = Order::withLogs()->get();
+        if ($orders->count() > 0)
+        {
+            $mergedLogs = $orders->groupBy('item_id')->map(function ($groupedOrders, $itemId) {
+                $itemName = $groupedOrders->first()->item->name;
+                $mergedLogs = $groupedOrders->reduce(function ($carry, $order) {
+                    return array_merge($carry, $order->log);
+                }, []);
+                return [
+                    'id' => $itemId,
+                    'name' => $itemName,
+                    'logs' => array_values($mergedLogs),
+                ];
+            })->values(); // Reset the keys
+            $orderIds = $orders->pluck('id');
+        }
 
         return response()->json([
             'logs' => $mergedLogs,
             'orders' => $orderIds,
         ]);
+        
     }
 
     public function truncate(Request $request)
