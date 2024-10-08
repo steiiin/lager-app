@@ -404,20 +404,6 @@
       // props
       const currentExpiryMonth = ref(null)
       const currentExpiryYear = ref(null)
-      const selectableMonths = ref([
-        { name: "Jan", value: 1 },
-        { name: "Feb", value: 2 },
-        { name: "Mär", value: 3 },
-        { name: "Apr", value: 4 },
-        { name: "Mai", value: 5 },
-        { name: "Jun", value: 6 },
-        { name: "Jul", value: 7 },
-        { name: "Aug", value: 8 },
-        { name: "Sep", value: 9 },
-        { name: "Okt", value: 10 },
-        { name: "Nov", value: 11 },
-        { name: "Dez", value: 12 },
-      ])
       const selectableStockChangeReasons = ref([
         { name: "Abweichung", value: -1 },
         { name: "Verfall", value: -2 },
