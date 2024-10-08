@@ -712,8 +712,17 @@
                   <v-col cols="4" class="app-Inventory--table-result">
                     Nächster Verfall
                   </v-col>
-                  <v-col cols="2" class="align-content-center">
-                    <v-select 
+                  <v-col cols="3" class="align-content-center">
+                    <v-number-input
+                      v-model="currentExpiryMonth"
+                      :reverse="false"
+                      controlVariant="split"
+                      :hideInput="false"
+                      :inset="false" hide-details
+                      :min="1"
+                      :max="12"
+                    ></v-number-input>
+                    <!-- <v-select 
                       v-model="currentExpiryMonth"
                       :items="selectableMonths"
                       label="Monat"
@@ -721,7 +730,7 @@
                       item-value="value"
                       required
                       hide-details
-                    ></v-select> 
+                    ></v-select>  -->
                   </v-col>
                   <v-col cols="3" class="align-content-center">
                     <v-number-input
