@@ -111,10 +111,10 @@ const InputService = {
     // #endregion
     // #region Key-KioskSettings
       registerKKiosk(callback) {
-        this.registerCallback('ö', callback)
+        this.registerCallback('m', callback)
       },
       unregisterKKiosk(callback) {
-        this.unregisterCallback('ö', callback)
+        this.unregisterCallback('m', callback)
       },
     // #endregion
     // #region Input
