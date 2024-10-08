@@ -193,7 +193,7 @@
                   justify="space-between" align="center" dense>
                   <!-- Item Name -->
                   <v-col cols="5">
-                    <span class="font-weight-bold">{{ order.item.name }}</span>
+                    <span>{{ order.item.name }}</span>
                   </v-col>
 
                   <!-- Ordered Amount -->
@@ -250,7 +250,7 @@
 
     &-row {
       display: flex;
-      min-width: 420px;
+      min-width: 650px;
     }
 
   }
