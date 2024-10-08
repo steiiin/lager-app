@@ -89,13 +89,13 @@
     InputService.registerK1(openBookOut)
     InputService.registerK2(openWhereIs)
     InputService.registerK3(openBookIn)
-    InputService.registerKl(openKioskSettings)
+    InputService.registerKKiosk(openKioskSettings)
   })
   onUnmounted(() => {
     InputService.unregisterK1(openBookOut)
     InputService.unregisterK2(openWhereIs)
     InputService.unregisterK3(openBookIn)
-    InputService.unregisterKl(openKioskSettings)
+    InputService.unregisterKKiosk(openKioskSettings)
   })
 
 // #endregion
