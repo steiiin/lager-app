@@ -101,7 +101,7 @@
 
 // #region expose
 
-  defineExpose({ open })
+  defineExpose({ open, isVisible })
 
 // #endregion
 

@@ -3,7 +3,7 @@
 // #region imports
 
   // Vue composables
-  import { ref, computed, nextTick, watch, toValue, toRef } from 'vue'
+  import { ref, computed, nextTick, watch, toValue, toRef, onMounted, onUnmounted } from 'vue'
   import { Head, router, useForm } from '@inertiajs/vue3'
 
   // Vue components
@@ -11,6 +11,7 @@
 
   // Local composables
   import { useBaseSize, useSizesCalc } from '@/Composables/CalcSizes'
+  import InputService from '@/Services/InputService'
 
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
@@ -450,6 +451,32 @@
     // #endregion
 
   // #endregion
+
+// #endregion
+
+// #region touchmode
+
+  const handleEsc = () => {
+    if (isItemSelected.value) {
+      clearSelectedItem()
+    } else {
+      openWelcome()
+    }
+  }
+  const handleEnter = () => {
+    if (isItemSelected.value && !isEditSizeVisible.value && !minmaxCalc.value.isVisible) {
+      saveItem()
+    }
+  }
+
+  onMounted(() => {
+    InputService.registerEsc(handleEsc)
+    InputService.registerEnter(handleEnter)
+  })
+  onUnmounted(() => {
+    InputService.unregisterEsc(handleEsc)
+    InputService.unregisterEnter(handleEnter)
+  })
 
 // #endregion
 
