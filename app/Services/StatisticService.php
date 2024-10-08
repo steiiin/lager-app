@@ -19,32 +19,24 @@ class StatisticService
   private function createStatsForRange(Collection $orders, Item $item)
   {
 
-    if ($orders->count() > 0)
-    {
-      $startDate = Carbon::createFromTimestamp($orders->min('prepare_time'));
-      $endDate = Carbon::createFromTimestamp($orders->max('prepare_time'));
-      $diffInWeeks = $startDate->diffInWeeks($endDate);
+    $startDate = Carbon::createFromTimestamp($orders->min('prepare_time'));
+    $endDate = Carbon::createFromTimestamp($orders->max('prepare_time'));
+    $diffInWeeks = $startDate->diffInWeeks($endDate);
 
-      $avgDemand = $orders->sum('amount_desired') / $diffInWeeks;
-      $maxDemand = $orders->max('amount_desired');
-      $minDemand = $orders->min('amount_desired');
-      $stockOutOccurences = $orders->where('amount_desired', '>=', $item->max_stock - $item->min_stock)->count();
+    $avgDemand = $orders->sum('amount_desired') / $diffInWeeks;
+    $maxDemand = $orders->max('amount_desired');
+    $minDemand = $orders->min('amount_desired');
+    $stockOutOccurences = $orders->where('amount_desired', '>=', $item->max_stock - $item->min_stock)->count();
 
-      $sd = $this->calcStandardDeviation($orders->pluck('amount_desired'));
+    $sd = $this->calcStandardDeviation($orders->pluck('amount_desired'));
 
-      return [
-        'avgDemand' => $avgDemand,
-        'maxDemand' => $maxDemand,
-        'minDemand' => $minDemand,
-        'stockOutOccurences' => $stockOutOccurences,
-        'sd' => $sd,
-      ];
-
-    }
-    else 
-    {
-      return [];
-    }
+    return [
+      'avgDemand' => $avgDemand,
+      'maxDemand' => $maxDemand,
+      'minDemand' => $minDemand,
+      'stockOutOccurences' => $stockOutOccurences,
+      'sd' => $sd,
+    ];
 
   }
 
@@ -57,6 +49,11 @@ class StatisticService
 
       $allOrders = $item->closedOrders;
       $recentOrders = $item->closedOrders->where('prepare_time', '>=', $recentThreshold->timestamp);
+
+      if ($recentOrders->count() == 0)
+      {
+        return null;
+      }
 
       // stats
       $statsAll = $this->createStatsForRange($allOrders, $item);
@@ -93,6 +90,8 @@ class StatisticService
         ],
       ];
 
+    })->filter(function ($item) {
+      return !is_null($item);
     });
   }
 
