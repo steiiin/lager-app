@@ -154,11 +154,11 @@
 
               <div class="lc-calcamount--shortcuts">
                 <div class="row">
-                  <div class="keys"><kbd sym>🡠</kbd>/<kbd sym>🡢</kbd></div>
+                  <div class="keys"><kbd sym>&larr;</kbd>/<kbd sym>&rarr;</kbd></div>
                   <div class="text">Menge ändern</div>
                 </div>
                 <div class="row">
-                  <div class="keys"><kbd sym>🡡</kbd>/<kbd sym>🡣</kbd></div>
+                  <div class="keys"><kbd sym>&uarr;</kbd>/<kbd sym>&darr;</kbd></div>
                   <div class="text">Größe ändern</div>
                 </div>
               </div>
@@ -246,11 +246,13 @@
     font-size: 0.9em;
 
     & kbd {
-      font-size: 0.9em;
+      font-size: 1.2em;
       display: inline-flex;
       justify-content: center;
-      padding: .1rem;
+      padding: 0;
       width: 24px;
+      height: 24px;
+      line-height: 24px;
     }
 
     & .row {
