@@ -212,7 +212,7 @@
 
   const handleEscape = () => {
     const canExit = itemInput?.value?.handleEscape() ?? true
-    if (canExit) {
+    if (canExit && !amountCalc.value.isVisible) {
       openWelcome()
     }
   }
@@ -272,7 +272,7 @@
       <LcItemInput ref="itemInput"
         :items="items" :booking="bookingsForm.entries"
         :result-pos="{ w: 850, i: 19 }"
-        :disabled="amountCalc.isVisible || bookingsForm.processing"
+        :disabled="amountCalc?.isVisible || bookingsForm.processing"
         @select-item="selectItem"
         @ctrl-finish="sendBooking">
       </LcItemInput>

@@ -3,10 +3,13 @@
 // #region imports
 
   // Vue composables
-  import { ref, computed } from 'vue'
+  import { ref, computed, onMounted, onUnmounted } from 'vue'
 
   // Vuetify components
   import { VNumberInput } from 'vuetify/labs/VNumberInput'
+
+  // Local composables
+  import InputService from '@/Services/InputService'
 
 // #endregion
 
@@ -61,6 +64,55 @@
 
 // #endregion
 
+// #region touchmode
+
+  const handleEnter = () => {
+    if (!isVisible.value) { return }
+    accept()
+  }
+
+  const handleUp = () => {
+    if (!isVisible.value) { return }
+    let index = currentItem.value.sizes.findIndex(e => e.amount === currentSize.value.amount) ?? 0
+    if (index > 0) { 
+      currentSize.value = currentItem.value.sizes[index - 1];
+    }
+  }
+  const handleDown = () => {
+    if (!isVisible.value) { return }
+    let index = currentItem.value.sizes.findIndex(e => e.amount === currentSize.value.amount) ?? 0
+    if (index < (currentItem.value.sizes.length - 1)) { 
+      currentSize.value = currentItem.value.sizes[index + 1];
+    }
+  }
+  const handleLeft = () => {
+    if (!isVisible.value) { return }
+    if (currentAmount.value > currentMin.value) {
+      currentAmount.value --
+    }
+  }
+  const handleRight = () => {
+    if (!isVisible.value) { return }
+    currentAmount.value ++
+  }
+
+  onMounted(() => {
+    InputService.registerEnter(handleEnter)
+    InputService.registerUp(handleUp)
+    InputService.registerDown(handleDown)
+    InputService.registerLeft(handleLeft)
+    InputService.registerRight(handleRight)
+  })
+  onUnmounted(() => {
+    InputService.unregisterEnter(handleEnter)
+    InputService.unregisterUp(handleUp)
+    InputService.unregisterDown(handleDown)
+    InputService.unregisterLeft(handleLeft)
+    InputService.unregisterRight(handleRight)
+  })
+
+// #endregion
+
 // #region expose
 
   defineExpose({ open, isVisible })
@@ -95,6 +147,19 @@
                 <div class="lc-calcamount--location-exact mt-2" v-if="!!currentItem.location.exact">
                   <v-icon icon="mdi-archive-marker-outline"></v-icon>
                   {{ currentItem.location.exact }}
+                </div>
+              </div>
+
+              <v-divider class="my-3"></v-divider>
+
+              <div class="lc-calcamount--shortcuts">
+                <div class="row">
+                  <div class="keys"><kbd sym>🡠</kbd>/<kbd sym>🡢</kbd></div>
+                  <div class="text">Menge ändern</div>
+                </div>
+                <div class="row">
+                  <div class="keys"><kbd sym>🡡</kbd>/<kbd sym>🡣</kbd></div>
+                  <div class="text">Größe ändern</div>
                 </div>
               </div>
 
@@ -171,6 +236,27 @@
 
   &--card {
     padding: calc(16px + .5rem) !important;
+  }
+
+  &--shortcuts {
+
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.9em;
+
+    & kbd {
+      font-size: 0.9em;
+      display: inline-flex;
+      justify-content: center;
+      padding: .1rem;
+      width: 24px;
+    }
+
+    & .row {
+      display: inline-flex;
+    }
+
   }
 
 }

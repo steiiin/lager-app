@@ -26,17 +26,13 @@ const InputService = {
       this.trackBuffer = ''
       clearTimeout(this.trackTimer)
       return
-    } else if (event.key === 'Escape') {
-      this.runCallbacks('Escape')
-      this.trackBuffer = ''
-      clearTimeout(this.trackTimer)
-      return
-    } else if (event.key === 'Backspace') {
-      this.runCallbacks('Backspace')
+    } else {
+      this.runCallbacks(event.key)
       this.trackBuffer = ''
       clearTimeout(this.trackTimer)
       return
     }
+    
     if (this.trackTimer) {
       clearTimeout(this.trackTimer)
     }
@@ -155,6 +151,32 @@ const InputService = {
         this.unregisterCallback('Enter', callback)
       },
     // #endregion
+    // #region Arrows
+      registerUp(callback) {
+        this.registerCallback('ArrowUp', callback)
+      },
+      unregisterUp(callback) {
+        this.unregisterCallback('ArrowUp', callback)
+      },
+      registerDown(callback) {
+        this.registerCallback('ArrowDown', callback)
+      },
+      unregisterDown(callback) {
+        this.unregisterCallback('ArrowDown', callback)
+      },
+      registerLeft(callback) {
+        this.registerCallback('ArrowLeft', callback)
+      },
+      unregisterLeft(callback) {
+        this.unregisterCallback('ArrowLeft', callback)
+      },
+      registerRight(callback) {
+        this.registerCallback('ArrowRight', callback)
+      },
+      unregisterRight(callback) {
+        this.unregisterCallback('ArrowRight', callback)
+      },
+  // #endregion
 
   // #endregion
 
