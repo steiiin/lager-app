@@ -19,13 +19,11 @@
         if (!this.cursorVisible) {
           this.cursorVisible = true;
           document.body.classList.remove('cursor-off');
-          document.body.classList.add('cursor-on');
         }
         this.resetHideCursorTimer();
       },
       hideCursor() {
         this.cursorVisible = false;
-        document.body.classList.remove('cursor-on');
         document.body.classList.add('cursor-off');
       },
       resetHideCursorTimer() {
