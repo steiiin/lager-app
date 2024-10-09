@@ -14,6 +14,7 @@
   import LcCalcAmountDialog from '@/Dialogs/LcCalcAmountDialog.vue'
   import LcConfirm from '@/Dialogs/LcConfirm.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
+  import CursorHandler from '@/Components/CursorHandler.vue'
   import InputService from '@/Services/InputService'
 
 // #endregion
@@ -239,6 +240,7 @@
 <template>
 
   <Head title="Verbrauch" />
+  <CursorHandler />
 
   <div class="app-BookOut">
 

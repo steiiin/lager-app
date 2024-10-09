@@ -31,3 +31,10 @@ kbd[sym] {
   box-shadow: 2px 2px #aaa;
   margin: 0 .5rem;
 }
+
+.cursor-off {
+  cursor: none;
+  & * {
+    pointer-events: none;
+  }
+}

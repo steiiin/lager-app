@@ -10,6 +10,7 @@
   import LcPagebar from '@/Components/LcPagebar.vue'
   import LcItemInput from '@/Components/LcItemInput.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
+  import CursorHandler from '@/Components/CursorHandler.vue'
   import InputService from '@/Services/InputService'
 
 // #endregion
@@ -64,6 +65,7 @@
 <template>
 
   <Head title="Wo ist?" />
+  <CursorHandler />
 
   <div class="app-WhereIs">
 
