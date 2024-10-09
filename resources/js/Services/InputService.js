@@ -27,10 +27,12 @@ const InputService = {
       clearTimeout(this.trackTimer)
       return
     } else {
-      this.runCallbacks(event.key)
-      this.trackBuffer = ''
-      clearTimeout(this.trackTimer)
-      return
+      if (state.handlers.hasOwnProperty(event.key)) {
+        this.runCallbacks(event.key)
+        this.trackBuffer = ''
+        clearTimeout(this.trackTimer)
+        return
+      }
     }
     
     if (this.trackTimer) {
