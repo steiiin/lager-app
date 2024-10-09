@@ -43,17 +43,15 @@ const InputService = {
       if (this.trackBuffer.startsWith('LC-')) {
         this.runCallbacks('scan', this.trackBuffer)
       } 
+      else if (this.trackBuffer.length === 1) 
+      {
+        if (state.handlers.hasOwnProperty(this.trackBuffer)) {
+          this.runCallbacks(this.trackBuffer)
+        }
+      }
       else if (this.trackBuffer.length > 0)
       {
-        if (
-          (this.trackBuffer === '1' && this.runCallbacks('1')) ||
-          (this.trackBuffer === '2' && this.runCallbacks('2')) ||
-          (this.trackBuffer === '3' && this.runCallbacks('3')) ||
-          (this.trackBuffer === 'l' && this.runCallbacks('l'))
-        ) { } 
-        else {
-          this.runCallbacks('keys', this.trackBuffer)
-        }
+        this.runCallbacks('keys', this.trackBuffer)
       }
       this.trackBuffer = ''
     }, 50)
@@ -109,10 +107,10 @@ const InputService = {
     // #endregion
     // #region Key-KioskSettings
       registerKKiosk(callback) {
-        this.registerCallback('m', callback)
+        this.registerCallback('y', callback)
       },
       unregisterKKiosk(callback) {
-        this.unregisterCallback('m', callback)
+        this.unregisterCallback('y', callback)
       },
     // #endregion
     // #region Input
