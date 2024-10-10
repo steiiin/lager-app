@@ -141,8 +141,7 @@
 
   </div>
   <div class="app-Welcome--invisibleUsageScanner">
-    <LcUsageInput
-      :usages="inventoryStore.usages" :is-unlocked="isUnlocked"
+    <LcUsageInput :is-unlocked="isUnlocked"
       @select-usage="openBookOutWithUsage">
     </LcUsageInput>
   </div>

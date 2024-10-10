@@ -227,7 +227,7 @@
 
     // load store
     inventoryStore.fetchStore()
-    
+
   })
   onUnmounted(() => {
     InputService.unregisterEsc(handleEscape)
@@ -248,8 +248,7 @@
 
     <div class="app-BookOut--page app-BookOut--usagepane">
 
-      <LcUsageInput v-if="!hasUsage"
-        :usages="inventoryStore.usages" :is-unlocked="isUnlocked"
+      <LcUsageInput v-if="!hasUsage" :is-unlocked="isUnlocked"
         @select-usage="selectUsage">
       </LcUsageInput>
 
@@ -272,7 +271,7 @@
     <div class="app-BookOut--page app-BookOut--inputpane" v-if="hasUsage">
 
       <LcItemInput ref="itemInput"
-        :items="inventoryStore.items" :booking="bookingsForm.entries"
+        :booking="bookingsForm.entries"
         :result-pos="{ w: 850, i: 19 }"
         :disabled="amountCalc?.isVisible || bookingsForm.processing"
         @select-item="selectItem"

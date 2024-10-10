@@ -5,6 +5,9 @@
   // Vue composables
   import { computed, ref, nextTick, onMounted, onUnmounted } from 'vue'
 
+  // Local composables
+  import { useInventoryStore } from '@/Services/StoreService'
+
   // Local components
   import LcButton from '@/Components/LcButton.vue'
   import LcScanIndicator from '@/Components/LcScanIndicator.vue'
@@ -14,6 +17,8 @@
 
 // #region props/emits
 
+  const inventoryStore = useInventoryStore()
+
   const emit = defineEmits([
     'createNew',
     'selectItem',
@@ -21,10 +26,6 @@
   ])
   const props = defineProps({
 
-    items: {
-      type: Array,
-      required: true,
-    },
     booking: {
       type: Array,
       required: false,
@@ -59,7 +60,7 @@
 
 // #region selection
 
-  const hasAnyItems = computed(() => props.items.length > 0)
+  const hasAnyItems = computed(() => inventoryStore.items.length > 0)
 
   const selectItemBySearch = (item) => {
     emit('selectItem', item, null)
@@ -122,7 +123,7 @@
     return map
   })
   const itemsMap = computed(() => {
-    return props.items.map(item => ({
+    return inventoryStore.items.map(item => ({
       ...item,
       pp_name: item.name.toLowerCase(),
       pp_search_altnames: item.search_altnames ? item.search_altnames.toLowerCase() : '',
@@ -228,7 +229,7 @@
     }
     
     // search item
-    const item = props.items.find(item => item.barcodes.hasOwnProperty(code)) ?? null
+    const item = inventoryStore.items.find(item => item.barcodes.hasOwnProperty(code)) ?? null
     if (!item) { return }
 
     // find itemsize

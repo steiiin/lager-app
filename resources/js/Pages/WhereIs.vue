@@ -73,7 +73,7 @@
     <div class="app-WhereIs--page">
 
       <LcItemInput 
-        :items="inventoryStore.items" :result-pos="{ w: 850, i: 11 }"
+        :result-pos="{ w: 850, i: 11 }"
         :allowScan="false" 
         @select-item="selectItem">
       </LcItemInput>

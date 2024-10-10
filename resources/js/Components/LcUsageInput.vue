@@ -5,6 +5,9 @@
   // Vue composables
   import { computed, onMounted, onUnmounted } from 'vue'
 
+  // Local composables
+  import { useInventoryStore } from '@/Services/StoreService'
+
   // Local components
   import LcButton from '@/Components/LcButton.vue'
   import LcScanIndicator from '@/Components/LcScanIndicator.vue'
@@ -14,14 +17,12 @@
 
 // #region props/emits
 
+  const inventoryStore = useInventoryStore()
+
   const emit = defineEmits([
     'selectUsage',
   ])
   const props = defineProps({
-    usages: {
-      type: Array,
-      required: true,
-    },
     isUnlocked: {
       type: Boolean,
       default: false,
@@ -33,14 +34,14 @@
 // #region selection
 
   // computed
-  const hasAnyUsages = computed(() => props.usages.length > 0)
+  const hasAnyUsages = computed(() => inventoryStore.usages.length > 0)
 
   // methods
   const selectUsage = (usage) => {
     emit('selectUsage', usage)
   }
   const findUsage = (code) => {
-    const found = props.usages.find(u => u.barcode === code)
+    const found = inventoryStore.usages.find(u => u.barcode === code)
     if (!!found) { selectUsage(found) }
   }
 
@@ -81,7 +82,7 @@
     </div>
     <div class="lc-pickerresult" v-if="hasAnyUsages">
 
-      <template v-for="usage in usages">
+      <template v-for="usage in inventoryStore.usages">
         <LcButton v-if="!usage.is_locked || isUnlocked"
           class="lc-pickerresult-usage" 
           @click="selectUsage(usage)">{{ usage.name }}
