@@ -18,14 +18,20 @@ export const useInventoryStore = defineStore('inventory', {
         return;
       }
       this.loading = true;
-      try {
+      try 
+      {
         const response = await axios.get('/api/store');
         this.items = response.data.items
         this.usages = response.data.usages
-      } catch (err) {
+        this.isLoaded = true
+      } 
+      catch (err) 
+      {
         this.error = err;
         console.error('Failed to fetch items:', err);
-      } finally {
+      } 
+      finally 
+      {
         this.loading = false;
       }
     },
