@@ -47,6 +47,8 @@ const InputService = {
       {
         if (state.handlers.hasOwnProperty(this.trackBuffer)) {
           this.runCallbacks(this.trackBuffer)
+        } else {
+          this.runCallbacks('keys', this.trackBuffer)
         }
       }
       else if (this.trackBuffer.length > 0)
