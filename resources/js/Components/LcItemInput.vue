@@ -192,8 +192,15 @@
     // sort if necessary
     if (results.length > 1) {
       results.sort((a, b) => b.score - a.score)
-      results.splice(4)
     }
+    // if (results.length > 4) {
+    //   const firstScore = results[0].score
+    //   let i = 4
+    //   while (results[i].score == firstScore) {
+    //     i += 1
+    //   }
+    //   results.splice(i)
+    // }
 
     return results
 

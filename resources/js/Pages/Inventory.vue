@@ -13,6 +13,7 @@
   import { useBaseSize, useSizesCalc } from '@/Composables/CalcSizes'
   import CursorHandler from '@/Components/CursorHandler.vue'
   import InputService from '@/Services/InputService'
+  import { useInventoryStore } from '@/Services/StoreService'
 
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
@@ -23,11 +24,9 @@
 
 // #region props
 
+  const inventoryStore = useInventoryStore()
+
   const props = defineProps({
-    items: {
-      type: Array,
-      required: true,
-    },
     demands: {
       type: Array,
       required: true,
@@ -60,7 +59,7 @@
 
     const itemsNearExpiry = computed(() => {
       const thresholdDate = (new Date()); thresholdDate.setDate(thresholdDate.getDate() + 21); thresholdDate.setHours(0, 0, 0, 0);
-      return props.items.filter(item => {
+      return inventoryStore.items.filter(item => {
         const expiryDate = new Date(item.current_expiry)
         return !isNaN(expiryDate) && expiryDate <= thresholdDate
       })
@@ -72,22 +71,6 @@
       { title: '', key: 'action', sortable: false },
     ])
     const sortExpiry = ref([
-      { key: 'current_expiry', order: 'asc' }
-    ])
-
-    const itemsOrdered = computed(() => {
-      const thresholdDate = (new Date()); thresholdDate.setDate(thresholdDate.getDate() + 21); thresholdDate.setHours(0, 0, 0, 0);
-      return props.items.filter(item => {
-        return item.current_quantity < item.demanded_quantity
-      })
-    })
-
-    const tableOrdered = ref([
-      { title: 'Name', key: 'name' },
-      { title: 'Verfall', key: 'current_expiry' },
-      { title: '', key: 'action', sortable: false },
-    ])
-    const sortOrdered = ref([
       { key: 'current_expiry', order: 'asc' }
     ])
 
@@ -118,6 +101,7 @@
       onSuccess: () => {
         router.reload()
         clearSelectedItem()
+        inventoryStore.fetchStore()
       },
     }
 
@@ -473,6 +457,7 @@
   onMounted(() => {
     InputService.registerEsc(handleEsc)
     InputService.registerEnter(handleEnter)
+    inventoryStore.fetchStore()
   })
   onUnmounted(() => {
     InputService.unregisterEsc(handleEsc)
