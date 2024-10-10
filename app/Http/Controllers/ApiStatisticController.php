@@ -7,7 +7,7 @@ use App\Services\StatisticService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class StatisticController extends Controller
+class ApiStatisticController extends Controller
 {
 
     public function index()

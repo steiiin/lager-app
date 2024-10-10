@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\BarcodeGenerator;
 
-class BarcodeController extends Controller
+class ApiBarcodeController extends Controller
 {
 
     public function index()

@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
-class OrderController extends Controller
+class ApiOrderController extends Controller
 {
 
   private function getItemsBelowMinStock()
