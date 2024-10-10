@@ -21,6 +21,10 @@ const vuetify = createVuetify({
 import InputService from './Services/InputService'
 InputService.initialize()
 
+// Pinia
+import { createPinia } from 'pinia';
+const pinia = createPinia()
+
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
@@ -30,6 +34,7 @@ createInertiaApp({
             .use(plugin)
             .use(ZiggyVue)
             .use(vuetify)
+            .use(pinia)
             .mount(el);
     },
     progress: {

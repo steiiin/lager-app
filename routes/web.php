@@ -2,8 +2,6 @@
 
 use App\Http\Controllers\BookInController;
 use App\Http\Controllers\BookOutController;
-use App\Models\Item;
-use App\Models\Usage;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
@@ -12,14 +10,10 @@ use Inertia\Inertia;
 #region Welcome
 
 Route::get('/', function () {
-
-    $usages = Usage::all(['id', 'name', 'is_locked']);
     return Inertia::render('Welcome', [
-        'usages' => $usages,
         'isUnlocked' => Session::get('isUnlocked', false),
         'isTouchMode' => Config::get('app.app_touchmode', false),
     ]);
-
 })->name('welcome');
 
 Route::post('/', function(Illuminate\Http\Request $request) {
@@ -51,12 +45,7 @@ Route::post('/', function(Illuminate\Http\Request $request) {
 #region WhereIs
 
 Route::get('/whereis', function () {
-
-    $items = Item::with(['demand'])->get();
-    return Inertia::render('WhereIs', [
-        'items' => $items,
-    ]);
-
+    return Inertia::render('WhereIs');
 })->name('whereis');
 
 #endregion

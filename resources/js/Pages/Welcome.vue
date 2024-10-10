@@ -6,6 +6,9 @@
   import { ref, computed, onMounted, onUnmounted } from 'vue'
   import { Head, router } from '@inertiajs/vue3'
 
+  // Local composables
+  import { useInventoryStore } from '@/Services/StoreService'
+
   // Local components
   import LcButton from '@/Components/LcButton.vue'
   import LcLockDialog from '@/Dialogs/LcLockDialog.vue'
@@ -19,11 +22,9 @@
 
 // #region props
 
+  const inventoryStore = useInventoryStore()
+
   defineProps({
-    usages: {
-      type: Array,
-      required: true,
-    },
     isUnlocked: {
       type: Boolean,
       required: true,
@@ -79,6 +80,7 @@
 // #region touchmode
 
   const openKioskSettings = () => {
+    debugger
     if (typeof OpenKiosk != 'undefined') {
       OpenKiosk.settings()
     } else {
@@ -91,6 +93,7 @@
     InputService.registerK2(openWhereIs)
     InputService.registerK3(openBookIn)
     InputService.registerKKiosk(openKioskSettings)
+    inventoryStore.fetchStore()
   })
   onUnmounted(() => {
     InputService.unregisterK1(openBookOut)
@@ -140,7 +143,7 @@
   </div>
   <div class="app-Welcome--invisibleUsageScanner">
     <LcUsageInput
-      :usages="usages" :is-unlocked="isUnlocked"
+      :usages="inventoryStore.usages" :is-unlocked="isUnlocked"
       @select-usage="openBookOutWithUsage">
     </LcUsageInput>
   </div>

@@ -6,6 +6,9 @@
   import { ref, computed, onMounted, onUnmounted } from 'vue'
   import { Head, router, useForm } from '@inertiajs/vue3'
 
+  // Local composables
+  import { useInventoryStore } from '@/Services/StoreService'
+
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
   import LcItemInput from '@/Components/LcItemInput.vue'
@@ -21,15 +24,9 @@
 
 // #region props
 
+  const inventoryStore = useInventoryStore()
+
   const props = defineProps({
-    items: {
-      type: Array,
-      required: true,
-    },
-    usages: {
-      type: Array,
-      required: true,
-    },
     isUnlocked: {
       type: Boolean,
       default: false,
@@ -89,7 +86,7 @@
 
     const hasUsage = computed(() => bookingsForm.usage_id !== null)
     const getUsage = (usage_id) => {
-      return props.usages.find(u => u.id === usage_id)
+      return inventoryStore.usages.find(u => u.id === usage_id)
     }
 
     const selectUsage = (usage) => {
@@ -107,7 +104,7 @@
     const hasAnyBookings = computed(() => bookingsForm.entries.length > 0)
     const preparedBooking = computed(() => {
       return  bookingsForm.entries.map(e => {
-        let item = props.items.find(i => i.id === e.item_id)
+        let item = inventoryStore.items.find(i => i.id === e.item_id)
         if (!item) { return null; }
 
         return {
@@ -228,6 +225,9 @@
     // register input
     InputService.registerEsc(handleEscape)
 
+    // load store
+    inventoryStore.fetchStore()
+    
   })
   onUnmounted(() => {
     InputService.unregisterEsc(handleEscape)
@@ -249,7 +249,7 @@
     <div class="app-BookOut--page app-BookOut--usagepane">
 
       <LcUsageInput v-if="!hasUsage"
-        :usages="usages" :is-unlocked="isUnlocked"
+        :usages="inventoryStore.usages" :is-unlocked="isUnlocked"
         @select-usage="selectUsage">
       </LcUsageInput>
 
@@ -272,7 +272,7 @@
     <div class="app-BookOut--page app-BookOut--inputpane" v-if="hasUsage">
 
       <LcItemInput ref="itemInput"
-        :items="items" :booking="bookingsForm.entries"
+        :items="inventoryStore.items" :booking="bookingsForm.entries"
         :result-pos="{ w: 850, i: 19 }"
         :disabled="amountCalc?.isVisible || bookingsForm.processing"
         @select-item="selectItem"

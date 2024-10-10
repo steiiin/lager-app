@@ -6,6 +6,9 @@
   import { ref, computed, onMounted, onUnmounted } from 'vue'
   import { Head, router } from '@inertiajs/vue3'
 
+  // Local composables
+  import { useInventoryStore } from '@/Services/StoreService'
+
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
   import LcItemInput from '@/Components/LcItemInput.vue'
@@ -17,12 +20,7 @@
 
 // #region props
 
-  defineProps({
-    items: {
-      type: Array,
-      required: true,
-    },
-  })
+  const inventoryStore = useInventoryStore()
 
 // #endregion
 
@@ -53,6 +51,7 @@
 
   onMounted(() => {
     InputService.registerEsc(openWelcome)
+    inventoryStore.fetchStore()
   })
   onUnmounted(() => {
     InputService.unregisterEsc(openWelcome)
@@ -74,7 +73,7 @@
     <div class="app-WhereIs--page">
 
       <LcItemInput 
-        :items="items" :result-pos="{ w: 850, i: 11 }"
+        :items="inventoryStore.items" :result-pos="{ w: 850, i: 11 }"
         :allowScan="false" 
         @select-item="selectItem">
       </LcItemInput>
