@@ -80,7 +80,6 @@
 // #region touchmode
 
   const openKioskSettings = () => {
-    debugger
     if (typeof OpenKiosk != 'undefined') {
       OpenKiosk.settings()
     } else {
