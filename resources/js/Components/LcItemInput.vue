@@ -142,7 +142,7 @@
 
       // calc score based on search criteria
       let score = 0
-      if (item.pp_name.startsWith(lcSearchText)) { score += 5 }
+      if (item.pp_name.startsWith(lcSearchText)) { score += 10 }
       else if (item.pp_name.includes(lcSearchText)) { score += 2 }
       if (item.pp_search_altnames.includes(lcSearchText)) { score += 3 }
       if (item.pp_search_tags.includes(lcSearchText)) { score += 1 }
