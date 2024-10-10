@@ -113,50 +113,91 @@
 
   // props
   const searchText = ref('')
+
+  const bookingsMap = computed(() => {
+    const map = new Map()
+    props.booking.forEach(booking => {
+      map.set(booking.item_id, booking)
+    })
+    return map
+  })
+  const itemsMap = computed(() => {
+    return props.items.map(item => ({
+      ...item,
+      pp_name: item.name.toLowerCase(),
+      pp_search_altnames: item.search_altnames ? item.search_altnames.toLowerCase() : '',
+      pp_search_tags: item.search_tags ? item.search_tags.toLowerCase() : '',
+    }))
+  })
+
   const filteredItems = computed(() => {
 
     // search text
     const lcSearchText = searchText.value.toLowerCase()
-    const result = props.items
-      .map(item => {
-
-        // search score
-        let score = 0
-        if (item.name.toLowerCase().startsWith(lcSearchText)) { score += 10 }
-        else if (item.name.toLowerCase().includes(lcSearchText)) { score += 3 }
-        if (!!item.search_altnames && item.search_altnames.toLowerCase().includes(lcSearchText)) { score += 2 }
-        if (!!item.search_tags && item.search_tags.toLowerCase().includes(lcSearchText)) { score += 1 }
-
-        // search props
-        let hasAltnames = !!item.search_altnames?.trim()
-        let taggedAltnames = hasAltnames ? getExplodedTags(item.search_altnames) : null
-        let hasTags = !!item.search_tags?.trim()
-        let taggedTags = hasTags ? getExplodedTags(item.search_tags) : null
-
-        // min-max props
-        let quantityColor = getQuantityColor(item)
-        let expiryColor = getExpiryColor(item)
-        let expiryText = getExpiryText(item)
-
-        // booking props
-        let bookingEntry = props.booking.find(e => e.item_id === item.id) ?? null
-        let isOnBooking = bookingEntry !== null
-        let bookingAmount = isOnBooking ? `${bookingEntry.item_amount} ${item.basesize.unit}` : null
-
-        return { 
-          ...item, 
-          score,
-          hasAltnames, taggedAltnames,
-          hasTags, taggedTags,
-          quantityColor, expiryColor, expiryText,
-          isOnBooking, bookingAmount
-        }
-      })
-      .filter(item => item.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 4);
+    const results = []
+    const bookings = bookingsMap.value
+    const items = itemsMap.value
     
-    return result
+    for (const item of items) {
+
+      // calc score based on search criteria
+      let score = 0
+      if (item.pp_name.startsWith(lcSearchText)) { score += 5 }
+      else if (item.pp_name.includes(lcSearchText)) { score += 2 }
+      if (item.pp_search_altnames.includes(lcSearchText)) { score += 3 }
+      if (item.pp_search_tags.includes(lcSearchText)) { score += 1 }
+
+      // compute additional props if matches at least the name
+      if (score > 1) {
+
+        const hasAltNames = !!item.search_altnames?.trim()
+        const taggedAltNames = hasAltNames 
+          ? getExplodedTags(item.search_altnames)
+          : null;
+
+        const hasTags = !!item.search_tags?.trim()
+        const taggedTags = hasTags
+          ? getExplodedTags(item.search_tags)
+          : null;
+
+        const quantityColor = getQuantityColor(item)
+        const expiryColor = getExpiryColor(item)
+        const expiryText = getExpiryText(item)
+
+        const bookingEntry = bookings.get(item.id) || null
+        const isOnBooking = bookingEntry !== null
+        const bookingText = isOnBooking
+          ? `${bookingEntry.item_amount} ${item.basesize.unit}`
+          : null;
+
+        results.push({
+          ...item,
+          score,
+          hasAltNames,
+          taggedAltNames,
+          hasTags,
+          taggedTags,
+          quantityColor,
+          expiryColor,
+          expiryText,
+          isOnBooking,
+          bookingText,
+        });
+
+        // cancel search if already 4 items
+        if (results.length >= 4) { break }
+
+      }
+
+    }
+
+    // sort if necessary
+    if (results.length > 1) {
+      results.sort((a, b) => b.score - a.score)
+    }
+
+    return results
+
   })
 
   const isSearching = computed(() => searchText.value.trim().length > 0)
@@ -352,8 +393,8 @@
           <v-spacer></v-spacer>
           <div class="lc-pickerresult-item--demand">{{ item.demand?.name }}</div>
         </div>
-        <template v-if="item.hasAltnames || item.hasTags">
-          <div class="lc-pickerresult-item--tags-wrapper mt-1" v-if="item.hasAltnames">
+        <template v-if="item.hasAltNames || item.hasTags">
+          <div class="lc-pickerresult-item--tags-wrapper mt-1" v-if="item.hasAltNames">
             <v-chip size="small" label variant="outlined" v-for="tag in item.taggedAltnames">{{ tag }}</v-chip>
           </div>
           <div class="lc-pickerresult-item--tags-wrapper mt-1" v-if="showWholeItem && item.hasTags">
@@ -387,7 +428,7 @@
         <template v-if="item.isOnBooking">
           <v-divider class="my-2"></v-divider>
           <div class="d-flex flex-row-reverse">
-            <v-chip color="black" label prepend-icon="mdi-check-circle" variant="flat">Schon im Warenkorb:&nbsp;<b>{{ item.bookingAmount }}</b></v-chip>
+            <v-chip color="black" label prepend-icon="mdi-check-circle" variant="flat">Schon im Warenkorb:&nbsp;<b>{{ item.bookingText }}</b></v-chip>
           </div>
         </template>
       </v-card>
