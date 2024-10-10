@@ -184,9 +184,6 @@
           bookingText,
         });
 
-        // cancel search if already 4 items
-        if (results.length >= 4) { break }
-
       }
 
     }
@@ -194,6 +191,7 @@
     // sort if necessary
     if (results.length > 1) {
       results.sort((a, b) => b.score - a.score)
+      results.splice(4)
     }
 
     return results
