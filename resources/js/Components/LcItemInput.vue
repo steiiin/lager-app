@@ -215,7 +215,7 @@
     // slice over 3
     if (results.length > 3) {
       const firstScore = results[0].relevance
-      let cutAfter = 3
+      let cutAfter = 4
       while ((results.length > cutAfter) && (cutAfter < 10) && results[cutAfter - 1].relevance === firstScore) {
         cutAfter += 1
       }
@@ -618,7 +618,6 @@
     &-text {
       background-color: var(--lc-primary-accent-background);
       color: var(--lc-primary-accent-text);
-      border-radius: 8px;
       padding: .5rem 1.5rem;
     }
   }
