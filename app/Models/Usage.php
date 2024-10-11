@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Services\BarcodeGenerator;
+use App\Services\BarcodeService;
 use Illuminate\Database\Eloquent\Model;
 
 class Usage extends Model
@@ -15,7 +15,7 @@ class Usage extends Model
 
     public function getBarcodeAttribute() 
     {
-        return BarcodeGenerator::generateUsage($this->id);
+        return BarcodeService::generateUsage($this->id);
     }
 
     public static function getInternalUsageName(int $id)

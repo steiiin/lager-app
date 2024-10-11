@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Item;
 use App\Models\Usage;
 
-class BarcodeGenerator
+class BarcodeService
 {
 
   #region Code-Generation

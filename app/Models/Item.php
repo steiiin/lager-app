@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Services\BarcodeGenerator;
+use App\Services\BarcodeService;
 use Illuminate\Database\Eloquent\Model;
 
 class Item extends Model
@@ -52,7 +52,7 @@ class Item extends Model
         $codes = [];
         foreach($sizes as $size)
         {
-            $codes[BarcodeGenerator::generateItem($this->id, $size->id)] = $size->amount;
+            $codes[BarcodeService::generateItem($this->id, $size->id)] = $size->amount;
         }
         return $codes;
     }

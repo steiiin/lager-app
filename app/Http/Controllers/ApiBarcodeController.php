@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\BarcodeGenerator;
+use App\Services\BarcodeService;
 
 class ApiBarcodeController extends Controller
 {
 
     public function index()
     {
-        $barcodeGenerator = new BarcodeGenerator();
-        $barcodes = $barcodeGenerator->generateAll();
+        $BarcodeService = new BarcodeService();
+        $barcodes = $BarcodeService->generateAll();
         return response()->json($barcodes);
     }
 
