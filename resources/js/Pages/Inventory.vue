@@ -101,7 +101,7 @@
       onSuccess: () => {
         router.reload()
         clearSelectedItem()
-        inventoryStore.fetchStore()
+        inventoryStore.fetchStore(true)
       },
     }
 

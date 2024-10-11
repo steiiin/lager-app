@@ -13,8 +13,8 @@ export const useInventoryStore = defineStore('inventory', {
   }),
   actions: {
 
-    async fetchStore() {
-      if (this.isLoaded || this.loading) {
+    async fetchStore(force = false) {
+      if ((!force && this.isLoaded) || this.loading) {
         return;
       }
       this.loading = true;
