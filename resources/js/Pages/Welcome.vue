@@ -111,33 +111,33 @@
 
   <div class="app-Welcome" :class="{ 'app-Welcome--locked': !isUnlocked }">
 
-    <lc-button class="app-Welcome--BookOut" 
+    <LcButton class="app-Welcome--BookOut" 
       type="primary" icon="mdi-barcode-scan"
       @click="openBookOut">Verbrauch<kbd v-if="!isTouchMode">1</kbd>
-    </lc-button>
+    </LcButton>
 
-    <lc-button class="app-Welcome--WhereIs"
+    <LcButton class="app-Welcome--WhereIs"
       type="primary" icon="mdi-home-search-outline"
       @click="openWhereIs">Wo ist ... ?<kbd v-if="!isTouchMode">2</kbd>
-    </lc-button>
+    </LcButton>
 
-    <lc-button class="app-Welcome--BookIn"
+    <LcButton class="app-Welcome--BookIn"
       icon="mdi-basket-outline"
       @click="openBookIn">Lieferung<kbd v-if="!isTouchMode">3</kbd>
-    </lc-button>
+    </LcButton>
 
-    <lc-button class="app-Welcome--Login" v-if="isUnlocked"
+    <LcButton class="app-Welcome--Login" v-if="isUnlocked"
       icon="mdi-lock-outline"
       @click="lockUi">
-    </lc-button>
-    <lc-button class="app-Welcome--Login" v-else
+    </LcButton>
+    <LcButton class="app-Welcome--Login" v-else
       icon="mdi-lock-open-variant-outline"
       @click="unlockUi">
-    </lc-button>
+    </LcButton>
 
-    <lc-button class="app-Welcome--Inventur" v-if="isUnlocked" 
+    <LcButton class="app-Welcome--Inventur" v-if="isUnlocked" 
       @click="openInventory">Inventur
-    </lc-button>
+    </LcButton>
 
   </div>
   <div class="app-Welcome--invisibleUsageScanner">
