@@ -381,11 +381,11 @@
       </div>
 
       <LcButton v-if="hasAnyItems && !disabled"
-        class="lc-picker--btn" type="secondary" icon="mdi-form-textbox"
+        class="lc-picker--btn" icon="mdi-form-textbox"
         @click="changeModeToText()">Suchen
       </LcButton>
       <LcButton v-if="adminMode && !disabled"
-        class="lc-picker--btn" type="secondary"icon="mdi-plus"
+        class="lc-picker--btn" icon="mdi-plus"
         @click="createNew">Neu
       </LcButton>
 
@@ -393,7 +393,7 @@
     <div class="lc-picker" v-else-if="isInTextMode">
 
       <LcButton v-if="allowScan"
-        class="lc-picker--btn" type="secondary" icon="mdi-arrow-left"
+        class="lc-picker--btn" icon="mdi-arrow-left"
         @click="changeModeToScan">Zurück
       </LcButton>
 
