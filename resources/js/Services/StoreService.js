@@ -11,6 +11,19 @@ export const useInventoryStore = defineStore('inventory', {
     loading: false,
     error: null,
   }),
+  getters: {
+    searchableItems: (state) => {
+      return state.items.map(item => ({
+        ...item,
+        pp_name: item.name.toLowerCase(),
+        pp_search_altnames: item.search_altnames ? item.search_altnames.toLowerCase() : '',
+        pp_search_altnames_list: item.search_altnames?.toLowerCase().trim().replace(/^,|,$/g, '').split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
+        pp_search_tags: item.search_tags ? item.search_tags.toLowerCase() : '',
+        pp_search_tags_list: item.search_tags?.toLowerCase().trim().replace(/^,|,$/g, '').split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
+      }))
+    },
+
+  },
   actions: {
 
     async fetchStore(force = false) {
