@@ -1,62 +1,67 @@
 <script setup>
 
-// #region props
+/**
+ * LcButton - Component
+ *
+ * A button component that seemlessly integrates with the app's style.
+ * It supports different button types, icons and loading indication.
+ *
+ * Props:
+ *  - type (String): Defines the visual style. [ 'primary', 'secondary' ]
+ *  - loading (Bool): Indicates if a progress indicator is shown.
+ *  - icon (String): Renders a "mdi"-icon over the button's text.
+ *  - prependIcon (String): Same as "icon", but it is rendered before the text in the same line.
+ *
+ */
 
-  defineProps({
+// #region Imports
+
+  import { computed } from 'vue'
+
+// #endregion
+// #region Props
+
+  const props = defineProps({
     type: {
       type: String,
-      required: false,
       default: 'secondary',
-    },
-    icon: {
-      type: String,
-      required: false,
-      default: null,
-    },
-    onlyIcon: {
-      type: String,
-      required: false,
-      default: null,
-    },
-    prependIcon: {
-      type: String,
-      required: false,
-      default: null,
+      validator: value => ['primary', 'secondary'].includes(value),
     },
     loading: {
       type: Boolean,
-      required: false,
       default: false,
     },
+    icon: String,
+    prependIcon: String,
   })
+
+// #endregion
+
+// #region TemplateProps
+
+  const buttonClasses = computed(() => ({
+    'lc-button--primary': props.type === 'primary',
+    'lc-button--secondary': props.type === 'secondary',
+    'lc-button--loading': props.loading,
+  }))
 
 // #endregion
 
 </script>
 <template>
-  <button class="lc-button"
-    :class="{
-      'lc-button--primary': type === 'primary',
-      'lc-button--secondary': type === 'secondary',
-      'lc-button--tertiary': type === 'tertiary',
-      'lc-button--loading': loading,
-    }">
-    <div class="lc-button--icon" v-if="!!icon">
+  <button class="lc-button" :class="buttonClasses">
+    <div class="lc-button__icon" v-if="icon">
       <v-icon :icon="icon"></v-icon>
     </div>
-    <div class="lc-button--standaloneicon" v-if="!!onlyIcon">
-      <v-icon :icon="onlyIcon"></v-icon>
-    </div>
-    <div class="lc-button--content">
-      <template v-if="!!prependIcon">
+    <div class="lc-button__content">
+      <template v-if="prependIcon">
         <v-icon
           :icon="prependIcon">
         </v-icon>
       </template>
-
-      <slot v-if="!onlyIcon" />
+      <slot />
     </div>
-    <v-progress-linear class="lc-button--progress"
+    <v-progress-linear class="lc-button__progress"
       indeterminate v-if="loading">
     </v-progress-linear>
   </button>
@@ -79,33 +84,27 @@
 
   transition: background-color 0.3s ease, color 0.3s ease;
 
-  &--icon {
+  &__icon {
     font-size: 4rem;
   }
-  &--standaloneicon {
-    font-size: 1.5rem;
-  }
-  &--content {
+  &__content {
     display: flex;
     gap: .5rem;
     align-items: center;
-
-    &-progress {
-      height: 1.5rem;
-    }
+  }
+  &__progress {
+    position: absolute;
   }
 
   &--loading {
     pointer-events: none;
   }
-  &--progress {
-    position: absolute;
-  }
-
   &--primary {
+
     background: var(--main-dark);
     border-color: var(--main-dark);
     color: var(--main-light);
+
     &:hover,
     &:focus-visible {
       color: var(--main-dark);
@@ -116,16 +115,19 @@
         box-shadow: 4px 4px var(--main-dark);
       }
     }
-    & .lc-button--icon {
+
+    & .lc-button__icon {
       font-size: 5rem;
     }
-  }
 
+  }
   &--secondary {
+
     gap: 0;
     background: var(--accent-primary-background);
     border-color: var(--accent-primary-background);
     color: var(--accent-primary-foreground);
+
     &:hover,
     &:focus-visible {
       color: var(--accent-primary-background);
@@ -136,33 +138,25 @@
         box-shadow: 4px 4px var(--accent-primary-background);
       }
     }
-    & .lc-button--icon {
+
+    & .lc-button__icon {
       font-size: 3rem;
     }
-  }
 
-  &--tertiary {
-    background: var(--accent-secondary-background);
-    border-color: var(--accent-secondary-background);
-    color: var(--accent-secondary-foreground);
-    &:hover,
-    &:focus-visible {
-      color: var(--accent-secondary-background);
-      background: var(--accent-secondary-foreground);
-    }
-    & .lc-button--icon {
-      display: none;
-    }
   }
 
   & :deep(kbd) {
-    font-size: 0.6em;
+
     outline: 2px solid var(--accent-primary-foreground);
+    box-shadow: 4px 4px var(--accent-primary-foreground);
     color: var(--accent-primary-foreground);
+
     padding: 0 .3rem;
     height: 60%;
     margin-left: .3rem;
-    box-shadow: 4px 4px var(--accent-primary-foreground);
+
+    font-size: 0.6em;
+
   }
 
 }
