@@ -10,47 +10,47 @@
  *
  */
 
-  // #region Imports
+// #region Imports
 
-    import { onMounted, onUnmounted } from 'vue'
-    import { debounce } from 'lodash'
+  import { onMounted, onUnmounted } from 'vue'
+  import { debounce } from 'lodash'
 
-  // #endregion
-  // #region Lifecycle
+// #endregion
+// #region Lifecycle
 
-    onMounted(() => {
-      window.addEventListener('mousemove', handleMouseMove)
-      window.addEventListener('keydown', handleKeyDown)
-      resetHideCursorTimer()
-    })
-    onUnmounted(() => {
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('keydown', handleKeyDown)
-      clearTimeout(hideCursorTimeout)
-    })
+  onMounted(() => {
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('keydown', handleKeyDown)
+    resetHideCursorTimer()
+  })
+  onUnmounted(() => {
+    window.removeEventListener('mousemove', handleMouseMove)
+    window.removeEventListener('keydown', handleKeyDown)
+    clearTimeout(hideCursorTimeout)
+  })
 
-  // #endregion
+// #endregion
 
-  // #region CursorLogic
+// #region CursorLogic
 
-    let cursorVisible = false
-    let hideCursorTimeout = null
-    const timeoutDuration = 3000
+  let cursorVisible = false
+  let hideCursorTimeout = null
+  const timeoutDuration = 3000
 
-    const showCursor = () => {
-      if (!cursorVisible) {
-        cursorVisible = true
-        document.body.classList.remove('cursor-off')
-      }
-      resetHideCursorTimer()
+  const showCursor = () => {
+    if (!cursorVisible) {
+      cursorVisible = true
+      document.body.classList.remove('cursor-off')
     }
-    const hideCursor = () => {
-      cursorVisible = false
-      document.body.classList.add('cursor-off')
-    }
+    resetHideCursorTimer()
+  }
+  const hideCursor = () => {
+    cursorVisible = false
+    document.body.classList.add('cursor-off')
+  }
 
-  // #endregion
-  // #region IdleLogic
+// #endregion
+// #region IdleLogic
 
     const resetHideCursorTimer = () => {
       clearTimeout(hideCursorTimeout)
