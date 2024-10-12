@@ -328,8 +328,8 @@
 
   &--usageBlock {
     height: 4rem;
-    background: var(--lc-primary-accent-background);
-    color: var(--lc-primary-accent-text);
+    background: var(--accent-primary-background);
+    color: var(--accent-primary-foreground);
     display: flex;
     flex-direction: row-reverse;
     align-items: center;
@@ -341,7 +341,7 @@
     &-clearBtn {
       width: 10rem;
       height: 100%;
-      outline: 0.5rem solid var(--lc-main-background);
+      outline: 0.5rem solid var(--main-light);
     }
 
     &-title {
@@ -367,9 +367,9 @@
   }
 
   & :deep(.v-data-table__th) {
-    background: var(--lc-main-text);
-    color: var(--lc-main-background) !important;
-    border-bottom: solid var(--lc-main-background);
+    background: var(--main-dark);
+    color: var(--main-light) !important;
+    border-bottom: solid var(--main-light);
     border-left: 0.5rem solid white;
     font-weight: bold;
     text-transform: uppercase;

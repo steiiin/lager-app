@@ -49,11 +49,11 @@
     </div>
     <div class="lc-button--content">
       <template v-if="!!prependIcon">
-        <v-icon 
+        <v-icon
           :icon="prependIcon">
         </v-icon>
       </template>
-      
+
       <slot v-if="!onlyIcon" />
     </div>
     <v-progress-linear class="lc-button--progress"
@@ -103,17 +103,17 @@
   }
 
   &--primary {
-    background: var(--lc-main-text);
-    border-color: var(--lc-main-text);
-    color: var(--lc-main-background);
+    background: var(--main-dark);
+    border-color: var(--main-dark);
+    color: var(--main-light);
     &:hover,
     &:focus-visible {
-      color: var(--lc-main-text);
-      background: var(--lc-main-background);
+      color: var(--main-dark);
+      background: var(--main-light);
       & :deep(kbd) {
-        outline: 2px solid var(--lc-main-text);
-        color: var(--lc-main-text);
-        box-shadow: 4px 4px var(--lc-main-text);
+        outline: 2px solid var(--main-dark);
+        color: var(--main-dark);
+        box-shadow: 4px 4px var(--main-dark);
       }
     }
     & .lc-button--icon {
@@ -123,17 +123,17 @@
 
   &--secondary {
     gap: 0;
-    background: var(--lc-primary-accent-background);
-    border-color: var(--lc-primary-accent-background);
-    color: var(--lc-primary-accent-text);
+    background: var(--accent-primary-background);
+    border-color: var(--accent-primary-background);
+    color: var(--accent-primary-foreground);
     &:hover,
     &:focus-visible {
-      color: var(--lc-primary-accent-background);
-      background: var(--lc-primary-accent-text);
+      color: var(--accent-primary-background);
+      background: var(--accent-primary-foreground);
       & :deep(kbd) {
-        outline: 2px solid var(--lc-primary-accent-background);
-        color: var(--lc-primary-accent-background);
-        box-shadow: 4px 4px var(--lc-primary-accent-background);
+        outline: 2px solid var(--accent-primary-background);
+        color: var(--accent-primary-background);
+        box-shadow: 4px 4px var(--accent-primary-background);
       }
     }
     & .lc-button--icon {
@@ -142,13 +142,13 @@
   }
 
   &--tertiary {
-    background: var(--lc-secondary-accent-background);
-    border-color: var(--lc-secondary-accent-background);
-    color: var(--lc-secondary-accent-text);
+    background: var(--accent-secondary-background);
+    border-color: var(--accent-secondary-background);
+    color: var(--accent-secondary-foreground);
     &:hover,
     &:focus-visible {
-      color: var(--lc-secondary-accent-background);
-      background: var(--lc-secondary-accent-text);
+      color: var(--accent-secondary-background);
+      background: var(--accent-secondary-foreground);
     }
     & .lc-button--icon {
       display: none;
@@ -157,12 +157,12 @@
 
   & :deep(kbd) {
     font-size: 0.6em;
-    outline: 2px solid #fff;
-    color: #fff;
+    outline: 2px solid var(--accent-primary-foreground);
+    color: var(--accent-primary-foreground);
     padding: 0 .3rem;
     height: 60%;
     margin-left: .3rem;
-    box-shadow: 4px 4px #fff;
+    box-shadow: 4px 4px var(--accent-primary-foreground);
   }
 
 }

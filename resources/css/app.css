@@ -1,20 +1,40 @@
-/* @tailwind base;
-@tailwind components;
-@tailwind utilities; */
+
+/**
+ * app.css
+ *
+ * Contains app colors and
+ * app-wide styles.
+ *
+ */
+
+/* APP-COLORS */
 
 :root {
 
-  --lc-main-background: #FFFFFF;
-  --lc-main-text: #000000;
+  --main-light-color: 255, 255, 255;
+  --main-dark-color: 0, 0, 0;
+  --accent-primary-color: 0, 123, 255;
+  --accent-secondary-color: 225, 245, 254;
 
-  --lc-primary-accent-background: #007BFF;
-  --lc-primary-accent-text: var(--lc-main-background);
+  --main-light: rgb(var(--main-light-color));
+  --main-dark: rgb(var(--main-dark-color));
+  --kbd-light-bg: rgb(238, 238, 238);
+  --kbd-light-ol: rgb(221, 221, 221);
+  --kbd-light-ds: rgb(170, 170, 170);
 
-  --lc-secondary-accent-background: #E1F5FE;
-  --lc-secondary-accent-text: var(--lc-main-text);
+  --accent-primary-background: rgb(var(--accent-primary-color));
+  --accent-primary-foreground: var(--main-light);
+
+  --accent-secondary-background: rgb(var(--accent-secondary-color));
+  --accent-secondary-foreground: var(--main-dark);
+
+  --overlay-translucent-background: rgba(var(--main-light-color), .6)
 
 }
 
+/* APP-WIDE styles */
+
+/* let app-container use full screen dimensions */
 #app {
 
   width: 100vw;
@@ -22,20 +42,25 @@
 
 }
 
-kbd[sym] {
-  font-size: 1.5em;
-  outline: 1px solid #ddd;
-  background: #eee;
-  padding: .2rem .4rem .1rem .2rem;
-  text-transform: uppercase;
-  box-shadow: 2px 2px #aaa;
-  margin: 0 .5rem;
-}
-
+/* hides the cursor and disable hover styles, if set in document body */
 .cursor-off {
+
   cursor: none;
-  transition: cursor 0.3s;
   & * {
     pointer-events: none;
   }
+
+}
+
+/* depicts a keyboard-shortcut */
+kbd[sym] {
+
+  background: var(--kbd-light-bg);
+  outline: 1px solid var(--kbd-light-ol);
+  box-shadow: 2px 2px var(--kbd-light-ds);
+  font-size: 1.5em;
+  padding: .2rem .4rem .1rem .2rem;
+  text-transform: uppercase;
+  margin: 0 .5rem;
+
 }

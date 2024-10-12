@@ -107,13 +107,13 @@
     height: 6rem;
   }
   &--scanner {
-    background: var(--lc-secondary-accent-background);
+    background: var(--accent-secondary-background);
   }
 
   &--description {
     flex: 1;
-    border: .5rem solid var(--lc-secondary-accent-background);
-    background: var(--lc-secondary-accent-background);
+    border: .5rem solid var(--accent-secondary-background);
+    background: var(--accent-secondary-background);
     padding: 1rem;
     display: flex;
     flex-direction: column;

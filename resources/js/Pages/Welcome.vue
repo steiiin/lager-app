@@ -157,8 +157,8 @@
   height: 100%;
   display: grid;
   padding: 10vh 10vw;
-  background: var(--lc-main-background);
-  color: var(--lc-main-text);
+  background: var(--main-light);
+  color: var(--main-dark);
   grid-template-columns: repeat(6, 0.5fr);
   grid-template-rows: 1.5fr 0.5fr 0.5fr;
   gap: 1rem;

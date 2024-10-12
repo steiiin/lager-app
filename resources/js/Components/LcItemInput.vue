@@ -56,7 +56,7 @@
 
   const resultPosWidth = computed(() => (props.resultPos?.w ?? 850) + 'px')
   const resultPosIndent = computed(() => (props.resultPos?.i ?? 11) + 'rem')
-  
+
 // #endregion
 
 // #region selection
@@ -124,7 +124,7 @@
   }, 300)
   watch(searchText, (newValue) => {
     searchTyping.value = true
-    updateSearchText(newValue) 
+    updateSearchText(newValue)
   })
 
   const bookingsMap = computed(() => {
@@ -144,7 +144,7 @@
     const results = []
     const bookings = bookingsMap.value
     const items = inventoryStore.searchableItems
-    
+
     for (const item of items) {
 
       let relevance = 0
@@ -158,7 +158,7 @@
 
       if (item.pp_search_altnames_list?.includes(lcSearchText)) {
         relevance += 20
-      } 
+      }
       else if (item.pp_search_altnames_list?.some(name => name.startsWith(lcSearchText))) {
         relevance += 15
       }
@@ -254,7 +254,7 @@
       emit('ctrlFinish')
       return
     }
-    
+
     // search item
     const item = inventoryStore.items.find(item => item.barcodes.hasOwnProperty(code)) ?? null
     if (!item) { return }
@@ -264,7 +264,7 @@
     selectItemByScan(item, amount)
 
   }
-  
+
   // #region input
 
     const receiveKeys = async (keys) => {
@@ -292,7 +292,7 @@
       if (isInTextMode.value) {
         changeModeToScan()
         return false
-      } 
+      }
       return true
     }
 
@@ -317,7 +317,7 @@
 
     const getExpiryColor = (item) => {
       const daysDiff = Math.round(
-        (new Date(item.current_expiry).getTime() - new Date().getTime()) / 
+        (new Date(item.current_expiry).getTime() - new Date().getTime()) /
         (1000 * 60 * 60 * 24))
       if (daysDiff > 21) { return 'success' }
       else if (daysDiff > 14) { return 'warning' }
@@ -370,7 +370,7 @@
     <div class="lc-picker" v-if="isInScanMode">
 
       <div class="lc-picker--scanner">
-        <LcScanIndicator 
+        <LcScanIndicator
           :active="hasAnyItems && !disabled">
         </LcScanIndicator>
       </div>
@@ -414,7 +414,7 @@
       <template v-if="adminMode">
 
         <v-card v-for="item in filteredItems" :key="item.id"
-          class="lc-pickerresult-item rounded-0" link variant="flat" 
+          class="lc-pickerresult-item rounded-0" link variant="flat"
           @click="selectItemBySearch(item)">
           <div class="lc-pickerresult-item--head-wrapper">
             <div class="lc-pickerresult-item--name">{{ item.name }}</div>
@@ -459,7 +459,7 @@
       <template v-else>
 
         <v-card v-for="item in filteredItems" :key="item.id"
-          class="lc-pickerresult-item rounded-0" link variant="flat" 
+          class="lc-pickerresult-item rounded-0" link variant="flat"
           @click="selectItemBySearch(item)">
           <div class="lc-pickerresult-item--head-wrapper">
             <div class="lc-pickerresult-item--name">{{ item.name }}</div>
@@ -509,13 +509,13 @@
     height: 8rem;
   }
   &--scanner {
-    background: var(--lc-secondary-accent-background);
+    background: var(--accent-secondary-background);
   }
 
   &--description {
     flex: 1;
-    border: .5rem solid var(--lc-secondary-accent-background);
-    background: var(--lc-secondary-accent-background);
+    border: .5rem solid var(--accent-secondary-background);
+    background: var(--accent-secondary-background);
     padding: 1rem;
     display: flex;
     flex-direction: column;
@@ -535,7 +535,7 @@
 
   &--search {
     flex: 1;
-    border: .5rem solid var(--lc-secondary-accent-background);
+    border: .5rem solid var(--accent-secondary-background);
     padding: 1.7rem;
     &-noscan {
       padding: 0;
@@ -547,7 +547,7 @@
 
   position: absolute;
   top: 16.5rem;
-  background: var(--lc-main-background);
+  background: var(--main-light);
   z-index: 999;
   width: 850px;
   height: 100%;
@@ -555,11 +555,10 @@
   overflow-x: hidden;
 
   margin-top: .5rem;
-  border-bottom: .5rem solid var(--lc-secondary-accent-background);
 
   &-item {
 
-    background: var(--lc-secondary-accent-background);
+    background: var(--accent-secondary-background);
     padding: .5rem;
     margin-bottom: .5rem;
 
@@ -575,13 +574,13 @@
     }
 
     &--demand {
-      background: var(--lc-primary-accent-background);
-      color: var(--lc-primary-accent-text);
+      background: var(--accent-primary-background);
+      color: var(--accent-primary-foreground);
       padding: 2px 1rem;
     }
     &--booking {
-      background: var(--lc-main-text);
-      color: var(--lc-main-background);
+      background: var(--main-dark);
+      color: var(--main-light);
       padding: 2px 1rem;
     }
 
@@ -607,7 +606,7 @@
   }
 
   &--overlay {
-    background-color: #ffffff88;
+    background-color: var(--overlay-translucent-background);
     position: absolute;
     width: 100%;
     height: 100%;
@@ -616,8 +615,8 @@
     justify-content: center;
     align-items: center;
     &-text {
-      background-color: var(--lc-primary-accent-background);
-      color: var(--lc-primary-accent-text);
+      background-color: var(--accent-secondary-background);
+      color: var(--accent-secondary-foreground);
       padding: .5rem 1.5rem;
     }
   }

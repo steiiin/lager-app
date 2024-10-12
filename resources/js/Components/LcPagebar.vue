@@ -55,18 +55,18 @@
 <style lang="scss" scoped>
 .lc-Pagebar {
 
-  background: var(--lc-main-text);
+  background: var(--main-dark);
 
   &--content {
     margin: 0 auto;
     display: flex;
     flex-direction: row;
-    outline: .5rem solid var(--lc-main-background);
+    outline: .5rem solid var(--main-light);
     height: 6rem;
   }
 
   &--button {
-    outline: .5rem solid var(--lc-main-background);
+    outline: .5rem solid var(--main-light);
     
     // box-sizing: content-box;
     
@@ -79,22 +79,22 @@
     transition: background-color 0.5s ease, color 0.3s ease;
 
     &-icon {
-      color: var(--lc-main-background);
+      color: var(--main-light);
       font-size: 2rem;
     }
 
     &:hover {
-      background-color: var(--lc-main-background);
-      border: .5rem solid var(--lc-main-text);
+      background-color: var(--main-light);
+      border: .5rem solid var(--main-dark);
       & .lc-Pagebar--button-icon {
-        color: var(--lc-main-text);
+        color: var(--main-dark);
       }
     }
 
   }
 
   &--title {
-    color: var(--lc-main-background);
+    color: var(--main-light);
     font-size: 1.25rem;
     font-weight: bold;
     display: flex;
