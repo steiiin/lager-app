@@ -15,7 +15,7 @@
   import LcCalcMinMaxDialog from '@/Dialogs/LcCalcMinMaxDialog.vue'
   import LcConfirm from '@/Dialogs/LcConfirm.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
-  import CursorHandler from '@/Components/CursorHandler.vue'
+  import IdleCursor from '@/Components/IdleCursor.vue'
   import InputService from '@/Services/InputService'
 
 // #endregion
@@ -151,7 +151,7 @@
 <template>
 
   <Head title="Lieferung" />
-  <CursorHandler />
+  <IdleCursor />
 
   <div class="app-BookIn">
 

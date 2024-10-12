@@ -15,7 +15,7 @@
   import LcUnlockDialog from '@/Dialogs/LcUnlockDialog.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
   import LcUsageInput from '@/Components/LcUsageInput.vue'
-  import CursorHandler from '@/Components/CursorHandler.vue'
+  import IdleCursor from '@/Components/IdleCursor.vue'
   import InputService from '@/Services/InputService'
 
 // #endregion
@@ -107,7 +107,7 @@
 <template>
 
   <Head title="Home" />
-  <CursorHandler />
+  <IdleCursor />
 
   <div class="app-Welcome" :class="{ 'app-Welcome--locked': !isUnlocked }">
 

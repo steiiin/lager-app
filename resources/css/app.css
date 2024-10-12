@@ -34,6 +34,7 @@ kbd[sym] {
 
 .cursor-off {
   cursor: none;
+  transition: cursor 0.3s;
   & * {
     pointer-events: none;
   }

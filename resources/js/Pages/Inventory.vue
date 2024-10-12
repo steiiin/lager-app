@@ -11,7 +11,7 @@
 
   // Local composables
   import { useBaseSize, useSizesCalc } from '@/Composables/CalcSizes'
-  import CursorHandler from '@/Components/CursorHandler.vue'
+  import IdleCursor from '@/Components/IdleCursor.vue'
   import InputService from '@/Services/InputService'
   import { useInventoryStore } from '@/Services/StoreService'
 
@@ -471,7 +471,7 @@
 <template>
 
   <Head title="Inventur" />
-  <CursorHandler />
+  <IdleCursor />
 
   <div class="app-Inventory">
 
