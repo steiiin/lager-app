@@ -1,72 +1,75 @@
 <script setup>
 
-// #region imports
+// #region Imports
 
   // Vue composables
   import { computed, ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
+
+  // 3rd-party composables
   import { debounce } from 'lodash'
 
   // Local composables
+  import InputService from '@/Services/InputService'
   import { useInventoryStore } from '@/Services/StoreService'
 
   // Local components
   import LcButton from '@/Components/LcButton.vue'
   import LcScanIndicator from '@/Components/LcScanIndicator.vue'
-  import InputService from '@/Services/InputService'
 
 // #endregion
-
-// #region props/emits
+// #region Props
 
   const inventoryStore = useInventoryStore()
-
-  const emit = defineEmits([
-    'createNew',
-    'selectItem',
-    'ctrlFinish',
-  ])
   const props = defineProps({
-
-    booking: {
-      type: Array,
-      required: false,
-      default: [],
-    },
-
     allowScan: {
       type: Boolean,
-      required: false,
       default: true,
     },
     adminMode: {
       type: Boolean,
-      required: false,
       default: false,
     },
     disabled: {
       type: Boolean,
       default: false,
     },
-    resultPos: {
+    resultSpecs: {
       type: Object,
-      required: false,
       default: { w: 850, i: 11 },
+    },
+    cart: {
+      type: Array,
+      required: false,
+      default: [],
     },
   })
 
-  const resultPosWidth = computed(() => (props.resultPos?.w ?? 850) + 'px')
-  const resultPosIndent = computed(() => (props.resultPos?.i ?? 11) + 'rem')
+  // #region TemplateProps
+
+    const hasAnyItems = computed(() => inventoryStore.items.length > 0)
+
+    const pickerresultWidth = computed(() => (props.resultSpecs?.w ?? 850) + 'px')
+    const pickerresultTop = computed(() => (props.resultSpecs?.i ?? 11) + 'rem')
+    const pickerresultCSS = computed(() => `height:calc(100% - 0.5rem - ${pickerresultTop.value}); top: ${pickerresultTop.value}; width: ${pickerresultWidth.value};`)
+
+    const pickerDescriptionTitle = computed(() =>
+      props.disabled ? '' : (hasAnyItems.value ? 'Scanne oder suche dein Material ...' : 'Kein Material angelegt')
+    )
+
+  // #endregion
 
 // #endregion
+// #region Emits
 
-// #region selection
-
-  const hasAnyItems = computed(() => inventoryStore.items.length > 0)
+  const emit = defineEmits([
+    'createNew',
+    'selectItem',
+    'ctrlFinish',
+  ])
 
   const selectItemBySearch = (item) => {
     emit('selectItem', item, null)
     changeModeToScan()
-    searchText.value = ''
   }
   const selectItemByScan = (item, amount) => {
     emit('selectItem', item, amount)
@@ -74,266 +77,15 @@
   const createNew = () => {
     emit('createNew')
     changeModeToScan()
-    searchText.value = ''
   }
 
 // #endregion
+// #region Expose
 
-// #region mode
-
-  // props
-  const currentMode = ref(props.allowScan ? 'SCAN' : 'TEXT')
-  const isInScanMode = computed(() => currentMode.value === 'SCAN')
-  const isInTextMode = computed(() => currentMode.value === 'TEXT')
-
-  // methods
-  const changeModeToScan = () => {
-    if (!props.allowScan) { return }
-    searchText.value = ''
-    currentMode.value = 'SCAN'
-  }
-  const changeModeToText = async (text = '') => {
-    searchText.value = text
-    currentMode.value = 'TEXT'
-    await nextTick()
-    document.getElementById('id-picker-searchbox')?.focus()
-  }
+  defineExpose({ handleEscape })
 
 // #endregion
-
-// #region scan-mode
-
-  const pickerDescriptionTitle = computed(() => {
-    if (!hasAnyItems.value) { return 'Kein Material angelegt' }
-    if (props.disabled) { return '' }
-    return 'Scanne oder suche dein Material ...'
-  })
-
-// #endregion
-
-// #region text-mode
-
-  // props
-  const searchText = ref('')
-  const searchTyping = ref(true)
-
-  const debouncedSearchText = ref('')
-  const updateSearchText = debounce((value) => {
-    debouncedSearchText.value = value
-    searchTyping.value = false
-  }, 300)
-  watch(searchText, (newValue) => {
-    searchTyping.value = true
-    updateSearchText(newValue)
-  })
-
-  const bookingsMap = computed(() => {
-    const map = new Map()
-    props.booking.forEach(booking => {
-      map.set(booking.item_id, booking)
-    })
-    return map
-  })
-
-  const filteredItems = computed(() => {
-
-    // search text
-    const lcSearchText = debouncedSearchText.value.toLowerCase()
-    if (lcSearchText.trim().length === 0) { return [] }
-
-    const results = []
-    const bookings = bookingsMap.value
-    const items = inventoryStore.searchableItems
-
-    for (const item of items) {
-
-      let relevance = 0
-
-      if (item.pp_name === lcSearchText) {
-        relevance += 50
-      }
-      else if (item.pp_name.startsWith(lcSearchText)) {
-        relevance += 30
-      }
-
-      if (item.pp_search_altnames_list?.includes(lcSearchText)) {
-        relevance += 20
-      }
-      else if (item.pp_search_altnames_list?.some(name => name.startsWith(lcSearchText))) {
-        relevance += 15
-      }
-
-      if (lcSearchText.length > 1) {
-
-        if (relevance <= 30 && item.pp_name.includes(lcSearchText)) {
-          relevance += 10
-        }
-
-        if (item.pp_search_altnames?.includes(lcSearchText)) {
-          relevance += 5
-        }
-
-        if (item.pp_search_tags_list?.some(tag => tag.startsWith(lcSearchText))) {
-          relevance += 2
-        }
-
-      }
-
-      if (relevance > 1) {
-
-        const quantityColor = props.adminMode ? getQuantityColor(item) : null
-        const expiryColor = props.adminMode ? getExpiryColor(item) : null
-        const expiryText = props.adminMode ? getExpiryText(item) : null
-
-        const bookingEntry = bookings.get(item.id) || null
-        const isOnBooking = bookingEntry !== null
-        const bookingText = isOnBooking
-          ? bookingEntry.item_amount + ' ' + item.basesize.unit
-          : null;
-
-        results.push({
-          ...item,
-          relevance,
-          hasAltNames: !!item.pp_search_altnames_list,
-          hasTags: !!item.pp_search_tags_list,
-          quantityColor,
-          expiryColor,
-          expiryText,
-          isOnBooking,
-          bookingText,
-        })
-
-      }
-
-    }
-
-    // sort if necessary
-    if (results.length > 1) {
-      results.sort((a, b) => b.relevance - a.relevance)
-    }
-
-    // slice over 3
-    if (results.length > 3) {
-      const firstScore = results[0].relevance
-      let cutAfter = 4
-      while ((results.length > cutAfter) && (cutAfter < 10) && results[cutAfter - 1].relevance === firstScore) {
-        cutAfter += 1
-      }
-      results.splice(cutAfter-1)
-    }
-
-    return results
-
-  })
-
-  const isSearching = computed(() => searchText.value.trim().length > 0)
-  const hasAnyResults = computed(() => filteredItems.value.length > 0)
-  const hasOneResult = computed(() => filteredItems.value.length === 1)
-
-  // methods
-  const getFirstResult = () => { return filteredItems.value[0] ?? null }
-
-  const selectItem = () => {
-    if (hasOneResult.value) {
-      // select only item
-      selectItemBySearch(getFirstResult())
-    }
-    if (searchText.value.startsWith('LC-')) {
-      // scanned something while in text-mode
-      searchText.value = ''
-    }
-  }
-  const findItem = (code) => {
-
-    if (!isInScanMode.value) {
-        changeModeToScan()
-      }
-
-    // fetch ctrl codes
-    if (code === 'LC-2000001000') {
-      emit('ctrlFinish')
-      return
-    }
-
-    // search item
-    const item = inventoryStore.items.find(item => item.barcodes.hasOwnProperty(code)) ?? null
-    if (!item) { return }
-
-    // find itemsize
-    const amount = item.barcodes[code]
-    selectItemByScan(item, amount)
-
-  }
-
-  // #region input
-
-    const receiveKeys = async (keys) => {
-      if (isInScanMode.value) {
-        changeModeToText()
-      }
-      if (document.getElementById('id-picker-searchbox') !== document.activeElement) {
-        searchText.value += keys
-        currentMode.value = 'TEXT'
-        await nextTick()
-        document.getElementById('id-picker-searchbox')?.focus()
-      }
-    }
-    const receiveBackspace = async () => {
-      if (isInScanMode.value) {
-        return
-      }
-      if (document.getElementById('id-picker-searchbox') !== document.activeElement) {
-        await nextTick()
-        document.getElementById('id-picker-searchbox')?.focus()
-      }
-    }
-
-    const handleEscape = () => {
-      if (isInTextMode.value) {
-        changeModeToScan()
-        return false
-      }
-      return true
-    }
-
-  // #endregion
-
-  // #region results
-
-    const cssResultPane = computed(() => `height:calc(100% - 0.5rem - ${resultPosIndent.value}); top: ${resultPosIndent.value}; width: ${resultPosWidth.value};`)
-
-    const getExplodedTags = (tags) => {
-      if (!tags) { return [] }
-      const trimmedInput = tags.trim().replace(/^,|,$/g, '')
-      const tagsArray = trimmedInput.split(',')
-      return tagsArray.map(tag => tag.trim()).filter(tag => tag !== '')
-    }
-
-    const getQuantityColor = (item) => {
-      if (item.demanded_quantity <= item.min_stock) { return 'error' }
-      else if (item.demanded_quantity <= (item.min_stock + item.max_stock/2)) { return 'warning' }
-      else { return 'success' }
-    }
-
-    const getExpiryColor = (item) => {
-      const daysDiff = Math.round(
-        (new Date(item.current_expiry).getTime() - new Date().getTime()) /
-        (1000 * 60 * 60 * 24))
-      if (daysDiff > 21) { return 'success' }
-      else if (daysDiff > 14) { return 'warning' }
-      else { return 'error' }
-    }
-
-    const getExpiryText = (item) => {
-      if (!item.current_expiry) { return "n/v" }
-      return new Date(item.current_expiry).toLocaleDateString(undefined, { year: 'numeric', month: 'short' }).replace(' ', '-').replace('.', '');
-    }
-
-  // #endregion
-
-// #endregion
-
-// #region mount/unmount
+// #region Lifecycle
 
   onMounted(() => {
 
@@ -358,16 +110,274 @@
   })
 
 // #endregion
-// #region expose
 
-  defineExpose({ handleEscape })
+// #region ItemMode
+
+  // Props
+  const currentMode = ref(props.allowScan ? 'SCAN' : 'TEXT')
+
+  // TemplateProps
+  const inScanMode = computed(() => currentMode.value === 'SCAN')
+  const inTextMode = computed(() => currentMode.value === 'TEXT')
+
+  // Methods
+  const changeModeToScan = () => {
+    if (!props.allowScan) { return }
+    searchText.value = ''
+    currentMode.value = 'SCAN'
+  }
+  const changeModeToText = async (text = '') => {
+    searchText.value = text
+    currentMode.value = 'TEXT'
+    await nextTick()
+    document.getElementById('id-picker-searchbox')?.focus()
+  }
+
+// #endregion
+// #region ItemMode: SCAN
+
+  const findItem = (code) => {
+
+    // change to scanmode if code in textmode received
+    if (!inScanMode.value) {
+      changeModeToScan()
+    }
+
+    // emit ctrl-codes
+    if (code === 'LC-2000001000') {
+      emit('ctrlFinish')
+      return
+    }
+
+    // search item
+    const found = inventoryStore.findItemByBarcode(code)
+    if (!found) { return }
+    selectItemByScan(found.item, found.amount)
+
+  }
+
+// #endregion
+// #region ItemMode: TEXT
+
+  // Textbox-Props
+  const searchText = ref('')
+  const isTyping = ref(true)
+
+  // Debounce Textbox
+  const debouncedSearchText = ref('')
+  const updateSearchText = debounce((value) => {
+    debouncedSearchText.value = value
+    isTyping.value = false
+  }, 300)
+  watch(searchText, (newValue) => {
+    isTyping.value = true
+    updateSearchText(newValue)
+  })
+
+  // #region Search-Logic
+
+    // Map
+    const bookingsMap = computed(() => {
+      const map = new Map()
+      props.cart.forEach(booking => {
+        map.set(booking.item_id, booking)
+      })
+      return map
+    })
+
+    // Props
+    const hasTyped = computed(() => searchText.value.trim().length > 0)
+
+    // Filter-Prop
+    const filteredItems = computed(() => {
+
+      // search text
+      const lcSearchText = debouncedSearchText.value.toLowerCase()
+      if (lcSearchText.trim().length === 0) { return [] }
+
+      const results = []
+      const bookings = bookingsMap.value
+      const items = inventoryStore.searchableItems
+
+      for (const item of items) {
+
+        let relevance = 0
+
+        if (item.pp_name === lcSearchText) {
+          relevance += 50
+        }
+        else if (item.pp_name.startsWith(lcSearchText)) {
+          relevance += 30
+        }
+
+        if (item.pp_search_altnames_list?.includes(lcSearchText)) {
+          relevance += 20
+        }
+        else if (item.pp_search_altnames_list?.some(name => name.startsWith(lcSearchText))) {
+          relevance += 15
+        }
+
+        if (lcSearchText.length > 1) {
+
+          if (relevance <= 30 && item.pp_name.includes(lcSearchText)) {
+            relevance += 10
+          }
+
+          if (item.pp_search_altnames?.includes(lcSearchText)) {
+            relevance += 5
+          }
+
+          if (item.pp_search_tags_list?.some(tag => tag.startsWith(lcSearchText))) {
+            relevance += 2
+          }
+
+        }
+
+        if (relevance > 1) {
+
+          const quantityColor = props.adminMode ? getQuantityColor(item) : null
+          const expiryColor = props.adminMode ? getExpiryColor(item) : null
+          const expiryText = props.adminMode ? getExpiryText(item) : null
+
+          const bookingEntry = bookings.get(item.id) || null
+          const isOnBooking = bookingEntry !== null
+          const bookingText = isOnBooking
+            ? bookingEntry.item_amount + ' ' + item.basesize.unit
+            : null;
+
+          results.push({
+            ...item,
+            relevance,
+            hasAltNames: !!item.pp_search_altnames_list,
+            hasTags: !!item.pp_search_tags_list,
+            quantityColor,
+            expiryColor,
+            expiryText,
+            isOnBooking,
+            bookingText,
+          })
+
+        }
+
+      }
+
+      // sort if necessary
+      if (results.length > 1) {
+        results.sort((a, b) => b.relevance - a.relevance)
+      }
+
+      // slice over 3
+      if (results.length > 3) {
+        const firstScore = results[0].relevance
+        let cutAfter = 4
+        while ((results.length > cutAfter) && (cutAfter < 10) && results[cutAfter - 1].relevance === firstScore) {
+          cutAfter += 1
+        }
+        results.splice(cutAfter-1)
+      }
+
+      return results
+
+    })
+
+    // TemplateProps
+    const hasAnyResults = computed(() => filteredItems.value.length > 0)
+    const hasExactlyOneResult = computed(() => filteredItems.value.length === 1)
+
+    // Methods
+    const getFirstResult = () => (filteredItems.value[0] ?? null)
+    const selectFirstResult = () => {
+      if (hasExactlyOneResult.value) {
+        // select only found item
+        selectItemBySearch(getFirstResult())
+      }
+      if (searchText.value.startsWith('LC-')) {
+        // scanned something while in text-mode
+        searchText.value = ''
+      }
+    }
+
+  // #endregion
+  // #region Keyboard-Input
+
+    const receiveKeys = async (keys) => {
+
+      // change to textmode if in scanmode
+      if (inScanMode.value) { changeModeToText() }
+
+      // focus searchbox if it is not active element
+      if (document.getElementById('id-picker-searchbox') !== document.activeElement) {
+        searchText.value += keys
+        currentMode.value = 'TEXT'
+        await nextTick()
+        document.getElementById('id-picker-searchbox')?.focus()
+      }
+
+    }
+    const receiveBackspace = async () => {
+
+      if (inScanMode.value) { return }
+      if (document.getElementById('id-picker-searchbox') !== document.activeElement) {
+        await nextTick()
+        document.getElementById('id-picker-searchbox')?.focus()
+      }
+
+    }
+
+    const handleEscape = () => {
+
+      if (inTextMode.value) {
+        changeModeToScan()
+        return false
+      }
+      return true
+
+    }
+
+  // #endregion
+
+  // #region ItemProps-Getter (for pickerresult)
+
+    const getQuantityColor = (item) => {
+      if (item.demanded_quantity <= item.min_stock) {
+        return 'error'
+      }
+      else if (item.demanded_quantity <= (item.min_stock + item.max_stock/2)) {
+        return 'warning'
+      }
+      else {
+        return 'success'
+      }
+    }
+
+    const getExpiryColor = (item) => {
+      const daysDiff = Math.round(
+        (new Date(item.current_expiry).getTime() - new Date().getTime()) /
+        (1000 * 60 * 60 * 24))
+      if (daysDiff > 21) {
+        return 'success'
+      }
+      else if (daysDiff > 14) {
+        return 'warning'
+      }
+      else {
+        return 'error'
+      }
+    }
+
+    const getExpiryText = (item) => {
+      if (!item.current_expiry) { return "n/v" }
+      return new Date(item.current_expiry).toLocaleDateString(undefined, { year: 'numeric', month: 'short' }).replace(' ', '-').replace('.', '');
+    }
+
+  // #endregion
 
 // #endregion
 
 </script>
 <template>
 
-    <div class="lc-picker" v-if="isInScanMode">
+    <div class="lc-picker" v-if="inScanMode">
 
       <div class="lc-picker--scanner">
         <LcScanIndicator
@@ -390,7 +400,7 @@
       </LcButton>
 
     </div>
-    <div class="lc-picker" v-else-if="isInTextMode">
+    <div class="lc-picker" v-else-if="inTextMode">
 
       <LcButton v-if="allowScan"
         class="lc-picker--btn" icon="mdi-arrow-left"
@@ -400,15 +410,15 @@
       <div class="lc-picker--search" :class="{ 'lc-picker--search-noscan': !allowScan }">
         <v-text-field label="Suche nach Material ..." variant="outlined" hide-details
           id="id-picker-searchbox" v-model="searchText" :rounded="0"
-          @keyup.enter="selectItem"></v-text-field>
+          @keyup.enter="selectFirstResult"></v-text-field>
       </div>
 
     </div>
-    <div class="lc-pickerresult" v-if="hasAnyItems && isSearching" :style="cssResultPane">
+    <div class="lc-pickerresult" v-if="hasAnyItems && hasTyped" :style="pickerresultCSS">
 
-      <v-empty-state v-show="!hasAnyResults && !searchTyping"
-        :title="searchTyping ? 'Suchen ...' : 'Kein Material gefunden'"
-        :text="searchTyping ? '' : 'Versuche einen anderen Suchbegriff'"
+      <v-empty-state v-show="!hasAnyResults && !isTyping"
+        :title="isTyping ? 'Suchen ...' : 'Kein Material gefunden'"
+        :text="isTyping ? '' : 'Versuche einen anderen Suchbegriff'"
       ></v-empty-state>
 
       <template v-if="adminMode">
@@ -481,13 +491,13 @@
 
       </template>
 
-      <template v-if="hasOneResult">
+      <template v-if="hasExactlyOneResult">
         <div class="lc-pickerresult--hint-enter" >
           Drücke <kbd sym>&crarr;</kbd> um <b>&nbsp;{{ getFirstResult().name }}&nbsp;</b> auszuwählen.
         </div>
       </template>
 
-      <div class="lc-pickerresult--overlay" v-if="searchTyping">
+      <div class="lc-pickerresult--overlay" v-if="isTyping">
         <div class="lc-pickerresult--overlay-text">Suche ...</div>
       </div>
 

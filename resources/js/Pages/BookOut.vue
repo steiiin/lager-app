@@ -271,8 +271,8 @@
     <div class="app-BookOut--page app-BookOut--inputpane" v-if="hasUsage">
 
       <LcItemInput ref="itemInput"
-        :booking="bookingsForm.entries"
-        :result-pos="{ w: 850, i: 19 }"
+        :cart="bookingsForm.entries"
+        :result-specs="{ w: 850, i: 19 }"
         :disabled="amountCalc?.isVisible || bookingsForm.processing"
         @select-item="selectItem"
         @ctrl-finish="sendBooking">

@@ -22,7 +22,16 @@ export const useInventoryStore = defineStore('inventory', {
         pp_search_tags_list: item.search_tags?.toLowerCase().trim().replace(/^,|,$/g, '').split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
       }))
     },
-
+    findItemByBarcode: (state) => {
+      return (barcode) => {
+        const foundItem = state.items.find((item) => item.barcodes.hasOwnProperty(barcode)) ?? null
+        if (!foundItem) { return foundItem }
+        return {
+          item: foundItem,
+          amount: foundItem.barcodes[barcode]
+        }
+      }
+    }
   },
   actions: {
 
@@ -31,19 +40,19 @@ export const useInventoryStore = defineStore('inventory', {
         return;
       }
       this.loading = true;
-      try 
+      try
       {
         const response = await axios.get('/api/store');
         this.items = response.data.items
         this.usages = response.data.usages
         this.isLoaded = true
-      } 
-      catch (err) 
+      }
+      catch (err)
       {
         this.error = err;
         console.error('Failed to fetch items:', err);
-      } 
-      finally 
+      }
+      finally
       {
         this.loading = false;
       }

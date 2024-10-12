@@ -491,7 +491,7 @@
       <template v-if="!isItemSelected">
 
         <LcItemInput 
-          :result-pos="{ w: 850, i: 14.5 }"
+          :result-specs="{ w: 850, i: 14.5 }"
           :admin-mode="true" 
           @create-new="createNew" @select-item="editItem">
         </LcItemInput>

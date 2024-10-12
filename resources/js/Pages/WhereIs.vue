@@ -69,12 +69,12 @@
   <div class="app-WhereIs">
 
     <LcPagebar title="Wo ist ... ?" @back="openWelcome"></LcPagebar>
-    
+
     <div class="app-WhereIs--page">
 
-      <LcItemInput 
-        :result-pos="{ w: 850, i: 11 }"
-        :allowScan="false" 
+      <LcItemInput
+        :result-specs="{ w: 850, i: 11 }"
+        :allow-scan="false"
         @select-item="selectItem">
       </LcItemInput>
 
@@ -89,7 +89,7 @@
             {{ selectedItem.location.room }}
           </div>
           <div class="app-WhereIs--selected-cab mt-2" v-if="!!selectedItem.location.cab">
-            <v-icon icon="mdi-fridge"></v-icon> 
+            <v-icon icon="mdi-fridge"></v-icon>
             {{ selectedItem.location.cab }}
           </div>
           <div class="app-WhereIs--selected-exact mt-2" v-if="!!selectedItem.location.exact">
