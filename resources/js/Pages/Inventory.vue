@@ -458,7 +458,7 @@
   onMounted(() => {
     InputService.registerEsc(handleEsc)
     InputService.registerEnter(handleEnter)
-    inventoryStore.fetchStore()
+    inventoryStore.fetchStore(true)
   })
   onUnmounted(() => {
     InputService.unregisterEsc(handleEsc)
@@ -692,7 +692,7 @@
                       controlVariant="split"
                       :hideInput="false"
                       :inset="false" hide-details
-                      :min="0"
+                      :min="-999"
                       :max="999"
                     ></v-number-input>
                   </v-col>
