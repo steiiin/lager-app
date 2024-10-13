@@ -15,7 +15,6 @@
 
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
-  import LcConfirm from '@/Dialogs/LcConfirm.vue'
 
 // #endregion
 // #region Props
