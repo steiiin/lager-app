@@ -269,7 +269,7 @@
   <Head title="Verbrauch" />
   <IdleCursor />
 
-  <div class="app-bookout">
+  <div class="page-bookout">
 
     <LcPagebar title="Verbrauch" :disabled="bookoutForm.processing" @back="openWelcome"></LcPagebar>
 
@@ -280,10 +280,10 @@
         @select-usage="selectUsage">
       </LcUsageInput>
 
-      <div v-else class="app-bookout__usage">
+      <div v-else class="page-bookout__usage">
 
         <LcButton v-if="!bookoutForm.processing && !hasItemsInCart"
-          class="app-bookout__usage-clear" prepend-icon="mdi-close"
+          class="page-bookout__usage-clear" prepend-icon="mdi-close"
           @click="clearUsage">
         </LcButton>
 
@@ -310,10 +310,10 @@
     </section>
 
     <!-- Cart -->
-    <section class="app-bookout__cart" v-if="hasUsage && hasItemsInCart">
+    <section class="page-bookout__cart" v-if="hasUsage && hasItemsInCart">
 
       <LcButton
-        class="app-bookout__finish" :loading="bookoutForm.processing"
+        class="page-bookout__finish" :loading="bookoutForm.processing"
         type="primary" prepend-icon="mdi-invoice-check"
         @click="finishBookOut">{{ bookoutForm.processing ? 'Entnahme buchen ...' : 'Fertig mit der Entnahme' }}
       </LcButton>
@@ -321,9 +321,9 @@
       <v-data-table v-if="!bookoutForm.processing"
         :items="preparedCart" :headers="tableHeader" :sort-by="tableSortBy"
         density="compact" :items-per-page="999"
-        hide-default-footer class="app-bookout__cart-table">
+        hide-default-footer class="page-bookout__cart-table">
         <template v-slot:item.action="{ item }">
-          <v-btn variant="flat" class="app-bookout__cart-table--reduce"
+          <v-btn variant="flat" class="page-bookout__cart-table--reduce"
             @click="reduceItem(item)">
             <v-icon icon="mdi-delete"></v-icon>
           </v-btn>
@@ -348,7 +348,7 @@
 
 </template>
 <style lang="scss" scoped>
-.app-bookout {
+.page-bookout {
 
   height: 100%;
 
