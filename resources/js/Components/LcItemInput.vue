@@ -120,8 +120,8 @@
 
     // Methods
     const changeModeToScan = () => {
-      if (!props.allowScan) { return }
       searchText.value = ''
+      if (!props.allowScan) { return }
       currentMode.value = 'SCAN'
     }
     const changeModeToText = async (text = '') => {

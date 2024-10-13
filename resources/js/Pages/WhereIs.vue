@@ -1,6 +1,13 @@
 <script setup>
 
-// #region imports
+/**
+ * WhereIs - Page component
+ *
+ * This page enables the user to search locations of items.
+ *
+ */
+
+// #region Imports
 
   // Vue composables
   import { ref, computed, onMounted, onUnmounted } from 'vue'
@@ -8,38 +15,37 @@
 
   // Local composables
   import { useInventoryStore } from '@/Services/StoreService'
+  import InputService from '@/Services/InputService'
 
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
   import LcItemInput from '@/Components/LcItemInput.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
   import IdleCursor from '@/Components/IdleCursor.vue'
-  import InputService from '@/Services/InputService'
 
 // #endregion
-
-// #region props
+// #region Props
 
   const inventoryStore = useInventoryStore()
 
 // #endregion
+// #region Navigation
 
-// #region navigation
-
+  // Router-Events
   const isRouting = ref(false)
   router.on('start', () => isRouting.value = true)
   router.on('finish', () => isRouting.value = false)
 
+  // Routes
   function openWelcome() {
     router.get('/')
   }
 
 // #endregion
 
-// #region item-selection
+// #region Search-Logic
 
   const selectedItem = ref(null)
-  const isItemSelected = computed(() => !!selectedItem.value)
 
   const selectItem = (item) => {
     selectedItem.value = item
@@ -47,7 +53,7 @@
 
 // #endregion
 
-// #region touchmode
+// #region Lifecycle
 
   onMounted(() => {
     InputService.registerEsc(openWelcome)
@@ -66,11 +72,11 @@
   <Head title="Wo ist?" />
   <IdleCursor />
 
-  <div class="app-WhereIs">
+  <div class="page-whereis">
 
     <LcPagebar title="Wo ist ... ?" @back="openWelcome"></LcPagebar>
 
-    <div class="app-WhereIs--page">
+    <section>
 
       <LcItemInput
         :result-specs="{ w: 850, i: 11 }"
@@ -78,66 +84,70 @@
         @select-item="selectItem">
       </LcItemInput>
 
-      <v-card class="app-WhereIs--selected mt-2 rounded-0" variant="outlined" v-if="isItemSelected">
+      <v-card v-if="selectedItem"
+        class="page-whereis__item" variant="outlined">
         <v-card-text>
-          <div class="app-WhereIs--selected-title">
+          <div class="page-whereis__item-title">
             {{ selectedItem.name }}
           </div>
           <v-divider class="my-4"></v-divider>
-          <div class="app-WhereIs--selected-coarse">
+          <div class="page-whereis__item-coarse">
             <v-icon icon="mdi-domain"></v-icon>
             {{ selectedItem.location.room }}
           </div>
-          <div class="app-WhereIs--selected-cab mt-2" v-if="!!selectedItem.location.cab">
+          <div class="page-whereis__item-cab" v-if="selectedItem.location.cab">
             <v-icon icon="mdi-fridge"></v-icon>
             {{ selectedItem.location.cab }}
           </div>
-          <div class="app-WhereIs--selected-exact mt-2" v-if="!!selectedItem.location.exact">
+          <div class="page-whereis__item-exact" v-if="selectedItem.location.exact">
             <v-icon icon="mdi-archive-marker-outline"></v-icon>
             {{ selectedItem.location.exact }}
           </div>
         </v-card-text>
       </v-card>
 
-    </div>
+    </section>
+
   </div>
 
   <LcRouteOverlay v-show="isRouting" />
 
 </template>
 <style lang="scss" scoped>
-.app-WhereIs {
-  &--page {
+.page-whereis {
+
+  & section {
     max-width: 850px;
     margin: 0.5rem auto;
   }
 
-  &--selected-title {
+  &__item {
+    margin-top: 4px;
+    border-radius: 0;
+  }
+
+  &__item-title {
     font-size: 2rem;
   }
 
-  &--selected-coarse,
-  &--selected-cab,
-  &--selected-exact {
+  &__item-coarse,
+  &__item-cab,
+  &__item-exact {
     display: flex;
     gap: 0.5rem;
-  }
-
-  &--selected-coarse {
     font-size: 1.4rem;
   }
 
-  &--selected-cab,
-  &--selected-exact {
+  &__item-cab,
+  &__item-exact {
+    margin-top: 4px;
+    margin-left: 1rem;
     font-size: 1.2rem;
   }
 
-  &--selected-cab {
-    margin-left: 1rem;
-  }
-
-  &--selected-exact {
+  &__item-exact {
     margin-left: 2rem;
   }
+
 }
 </style>
