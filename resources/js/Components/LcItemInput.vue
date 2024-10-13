@@ -577,6 +577,7 @@
     width: 850px;
     height: 100%;
     margin-top: .5rem;
+    padding: .5rem 0 0 0;
 
     background: var(--main-light);
 

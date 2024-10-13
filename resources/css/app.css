@@ -42,6 +42,11 @@
 
 }
 
+#app section {
+  max-width: 850px;
+  margin: 0.5rem auto;
+}
+
 /* hides the cursor and disable hover styles, if set in document body */
 .cursor-off {
 

@@ -116,11 +116,6 @@
 <style lang="scss" scoped>
 .page-whereis {
 
-  & section {
-    max-width: 850px;
-    margin: 0.5rem auto;
-  }
-
   &__item {
     margin-top: .5rem;
     border-radius: 0;

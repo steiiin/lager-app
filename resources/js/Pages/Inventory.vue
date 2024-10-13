@@ -797,11 +797,6 @@
 <style lang="scss" scoped>
 .page-inventory {
 
-  & section {
-    max-width: 850px;
-    margin: .5rem auto;
-  }
-
   &__table--result-centered,
   &__table--result {
     display: flex;

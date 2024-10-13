@@ -229,11 +229,6 @@
 <style lang="scss" scoped>
 .page-bookin {
 
-  & section {
-    max-width: 850px;
-    margin: 0.5rem auto;
-  }
-
   &__empty {
     position: absolute;
     height: calc(100% - 6rem);

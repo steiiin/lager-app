@@ -204,13 +204,3 @@
   </v-dialog>
 
 </template>
-<style lang="scss" scoped>
-.page-configusages {
-
-  & section {
-    max-width: 850px;
-    margin: .5rem auto;
-  }
-
-}
-</style>

@@ -8,7 +8,6 @@
  * Props:
  *  - title (String): The page title.
  *  - disabled (Boolean): Disables the back-button.
- *  - width (Number): The width of the indented page content in pixels.
  *
  * Emits:
  *  - back: Emitted when the user clicks the back-button.
@@ -26,10 +25,6 @@
       type: Boolean,
       default: false,
     },
-    width: {
-      type: Number,
-      default: 850,
-    },
   })
 
 // #endregion
@@ -44,7 +39,7 @@
 <template>
 
     <div class="lc-pagebar">
-      <div class="lc-pagebar__content" :style="'max-width:'+width+'px'">
+      <section class="lc-pagebar__content">
         <button class="lc-pagebar__content--backbutton" @click="emit('back')" v-if="!disabled">
           <div class="lc-pagebar__content--backbutton-icon">
             <v-icon icon="mdi-arrow-left"></v-icon>
@@ -57,7 +52,7 @@
         <div class="lc-pagebar__content--actions">
           <slot name="actions" />
         </div>
-      </div>
+      </section>
     </div>
 
 </template>

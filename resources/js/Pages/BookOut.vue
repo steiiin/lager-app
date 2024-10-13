@@ -352,11 +352,6 @@
 
   height: 100%;
 
-  & section {
-    max-width: 850px;
-    margin: 0.5rem auto;
-  }
-
   &__usage {
     height: 4rem;
     background: var(--accent-primary-background);
