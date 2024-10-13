@@ -7,7 +7,7 @@
   import { Head, router, useForm } from '@inertiajs/vue3'
 
   // Local composables
-  import { findOptimalSize } from '@/Composables/CalcSizes'
+  import { findOptimalSize } from '@/Utils/sizeUtils'
 
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
@@ -121,11 +121,11 @@
     }
     const finishOrders = () => {
 
-      ordersForm.orders = props.openOrders.map(oo => { 
-        return { 
-          id: oo.id, 
-          amount_delivered: oo.changed ? oo.amount_delivered : oo.amount_desired 
-        }   
+      ordersForm.orders = props.openOrders.map(oo => {
+        return {
+          id: oo.id,
+          amount_delivered: oo.changed ? oo.amount_delivered : oo.amount_desired
+        }
       })
       ordersForm.post('/bookin', ordersFormOptions)
 
@@ -158,7 +158,7 @@
     <LcPagebar title="Lieferung" :disabled="ordersForm.processing" @back="openWelcome"></LcPagebar>
 
     <div class="app-BookIn--emptypage" v-if="!hasAnyOpenOrders">
-      <v-empty-state 
+      <v-empty-state
         icon="mdi-invoice-remove-outline"
         title="Keine Bestellung auf dem Weg">
         <template #text>
@@ -180,7 +180,7 @@
 
         <v-timeline class="ml-4"
           side="end">
-      
+
           <v-timeline-item
             v-for="(orders, date) in groupedOpenOrders"
             class="my-4">
@@ -191,7 +191,7 @@
               <v-card-text>
                 <v-row
                   v-for="order in orders" :key="order.id"
-                  class="app-BookIn--adapt-row" 
+                  class="app-BookIn--adapt-row"
                   justify="space-between" align="center" dense>
                   <!-- Item Name -->
                   <v-col cols="5">
@@ -215,7 +215,7 @@
           </v-timeline-item>
 
         </v-timeline>
-        
+
       </div>
 
     </div>
