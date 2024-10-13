@@ -68,6 +68,7 @@
     flex-direction: row;
     outline: .5rem solid var(--main-light);
     height: 6rem;
+    padding: 0;
 
     &--backbutton {
 

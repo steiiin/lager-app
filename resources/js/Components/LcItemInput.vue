@@ -451,6 +451,7 @@
 
   </section>
   <section class="lc-picker__result" v-if="hasAnyItems && hasTyped" :style="pickerResultCSS">
+    <div class="lc-picker__result--fade-top"></div>
 
     <v-empty-state v-show="!hasAnyResults && !isTyping"
       :title="isTyping ? '' : 'Kein Material gefunden'"
@@ -645,6 +646,15 @@
         color: var(--accent-secondary-foreground);
         padding: .5rem 1.5rem;
       }
+    }
+
+    &--fade-top {
+      position: fixed;
+      height: .5rem;
+      width: 100%;
+      margin-top: -0.5rem;
+      z-index: 10;
+      background: linear-gradient(to top, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 75%);
     }
 
   }
