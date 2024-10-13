@@ -1,6 +1,13 @@
 <script setup>
 
-// #region imports
+/**
+ * ConfigUsages - Page component
+ *
+ * This page enables the user to config the app-wide usages.
+ *
+ */
+
+// #region Imports
 
   // Vue composables
   import { ref, computed, nextTick } from 'vue'
@@ -11,8 +18,7 @@
   import LcConfirm from '@/Dialogs/LcConfirm.vue'
 
 // #endregion
-
-// #region props
+// #region Props
 
   defineProps({
     usages: {
@@ -22,22 +28,23 @@
   })
 
 // #endregion
+// #region Navigation
 
-// #region navigation
-
+  // Router-Events
   const isRouting = ref(false)
   router.on('start', () => isRouting.value = true)
   router.on('finish', () => isRouting.value = false)
 
+  // Routes
   function openInventory() {
     router.get('/inventory')
   }
 
 // #endregion
 
-// #region usages
+// #region Usages-Logic
 
-  // #region form-data
+  // #region EditForm
 
     const editForm = useForm({
       id: null,
@@ -48,32 +55,32 @@
       preserveScroll: true,
       onSuccess: () => {
         router.reload({ only: ['usages'] })
-        isEditDialogVisible.value = false
+        editDialogVisible.value = false
       },
     }
 
+    const isNewUsage = computed(() => editForm.id === null)
+
   // #endregion
+  // #region EditDialog
 
-  // #region edit-dialog
-
-    // props
-    const isEditDialogVisible = ref(false)
+    // DialogProps
+    const editDialogVisible = ref(false)
     const editDialogTitle = computed(() => {
       return !editForm.id
         ? 'Neue Verwendung erstellen'
         : `${editForm.name} bearbeiten`
     })
-    const isValidEdit = computed(() => {
-      return editForm.name.trim().length > 0
-    })
 
-    // open-dialog
+    const isValidEdit = computed(() => editForm.name.trim().length > 0)
+
+    // OpenMethods
     const openNewUsageDialog = async () => {
       editForm.reset()
       editForm.id = null
       editForm.name = ''
       editForm.is_locked = false
-      isEditDialogVisible.value = true
+      editDialogVisible.value = true
       await nextTick()
       document.getElementById('id-editusage-name')?.focus()
     }
@@ -82,9 +89,10 @@
       editForm.id = item.id
       editForm.name = item.name
       editForm.is_locked = item.is_locked ? true : false
-      isEditDialogVisible.value = true
+      editDialogVisible.value = true
     }
 
+    // ActionMethods
     const saveEdit = () => {
       if (!isValidEdit) { return }
       if (editForm.id === null) {
@@ -94,12 +102,11 @@
       }
     }
     const cancelEdit = () => {
-      isEditDialogVisible.value = false
+      editDialogVisible.value = false
     }
     const deleteUsage = () => {
 
-      // TODO: create real confirm
-      if (confirm('really delete this?')) {
+      if (confirm('Do you really want to delete this?')) {
         editForm.delete(`/config-usages/${editForm.id}`, editFormOptions)
       }
 
@@ -107,7 +114,7 @@
 
   // #endregion
 
-  // #region data-table
+  // #region UsageTable
 
     const tableheaders = ref([
       { title: 'Name', key: 'name', minWidth: '60%' },
@@ -125,11 +132,11 @@
 
   <Head title="Verwendungen" />
 
-  <div class="app-ConfigUsages">
-    
+  <div class="page-configusages">
+
     <LcPagebar title="Verwendungen" @back="openInventory" />
 
-    <div class="app-ConfigUsages--page">
+    <section>
 
       <v-toolbar>
         <v-spacer></v-spacer>
@@ -140,7 +147,7 @@
         </v-toolbar-items>
       </v-toolbar>
 
-      <v-data-table 
+      <v-data-table
         :items="usages" :headers="tableheaders"
         hide-default-footer :items-per-page="100">
         <template v-slot:item.is_locked="{ item }">
@@ -153,10 +160,12 @@
         </template>
       </v-data-table>
 
-    </div>
+    </section>
+
   </div>
 
-  <v-dialog v-model="isEditDialogVisible" max-width="450px">
+  <!-- EditDialog -->
+  <v-dialog v-model="editDialogVisible" max-width="450px">
     <v-card prepend-icon="mdi-truck" :title="editForm.dialogTitle" :disabled="editForm.processing" class="rounded-0">
 
       <v-divider></v-divider>
@@ -183,7 +192,7 @@
 
       <v-card-actions class="mx-4 mb-2">
         <v-btn color="error"
-          variant="tonal" v-if="editForm.id !== null"
+          variant="tonal" v-if="!isNewUsage"
           @click="deleteUsage">Löschen</v-btn>
         <v-spacer></v-spacer>
         <v-btn @click="cancelEdit">Abbrechen</v-btn>
@@ -195,13 +204,11 @@
     </v-card>
   </v-dialog>
 
-  <LcConfirm ref="confirm" :z="1" />
-  
 </template>
 <style lang="scss" scoped>
-.app-ConfigUsages {
+.page-configusages {
 
-  &--page {
+  & section {
     max-width: 850px;
     margin: .5rem auto;
   }
