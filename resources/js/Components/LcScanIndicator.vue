@@ -1,6 +1,22 @@
 <script setup>
 
-// #region props/emits
+/**
+ * LcScanIndicator - Component
+ *
+ * An indicator to show the user the scanner is active.
+ *
+ * Props:
+ *  - active (Boolean): If the indicator is running or shown as inactive.
+ *
+ */
+
+// #region Imports
+
+  // Vue composables
+  import { computed } from 'vue'
+
+// #endregion
+// #region Props
 
   const props = defineProps({
     active: {
@@ -9,14 +25,19 @@
     },
   })
 
+  // #region TemplateProps
+
+    const indeterminateState = computed(() => props.active ? 'disable-shrink' : false)
+
+  // #endregion
+
 // #endregion
 
 </script>
 <template>
   <div class="lc-scanindicator">
-    <v-icon v-if="active" icon="mdi-barcode-scan" size="36"></v-icon>
-    <v-progress-circular v-if="active" size="72" indeterminate="disable-shrink"></v-progress-circular>
-    <v-progress-circular v-else size="72"></v-progress-circular>
+    <v-icon v-show="active" icon="mdi-barcode-scan" size="36"></v-icon>
+    <v-progress-circular size="72" :indeterminate="indeterminateState"></v-progress-circular>
   </div>
 </template>
 <style lang="scss" scoped>
