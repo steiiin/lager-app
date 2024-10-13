@@ -1,19 +1,26 @@
 <script setup>
 
-// #region imports
+/**
+ * LcUnlockDialog - Dialog component
+ *
+ * A dialog for unlocking the app.
+ *
+ */
+
+// #region Imports
 
   // Vue composables
-  import { computed, ref, nextTick, watch } from 'vue'
-  import { router, usePage } from '@inertiajs/vue3'
+  import { computed, ref, nextTick } from 'vue'
+  import { router } from '@inertiajs/vue3'
 
 // #endregion
 
-// #region dialog
+// #region Dialog-Logic
 
-  // props
+  // DialogProps
   const isVisible = ref(false)
 
-  // methods
+  // DialogMethods
   const open = async () => {
     isUnlockFailed.value = false
     isUnlocking.value = false
@@ -27,18 +34,10 @@
   }
 
 // #endregion
+// #region Unlock-Logic
 
-// #region unlock-logic
-
-  // props: password
   const password = ref('')
-  const isValidPassword = computed(() => password.value.trim().length > 0)
 
-  // props: state
-  const isUnlockFailed = ref(false)
-  const isUnlocking = ref(false)
-
-  // methods
   const doUnlock = () => {
     if (!isValidPassword) { return }
 
@@ -64,9 +63,18 @@
 
   }
 
+  // #region TemplateProps
+
+    const isValidPassword = computed(() => password.value.trim().length > 0)
+
+    const isUnlockFailed = ref(false)
+    const isUnlocking = ref(false)
+
+  // #endregion
+
 // #endregion
 
-// #region expose
+// #region Expose
 
   defineExpose({ open })
 
@@ -81,12 +89,11 @@
       <v-card-text>
         <p class="mb-4">Bitte gib das Passwort ein, um die Lagerverwaltung zu entsperren.</p>
 
-        <v-text-field
-          v-model="password" id="lc-unlockdialog-passwordbox"
+        <v-text-field v-model="password" id="lc-unlockdialog-passwordbox"
           label="Passwort" :disabled="isUnlocking"
           type="password" variant="solo"
-          prepend-icon="mdi-lock"
-          hide-details="auto" @keydown.enter="doUnlock">
+          prepend-icon="mdi-lock" hide-details="auto"
+          @keydown.enter="doUnlock">
         </v-text-field>
 
         <v-alert class="mt-4" v-if="isUnlockFailed"
@@ -100,11 +107,10 @@
           @click="cancel">Abbrechen
         </v-btn>
         <v-btn :loading="isUnlocking" :disabled="!isValidPassword"
-          color="primary" variant="tonal" 
+          color="primary" variant="tonal"
           @click="doUnlock">OK
         </v-btn>
       </v-card-actions>
-
     </v-card>
   </v-dialog>
 </template>

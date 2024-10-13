@@ -1,25 +1,32 @@
 <script setup>
 
-// #region imports
+/**
+ * LcLockDialog - Dialog component
+ *
+ * A dialog that is opened while locking the app.
+ *
+ */
+
+// #region Imports
 
   // Vue composables
-  import { ref, computed, watch } from 'vue'
+  import { ref } from 'vue'
   import { router } from '@inertiajs/vue3'
 
 // #endregion
 
-// #region dialog
+// #region Lock-Logic
 
-  // props
+  // DialogProps
   const isVisible = ref(false)
 
-  // methods
+  // DialogMethod
   const open = () => {
 
     isVisible.value = true
     router.post('/', { action: 'LOCK' }, {
 
-      onFinish: visit => {
+      onFinish: () => {
         isVisible.value = false
       },
 
@@ -29,7 +36,7 @@
 
 // #endregion
 
-// #region expose
+// #region Expose
 
   defineExpose({ open })
 
