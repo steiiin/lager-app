@@ -1,27 +1,36 @@
 <script setup>
 
-// #region imports
+/**
+ * LcUsageInput - Component
+ *
+ * An picker componant for scanning/selecting usages.
+ *
+ * Props:
+ *  - isUnlocked (Boolean): If admin-usages are shown.
+ *
+ * Emits:
+ *  - selectUsage: Is emitted when the user selects/scans an usage.
+ *
+ */
+
+// #region Imports
 
   // Vue composables
   import { computed, onMounted, onUnmounted } from 'vue'
 
   // Local composables
+  import InputService from '@/Services/InputService'
   import { useInventoryStore } from '@/Services/StoreService'
 
   // Local components
   import LcButton from '@/Components/LcButton.vue'
   import LcScanIndicator from '@/Components/LcScanIndicator.vue'
-  import InputService from '@/Services/InputService'
 
 // #endregion
-
-// #region props/emits
+// #region Props
 
   const inventoryStore = useInventoryStore()
 
-  const emit = defineEmits([
-    'selectUsage',
-  ])
   const props = defineProps({
     isUnlocked: {
       type: Boolean,
@@ -29,14 +38,23 @@
     },
   })
 
+  // #region TemplateProps
+
+    const hasAnyUsages = computed(() => inventoryStore.usages.length > 0)
+
+  // #endregion
+
+// #endregion
+// #regin Emits
+
+  const emit = defineEmits([
+    'selectUsage',
+  ])
+
 // #endregion
 
-// #region selection
+// #region Picker-Logic
 
-  // computed
-  const hasAnyUsages = computed(() => inventoryStore.usages.length > 0)
-
-  // methods
   const selectUsage = (usage) => {
     emit('selectUsage', usage)
   }
@@ -47,7 +65,7 @@
 
 // #endregion
 
-// #region mount/unmount
+// #region Lifecycle
 
   onMounted(() => {
     InputService.registerScan(findUsage)
@@ -64,27 +82,27 @@
 
     <div class="lc-picker">
 
-      <div class="lc-picker--scanner">
-        <LcScanIndicator 
+      <div class="lc-picker__scanner">
+        <LcScanIndicator
           :active="hasAnyUsages">
         </LcScanIndicator>
       </div>
-      <div class="lc-picker--description">
-        <div class="lc-picker--description_title">
-          {{ 
+      <div class="lc-picker__description">
+        <div class="lc-picker__description-title">
+          {{
             hasAnyUsages
             ? 'Scanne oder wähle ein Fahrzeug ...'
-            : 'Keine Verwendungen angelegt'  
+            : 'Keine Verwendungen angelegt'
           }}
         </div>
       </div>
 
     </div>
-    <div class="lc-pickerresult" v-if="hasAnyUsages">
+    <div class="lc-picker__result" v-if="hasAnyUsages">
 
       <template v-for="usage in inventoryStore.usages">
         <LcButton v-if="!usage.is_locked || isUnlocked"
-          class="lc-pickerresult-usage" 
+          class="lc-picker__result-usage"
           @click="selectUsage(usage)">{{ usage.name }}
         </LcButton>
       </template>
@@ -98,19 +116,18 @@
   display: flex;
   gap: .5rem;
 
-  &--scanner,
-  &--btn {
+  &__scanner {
     display: flex;
     justify-content: center;
     align-items: center;
     width: 6rem;
     height: 6rem;
   }
-  &--scanner {
+  &__scanner {
     background: var(--accent-secondary-background);
   }
 
-  &--description {
+  &__description {
     flex: 1;
     border: .5rem solid var(--accent-secondary-background);
     background: var(--accent-secondary-background);
@@ -122,28 +139,29 @@
     & > * {
       opacity: .3;
     }
-    &_title {
+    &-title {
       font-weight: bold;
       font-size: 1.3rem;
     }
   }
 
-}
-.lc-pickerresult {
+  &__result {
 
-  margin-top: .5rem;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: .5rem;
-  justify-content: space-between;
+    margin-top: .5rem;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: .5rem;
+    justify-content: space-between;
 
-  &-usage {
+    &-usage {
 
-    height: 4rem;
-    min-width: 6rem;
-    flex: 1;
-    
+      height: 4rem;
+      min-width: 6rem;
+      flex: 1;
+
+    }
+
   }
 
 }
