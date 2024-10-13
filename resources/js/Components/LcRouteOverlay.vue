@@ -1,3 +1,9 @@
+<!--
+ * LcRouteOverlay - Component
+ *
+ * Only a simple semi-transparent overlay which is visible while navigating to the next route.
+ *
+ */-->
 <template>
   <div class="lc-routeoverlay">
     &nbsp;
