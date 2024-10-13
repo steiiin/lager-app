@@ -14,7 +14,7 @@
   import LcItemInput from '@/Components/LcItemInput.vue'
   import LcUsageInput from '@/Components/LcUsageInput.vue'
   import LcButton from '@/Components/LcButton.vue'
-  import LcCalcAmountDialog from '@/Dialogs/LcCalcAmountDialog.vue'
+  import LcBookManuallyDialog from '@/Dialogs/LcBookManuallyDialog.vue'
   import LcConfirm from '@/Dialogs/LcConfirm.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
   import IdleCursor from '@/Components/IdleCursor.vue'
@@ -302,7 +302,7 @@
     </div>
 
     <!-- Dialogs -->
-    <LcCalcAmountDialog ref="amountCalc" />
+    <LcBookManuallyDialog ref="amountCalc" />
     <LcConfirm ref="confirmDialog" />
     <LcRouteOverlay v-show="isRouting" />
 
