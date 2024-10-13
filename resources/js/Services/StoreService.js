@@ -1,6 +1,5 @@
 // Services/ItemsStore.js
 import { defineStore } from 'pinia'
-import { router } from '@inertiajs/vue3'
 import axios from 'axios';
 
 export const useInventoryStore = defineStore('inventory', {
