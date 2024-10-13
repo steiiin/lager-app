@@ -19,7 +19,7 @@
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
   import LcItemInput from '@/Components/LcItemInput.vue'
-  import LcCalcMinMaxDialog from '@/Dialogs/LcCalcMinMaxDialog.vue'
+  import LcItemAmountDialog from '@/Dialogs/LcItemAmountDialog.vue'
 
 // #endregion
 
@@ -361,8 +361,7 @@
           title: 'Min-Bestand berechnen',
           message: 'Gib eine Packungsgröße und eine Menge ein, um einen neuen Min-Bestand zu errechnen.',
           sizes: itemForm.sizes,
-          curSize: itemForm.sizes.find(e=>e.is_default),
-          allowZero: true,
+          selectedSize: itemForm.sizes.find(e=>e.is_default),
         })
         if (newMin === null) { return }
         itemForm.min_stock = newMin
@@ -372,8 +371,7 @@
           title: 'Max-Bestand berechnen',
           message: 'Gib eine Packungsgröße und eine Menge ein, um einen neuen Max-Bestand zu errechnen.',
           sizes: itemForm.sizes,
-          curSize: itemForm.sizes.find(e=>e.is_default),
-          allowZero: true,
+          selectedSize: itemForm.sizes.find(e=>e.is_default),
         })
         if (newMax === null) { return }
         itemForm.max_stock = newMax
@@ -839,7 +837,7 @@
       </v-dialog>
 
       <!-- Dialog: AmountInput -->
-      <LcCalcMinMaxDialog ref="minmaxCalc" />
+      <LcItemAmountDialog ref="minmaxCalc" />
 
     </div>
 

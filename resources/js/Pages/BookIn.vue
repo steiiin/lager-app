@@ -12,7 +12,7 @@
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
   import LcButton from '@/Components/LcButton.vue'
-  import LcCalcMinMaxDialog from '@/Dialogs/LcCalcMinMaxDialog.vue'
+  import LcItemAmountDialog from '@/Dialogs/LcItemAmountDialog.vue'
   import LcConfirm from '@/Dialogs/LcConfirm.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
   import IdleCursor from '@/Components/IdleCursor.vue'
@@ -101,9 +101,8 @@
         title: 'Liefermenge',
         message: 'Gib die Menge an, die geliefert wurde.',
         sizes: order.item.sizes,
-        allowZero: true,
-        curSize: order.item.sizes.find(e=>e.unit === order.ooSizeUnit),
-        curAmount: order.ooSizeAmount,
+        selectedSize: order.item.sizes.find(e=>e.unit === order.ooSizeUnit),
+        selectedAmount: order.ooSizeAmount,
       })
       if (delivered === null) { return }
       const propOrder = props.openOrders.find(o => o.id === order.id)
@@ -222,7 +221,7 @@
 
     <!-- Dialogs -->
     <LcConfirm ref="confirmDialog" />
-    <LcCalcMinMaxDialog ref="minmaxCalc" />
+    <LcItemAmountDialog ref="minmaxCalc" />
     <LcRouteOverlay v-show="isRouting" />
 
   </div>
