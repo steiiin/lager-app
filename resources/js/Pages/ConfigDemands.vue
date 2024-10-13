@@ -59,7 +59,7 @@
       },
     }
 
-    const isNewDemand = computed(() => editForm.id !== null)
+    const isNewDemand = computed(() => editForm.id === null)
 
   // #endregion
   // #region EditDialog
@@ -71,6 +71,7 @@
         ? 'Neue Anforderung erstellen'
         : `${editForm.name} bearbeiten`
     })
+
     const isValidEdit = computed(() => editForm.name.trim().length>0 && editForm.sp_name.trim().length>0)
 
     // OpenMethods
@@ -218,9 +219,6 @@
 
     </v-card>
   </v-dialog>
-
-  <!-- Dialogs -->
-  <LcConfirm ref="confirm" />
 
 </template>
 <style lang="scss" scoped>
