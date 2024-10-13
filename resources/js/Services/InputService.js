@@ -34,7 +34,7 @@ const InputService = {
         return
       }
     }
-    
+
     if (this.trackTimer) {
       clearTimeout(this.trackTimer)
     }
@@ -42,8 +42,8 @@ const InputService = {
 
       if (this.trackBuffer.startsWith('LC-')) {
         this.runCallbacks('scan', this.trackBuffer)
-      } 
-      else if (this.trackBuffer.length === 1) 
+      }
+      else if (this.trackBuffer.length === 1)
       {
         if (state.handlers.hasOwnProperty(this.trackBuffer)) {
           this.runCallbacks(this.trackBuffer)

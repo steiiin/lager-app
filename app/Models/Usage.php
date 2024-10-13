@@ -13,7 +13,7 @@ class Usage extends Model
     public $timestamps = false;
     protected $appends = ['barcode'];
 
-    public function getBarcodeAttribute() 
+    public function getBarcodeAttribute()
     {
         return BarcodeService::generateUsage($this->id);
     }
@@ -21,8 +21,6 @@ class Usage extends Model
     public static function getInternalUsageName(int $id)
     {
         if ($id === -1) { return "Inv-Abweichung"; }
-        else if ($id === -2) { return "Inv-Verfall"; }
-        else if ($id === -3) { return "Inv-Beschädigung"; }
         else { return "Inv-Andere"; }
     }
 

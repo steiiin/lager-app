@@ -155,8 +155,8 @@
       @click="unlockUi">
     </LcButton>
 
-    <LcButton class="page-welcome__Inventur" v-if="isUnlocked"
-      @click="openInventory">Inventur
+    <LcButton class="page-welcome__Inventory" v-if="isUnlocked"
+      @click="openInventory">Inventar
     </LcButton>
 
   </div>
@@ -187,7 +187,7 @@
   grid-template-areas:
     "BookOut BookOut BookOut WhereIs WhereIs WhereIs"
     "BookOut BookOut BookOut BookIn BookIn Login"
-    "Inventur Inventur Inventur Inventur Inventur Inventur";
+    "Inventory Inventory Inventory Inventory Inventory Inventory";
 
   &--locked {
     grid-template-rows: 1.5fr 0.5fr;
@@ -212,8 +212,8 @@
     grid-area: Login;
   }
 
-  &__Inventur {
-    grid-area: Inventur;
+  &__Inventory {
+    grid-area: Inventory;
   }
 
   & :deep(.lc-button) {

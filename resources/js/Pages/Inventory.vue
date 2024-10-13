@@ -1,29 +1,36 @@
 <script setup>
 
-// #region imports
+/**
+ * Inventory - Page component
+ *
+ * This page enables editing items.
+ * Additionally it show info for easier management.
+ *
+ */
+
+// #region Imports
 
   // Vue composables
-  import { ref, computed, nextTick, watch, toValue, toRef, onMounted, onUnmounted } from 'vue'
+  import { ref, computed, nextTick, watch, toRef, onMounted, onUnmounted } from 'vue'
   import { Head, router, useForm } from '@inertiajs/vue3'
 
   // Vue components
   import { VNumberInput } from 'vuetify/labs/VNumberInput'
 
   // Local composables
-  import IdleCursor from '@/Components/IdleCursor.vue'
-  import InputService from '@/Services/InputService'
-  import { useInventoryStore } from '@/Services/StoreService'
   import { useBaseSize } from '@/Composables/useBaseSize'
   import { useOptimalSize } from '@/Composables/useOptimalSize'
+  import { useInventoryStore } from '@/Services/StoreService'
+  import InputService from '@/Services/InputService'
 
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
   import LcItemInput from '@/Components/LcItemInput.vue'
   import LcItemAmountDialog from '@/Dialogs/LcItemAmountDialog.vue'
+  import IdleCursor from '@/Components/IdleCursor.vue'
 
 // #endregion
-
-// #region props
+// #region Props
 
   const inventoryStore = useInventoryStore()
 
@@ -35,13 +42,14 @@
   })
 
 // #endregion
+// #region Navigation
 
-// #region navigation
-
+  // Router-Events
   const isRouting = ref(false)
   router.on('start', () => isRouting.value = true)
   router.on('finish', () => isRouting.value = false)
 
+  // Routes
   function openWelcome() {
     router.get('/')
   }
@@ -52,12 +60,30 @@
     router.get('/config-usages')
   }
 
+  // #region KeyboardShortcuts
+
+    const handleEsc = () => {
+      if (isItemSelected.value) {
+        clearSelectedItem()
+      } else {
+        openWelcome()
+      }
+    }
+    const handleEnter = () => {
+      if (isItemSelected.value && !isEditSizeVisible.value && !minmaxDialog.value.isVisible) {
+        saveItem()
+      }
+    }
+
+  // #endregion
+
 // #endregion
 
-// #region items
+// #region Inventory-Logic
 
-  // #region dashboard
+  // #region Dashboard
 
+    // FilterProps
     const itemsNearExpiry = computed(() => {
       const thresholdDate = (new Date()); thresholdDate.setDate(thresholdDate.getDate() + 21); thresholdDate.setHours(0, 0, 0, 0);
       return inventoryStore.items.filter(item => {
@@ -66,6 +92,12 @@
       })
     })
 
+    // Getter
+    const getExpiryText = (dstr) => {
+      return new Date(dstr).toLocaleDateString(undefined, { year: 'numeric', month: 'short' }).replace(' ', '-').replace('.', '');
+    }
+
+    // Table
     const tableExpiry = ref([
       { title: 'Name', key: 'name' },
       { title: 'Verfall', key: 'current_expiry' },
@@ -77,8 +109,19 @@
 
   // #endregion
 
-  // #region form-data
+  // #region ItemPicker
 
+    const selectedItem = ref(null)
+    const isItemSelected = computed(() => !!selectedItem.value)
+
+    const clearSelectedItem = async () => {
+      selectedItem.value = null
+    }
+
+  // #endregion
+  // #region ItemEditor
+
+    // Form
     const itemForm = useForm({
 
       id: null,
@@ -106,30 +149,7 @@
       },
     }
 
-  // #endregion
-
-  // #region select
-
-    const selectedItem = ref(null)
-    const isItemSelected = computed(() => {
-      return !!selectedItem.value
-    })
-
-    const clearSelectedItem = async () => {
-      selectedItem.value = null
-    }
-
-  // #endregion
-
-  // #region editor
-
-    // state
-    const editActivePanel = ref(null)
-
-    // computed
-    const isNewItem = computed(() => itemForm.id === null)
-
-    // methods
+    // OpenMethods
     const createNew = () => {
 
       itemForm.reset()
@@ -157,7 +177,7 @@
       itemForm.sizes.splice(0, itemForm.sizes.length)
       itemForm.sizes.push({ id: null, unit: 'Stk.', amount: 1, is_default: true })
 
-      editActivePanel.value = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+      editorAccordionOpened.value = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
       selectedItem.value = { new: true }
 
     }
@@ -187,11 +207,12 @@
       itemForm.sizes = item.sizes
       item.stockchangeReason = -1
 
-      editActivePanel.value = [ 4 ]
+      editorAccordionOpened.value = [ 4 ]
       selectedItem.value = { edit: true }
 
     }
 
+    // ActionMethods
     const saveItem = async () => {
 
       if (isNewItem.value) {
@@ -203,37 +224,15 @@
     }
     const deleteItem = () => {
 
-      // TODO: create real confirm
-      if (confirm('really delete this?')) {
+      if (confirm('Do you really want to delete this?')) {
         itemForm.delete(`/inventory/${itemForm.id}`, itemFormOptions)
       }
 
     }
 
-    // #region editor-general
+    // #region Sizes-Group
 
-      const isValidName = computed(() => itemForm.name.trim().length>0 )
-      const isValidDemand = computed(() => !!itemForm.demand_id )
-      const isValidItem = computed(() => isValidName.value && isValidDemand.value )
-
-    // #endregion
-
-    // #region editor-size
-
-      // #region data-table
-
-        const sizesHeaders = ref([
-          { title: 'Einheit', key: 'unit', minWidth: '30%' },
-          { title: 'Menge', key: 'amount', minWidth: '20%' },
-          { title: 'Bearbeiten', key: 'action', sortable: false },
-        ])
-
-        const sizesSort = ref([
-          { key: 'amount', order: 'asc' }
-        ])
-
-      // #endregion
-
+      // DialogProps
       const isEditSizeVisible = ref(false)
       const isEditSizeNew = computed(() => !currentEditSizeItem.value?.origOneUnit )
 
@@ -273,6 +272,7 @@
         defaultOne: false,
       })
 
+      // OpenMethods
       const beginAddSize = async () => {
         currentEditSizeItem.value = {
           id: null,
@@ -302,6 +302,8 @@
         }
         isEditSizeVisible.value = true
       }
+
+      // ActionMethods
       const cancelEditSize = () => {
         currentEditSizeItem.value = null
         isEditSizeVisible.value = false
@@ -339,11 +341,23 @@
         cancelEditSize()
       }
 
+      // #region Table
+
+        const sizesHeaders = ref([
+          { title: 'Einheit', key: 'unit', minWidth: '30%' },
+          { title: 'Menge', key: 'amount', minWidth: '20%' },
+          { title: 'Bearbeiten', key: 'action', sortable: false },
+        ])
+        const sizesSortBy = ref([
+          { key: 'amount', order: 'asc' }
+        ])
+
+      // #endregion
+
     // #endregion
+    // #region MinMax-Group
 
-    // #region editor-minmax
-
-      // computed
+      // Props
       const { baseUnit } = useBaseSize(toRef(itemForm, 'sizes'))
       const { text: minText } = useOptimalSize(toRef(itemForm, 'sizes'), toRef(itemForm, 'min_stock'))
       const { text: maxText } = useOptimalSize(toRef(itemForm, 'sizes'), toRef(itemForm, 'max_stock'))
@@ -354,10 +368,12 @@
       const minSizesDiffer = computed(() => minText.value != minDefaultText.value)
       const maxSizesDiffer = computed(() => maxText.value != maxDefaultText.value)
 
-      // dialog-methods
-      const minmaxCalc = ref(null)
+      // DialogProps
+      const minmaxDialog = ref(null)
+
+      // OpenMethods
       const openMinCalc = async () => {
-        const newMin = await minmaxCalc.value.open({
+        const newMin = await minmaxDialog.value.open({
           title: 'Min-Bestand berechnen',
           message: 'Gib eine Packungsgröße und eine Menge ein, um einen neuen Min-Bestand zu errechnen.',
           sizes: itemForm.sizes,
@@ -367,7 +383,7 @@
         itemForm.min_stock = newMin
       }
       const openMaxCalc = async () => {
-        const newMax = await minmaxCalc.value.open({
+        const newMax = await minmaxDialog.value.open({
           title: 'Max-Bestand berechnen',
           message: 'Gib eine Packungsgröße und eine Menge ein, um einen neuen Max-Bestand zu errechnen.',
           sizes: itemForm.sizes,
@@ -378,24 +394,21 @@
       }
 
     // #endregion
+    // #region Quantity/Expiry-Group
 
-    // #region editor-quantity/expiry
-
-      // computed
+      // Props
       const isValidExpiry = computed(() => {
-        return itemForm.current_expiry !== null && !isNaN(itemForm.current_expiry)
+        return itemForm.current_expiry !== null
+          && !isNaN(itemForm.current_expiry)
       })
 
-      // props
       const currentExpiryMonth = ref(null)
       const currentExpiryYear = ref(null)
       const selectableStockChangeReasons = ref([
         { name: "Abweichung", value: -1 },
-        { name: "Verfall", value: -2 },
-        { name: "Beschädigung", value: -3 },
       ])
 
-      // update
+      // Expiry-Props
       const updateExpiry = () => {
         if (!currentExpiryMonth.value || !currentExpiryYear.value) {
           itemForm.current_expiry = null
@@ -412,25 +425,16 @@
 
     // #endregion
 
-  // #endregion
+    // #region TemplateProps
 
-  // #region table
+      const isNewItem = computed(() => itemForm.id === null)
+      const editorAccordionOpened = ref([])
 
-    // #region data-table
+      // Validation
+      const isValidName = computed(() => itemForm.name.trim().length>0 )
+      const isValidDemand = computed(() => !!itemForm.demand_id )
+      const isValidItem = computed(() => isValidName.value && isValidDemand.value )
 
-      const tableheaders = ref([
-        { title: 'Name', key: 'name' },
-        { title: 'Anforderung', key: 'demand' },
-        { title: 'Min', key: 'min_stock' },
-        { title: 'Max', key: 'max_stock' },
-        { title: 'Bestand', key: 'current_quantity' },
-        { title: 'Bestand (inkl.)', key: 'demanded_quantity' },
-        { title: 'Verfall', key: 'current_expiry' },
-      ])
-
-      const getExpiryText = (dstr) => {
-        return new Date(dstr).toLocaleDateString(undefined, { year: 'numeric', month: 'short' }).replace(' ', '-').replace('.', '');
-      }
 
     // #endregion
 
@@ -438,20 +442,7 @@
 
 // #endregion
 
-// #region touchmode
-
-  const handleEsc = () => {
-    if (isItemSelected.value) {
-      clearSelectedItem()
-    } else {
-      openWelcome()
-    }
-  }
-  const handleEnter = () => {
-    if (isItemSelected.value && !isEditSizeVisible.value && !minmaxCalc.value.isVisible) {
-      saveItem()
-    }
-  }
+// #region Lifecycle
 
   onMounted(() => {
     InputService.registerEsc(handleEsc)
@@ -469,12 +460,12 @@
 
 <template>
 
-  <Head title="Inventur" />
+  <Head title="Inventar" />
   <IdleCursor />
 
-  <div class="app-Inventory">
+  <div class="page-inventory">
 
-    <LcPagebar title="Inventur" @back="openWelcome">
+    <LcPagebar title="Inventar" @back="openWelcome">
       <template #actions>
         <v-btn v-if="!isItemSelected" variant="flat"
           @click="openConfigDemands">Anforderungen
@@ -485,13 +476,12 @@
       </template>
     </LcPagebar>
 
-    <div class="app-Inventory--page">
+    <section>
 
       <template v-if="!isItemSelected">
 
-        <LcItemInput
+        <LcItemInput :admin-mode="true"
           :result-specs="{ w: 850, i: 14.5 }"
-          :admin-mode="true"
           @create-new="createNew" @select-item="editItem">
         </LcItemInput>
 
@@ -499,8 +489,8 @@
         <v-card title="Verfall prüfen" class="mt-2" variant="outlined">
           <v-card-text>
 
-            <v-data-table
-              :items="itemsNearExpiry" :headers="tableExpiry" :sort-by="sortExpiry"
+            <v-data-table :items="itemsNearExpiry"
+              :headers="tableExpiry" :sort-by="sortExpiry"
               hide-default-footer :items-per-page="100">
               <template v-slot:item.demand="{ item }">
                 {{ item.demand.name }}
@@ -517,27 +507,8 @@
 
           </v-card-text>
         </v-card>
-        <!-- <v-card title="In Bestellung" class="mt-2" variant="outlined">
-          <v-card-text>
-
-            <v-data-table
-              :items="itemsOrdered" :headers="tableOrdered" :sort-by="sortOrdered"
-              hide-default-footer :items-per-page="100">
-              <template v-slot:item.demand="{ item }">
-                {{ item.demand.name }}
-              </template>
-              <template v-slot:item.action="{ item }">
-                <v-btn small variant="outlined" @click="editItem(item)">
-                  <v-icon icon="mdi-cog"></v-icon>
-                </v-btn>
-              </template>
-            </v-data-table>
-
-          </v-card-text>
-        </v-card> -->
 
       </template>
-
       <template v-else>
 
         <v-toolbar flat>
@@ -550,44 +521,34 @@
         </v-toolbar>
 
         <v-expansion-panels class="mt-2" flat multiple
-          v-model="editActivePanel" :disabled="itemForm.processing">
+          v-model="editorAccordionOpened" :disabled="itemForm.processing">
 
           <v-expansion-panel class="mt-1" title="Allgemein" color="black" outlined>
             <v-expansion-panel-text>
 
-              <v-text-field
-                v-model="itemForm.name"
-                label="Name"
-                required
-                hide-details
-              ></v-text-field>
+              <v-text-field v-model="itemForm.name"
+                label="Name" required hide-details>
+              </v-text-field>
               <v-alert v-if="!isValidName"
                 text="Du musst einen Namen angeben."
-                type="error"></v-alert>
+                type="error">
+              </v-alert>
 
-              <v-text-field class="mt-2"
-                v-model="itemForm.search_altnames"
-                label="Alternative Namen"
-                hide-details
-              ></v-text-field>
-              <v-text-field
-                v-model="itemForm.search_tags"
-                label="Tags"
-                hide-details
-              ></v-text-field>
+              <v-text-field v-model="itemForm.search_altnames"
+                class="mt-2" label="Alternative Namen" hide-details>
+              </v-text-field>
+              <v-text-field v-model="itemForm.search_tags"
+                label="Tags" hide-details>
+              </v-text-field>
 
-              <v-select
-                v-model="itemForm.demand_id" class="mt-2"
-                :items="demands"
-                label="Anforderung"
-                item-title="name"
-                item-value="id"
-                required
-                hide-details
-              ></v-select>
+              <v-select v-model="itemForm.demand_id" :items="demands"
+                class="mt-2" label="Anforderung" item-title="name"
+                item-value="id" required hide-details>
+              </v-select>
               <v-alert v-if="!isValidDemand"
                 text="Du musst eine Anforderung angeben."
-                type="error"></v-alert>
+                type="error">
+              </v-alert>
 
             </v-expansion-panel-text>
           </v-expansion-panel>
@@ -595,23 +556,17 @@
           <v-expansion-panel class="mt-1" title="Wo ist ... ?" color="black">
             <v-expansion-panel-text>
 
-              <v-text-field
-                v-model="itemForm.location.room"
-                label="Raum"
-                hide-details
-              ></v-text-field>
+              <v-text-field v-model="itemForm.location.room"
+                label="Raum" hide-details>
+              </v-text-field>
 
-              <v-text-field
-                v-model="itemForm.location.cab"
-                label="Schrank"
-                hide-details
-              ></v-text-field>
+              <v-text-field v-model="itemForm.location.cab"
+                label="Schrank" hide-details>
+              </v-text-field>
 
-              <v-text-field
-                v-model="itemForm.location.exact"
-                label="Genauer Ort (z.B. Schublade)"
-                hide-details
-              ></v-text-field>
+              <v-text-field v-model="itemForm.location.exact"
+                label="Genauer Ort (z.B. Schublade)" hide-details>
+              </v-text-field>
 
             </v-expansion-panel-text>
           </v-expansion-panel>
@@ -620,7 +575,7 @@
             <v-expansion-panel-text>
 
               <v-data-table :items="itemForm.sizes"
-                :headers="sizesHeaders" :sort-by="sizesSort"
+                :headers="sizesHeaders" :sort-by="sizesSortBy"
                 hide-default-footer :items-per-page="100">
                 <template v-slot:item.action="{ item }">
                   <v-btn small variant="outlined" @click="beginEditSize(item)">
@@ -632,7 +587,8 @@
               <v-divider></v-divider>
 
               <v-btn color="primary" variant="outlined" class="mt-4" prepend-icon="mdi-plus"
-                @click="beginAddSize()">Hinzufügen</v-btn>
+                @click="beginAddSize()">Hinzufügen
+              </v-btn>
 
               </v-expansion-panel-text>
           </v-expansion-panel>
@@ -644,28 +600,26 @@
                 <v-row>
                   <v-col cols="4">
                     <v-btn prepend-icon="mdi-calculator" variant="outlined"
-                      @click="openMinCalc">
-                      Min-Bestand ändern
+                      @click="openMinCalc">Min-Bestand ändern
                     </v-btn>
                   </v-col>
-                  <v-col cols="2" class="app-Inventory--minmax-result">
+                  <v-col cols="2" class="page-inventory__table--result-centered">
                     {{ minDefaultText }}
                   </v-col>
-                  <v-col cols="2" class="app-Inventory--minmax-result" v-if="minSizesDiffer">
+                  <v-col cols="2" class="page-inventory__table--result-centered" v-if="minSizesDiffer">
                     bzw. {{ minText }}
                   </v-col>
                 </v-row>
                 <v-row class="mt-2">
                   <v-col cols="4">
                     <v-btn prepend-icon="mdi-calculator" variant="outlined"
-                      @click="openMaxCalc">
-                      Max-Bestand ändern
+                      @click="openMaxCalc">Max-Bestand ändern
                     </v-btn>
                   </v-col>
-                  <v-col cols="2" class="app-Inventory--minmax-result">
+                  <v-col cols="2" class="page-inventory__table--result-centered">
                     {{ maxDefaultText }}
                   </v-col>
-                  <v-col cols="2" class="app-Inventory--minmax-result" v-if="maxSizesDiffer">
+                  <v-col cols="2" class="page-inventory__table--result-centered" v-if="maxSizesDiffer">
                     bzw. {{ maxText }}
                   </v-col>
                 </v-row>
@@ -680,7 +634,7 @@
 
               <v-form>
                 <v-row>
-                  <v-col cols="4" class="app-Inventory--table-result text-right">
+                  <v-col cols="4" class="page-inventory__table--result">
                     Aktueller Bestand ({{ baseUnit }})
                   </v-col>
                   <v-col cols="5">
@@ -707,7 +661,7 @@
                   </v-col>
                 </v-row>
                 <v-row class="mt-2">
-                  <v-col cols="4" class="app-Inventory--table-result">
+                  <v-col cols="4" class="page-inventory__table--result">
                     Nächster Verfall
                   </v-col>
                   <v-col cols="3" class="align-content-center">
@@ -720,15 +674,6 @@
                       :min="1"
                       :max="12"
                     ></v-number-input>
-                    <!-- <v-select
-                      v-model="currentExpiryMonth"
-                      :items="selectableMonths"
-                      label="Monat"
-                      item-title="name"
-                      item-value="value"
-                      required
-                      hide-details
-                    ></v-select>  -->
                   </v-col>
                   <v-col cols="3" class="align-content-center">
                     <v-number-input
@@ -783,42 +728,43 @@
 
       </template>
 
-      <!-- Dialog: PackageSize -->
+      <!-- ItemSize-Dialog -->
       <v-dialog v-model="isEditSizeVisible" max-width="420px">
         <v-card prepend-icon="mdi-package-variant-closed" v-if="currentEditSizeItem" class="rounded-0"
           :title="isEditSizeNew ? 'Neue Packungsgröße' : 'Packungsgröße bearbeiten'">
-
           <v-divider></v-divider>
-
           <v-card-text>
+
             <p class="mb-4">
               Gib eine Packungsgröße an.
             </p>
 
-            <v-text-field
-              v-model="currentEditSizeItem.amount" :disabled="currentEditSizeItem.defaultOne"
+            <v-text-field v-model="currentEditSizeItem.amount"
+              :disabled="currentEditSizeItem.defaultOne"
               label="Menge" type="number" :min="2" hide-details>
             </v-text-field>
 
-            <v-text-field class="mt-2"
-              v-model="currentEditSizeItem.unit" id="id-editsize-unit"
+            <v-text-field v-model="currentEditSizeItem.unit"
+              class="mt-2" id="id-editsize-unit"
               label="Größenangabe" hide-details>
             </v-text-field>
 
-            <v-checkbox
-              label="In dieser Packungseinheit bestellen"
-              v-model="currentEditSizeItem.is_default"
-              hide-details>
+            <v-checkbox v-model="currentEditSizeItem.is_default"
+              label="In dieser Packungseinheit bestellen" hide-details>
             </v-checkbox>
 
             <v-alert class="mt-2" v-if="isEditSizeUnitExisting"
-              text="Diese Einheit existiert bereits." type="error"></v-alert>
+              text="Diese Einheit existiert bereits." type="error">
+            </v-alert>
             <v-alert class="mt-2" v-else-if="isEditSizeAmountExisting"
-              text="Diese Menge exisitert bereits." type="error"></v-alert>
+              text="Diese Menge exisitert bereits." type="error">
+            </v-alert>
             <v-alert class="mt-2" v-else-if="isEditSizeEmpty"
-              text="Du musst alles ausfüllen." type="error"></v-alert>
+              text="Du musst alles ausfüllen." type="error">
+            </v-alert>
             <v-alert class="mt-2" v-else-if="isEditSizeTooLow"
-              text="Du kannst nicht unter die Standardgröße." type="error"></v-alert>
+              text="Du kannst nicht unter die Standardgröße." type="error">
+            </v-alert>
 
           </v-card-text>
 
@@ -826,42 +772,46 @@
 
           <v-card-actions class="mx-4 mb-2">
             <v-btn color="error" variant="tonal" v-if="!isEditSizeNew && !isEditSizeDefault"
-              @click="deleteEditSize">Delete</v-btn>
+              @click="deleteEditSize">Delete
+            </v-btn>
             <v-spacer></v-spacer>
-            <v-btn @click="cancelEditSize">Abbrechen</v-btn>
+            <v-btn
+              @click="cancelEditSize">Abbrechen
+            </v-btn>
             <v-btn color="primary" variant="tonal" :disabled="!isValidSizeEdit"
-              @click="acceptEditSize">Speichern</v-btn>
+              @click="acceptEditSize">Speichern
+            </v-btn>
           </v-card-actions>
 
         </v-card>
       </v-dialog>
 
-      <!-- Dialog: AmountInput -->
-      <LcItemAmountDialog ref="minmaxCalc" />
+      <!-- Dialogs -->
+      <LcItemAmountDialog ref="minmaxDialog" />
 
-    </div>
+    </section>
 
   </div>
 
 </template>
 <style lang="scss" scoped>
-.app-Inventory {
+.page-inventory {
 
-  &--page {
+  & section {
     max-width: 850px;
     margin: .5rem auto;
   }
 
-  &--table-result,
-  &--minmax-result {
+  &__table--result-centered,
+  &__table--result {
     display: flex;
     font-weight: bold;
     align-items: center;
     justify-content: right;
-  }
 
-  &--minmax-result {
-    justify-content: center;
+    &-centered {
+      justify-content: center;
+    }
   }
 
 }
