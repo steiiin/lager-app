@@ -122,7 +122,7 @@
   }
 
   &__item {
-    margin-top: 4px;
+    margin-top: .5rem;
     border-radius: 0;
   }
 
