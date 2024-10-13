@@ -1,6 +1,13 @@
 <script setup>
 
-// #region imports
+/**
+ * ConfigDemands - Page component
+ *
+ * This page enables the user to config the app-wide demands.
+ *
+ */
+
+// #region Imports
 
   // Vue composables
   import { ref, computed, nextTick } from 'vue'
@@ -11,8 +18,7 @@
   import LcConfirm from '@/Dialogs/LcConfirm.vue'
 
 // #endregion
-
-// #region props
+// #region Props
 
   defineProps({
     demands: {
@@ -22,22 +28,23 @@
   })
 
 // #endregion
+// #region Navigation
 
-// #region navigation
-
+  // Router-Events
   const isRouting = ref(false)
   router.on('start', () => isRouting.value = true)
   router.on('finish', () => isRouting.value = false)
 
+  // Routes
   function openInventory() {
     router.get('/inventory')
   }
 
 // #endregion
 
-// #region demands
+// #region Demand-Logic
 
-  // #region form-data
+  // #region EditForm
 
     const editForm = useForm({
       id: null,
@@ -48,16 +55,17 @@
       preserveScroll: true,
       onSuccess: () => {
         router.reload({ only: ['demands'] })
-        isEditDialogVisible.value = false
+        editDialogVisible.value = false
       },
     }
 
+    const isNewDemand = computed(() => editForm.id !== null)
+
   // #endregion
+  // #region EditDialog
 
-  // #region edit-dialog
-
-    // props
-    const isEditDialogVisible = ref(false)
+    // DialogProps
+    const editDialogVisible = ref(false)
     const editDialogTitle = computed(() => {
       return !editForm.id
         ? 'Neue Anforderung erstellen'
@@ -65,13 +73,13 @@
     })
     const isValidEdit = computed(() => editForm.name.trim().length>0 && editForm.sp_name.trim().length>0)
 
-    // open-dialog
+    // OpenMethods
     const openNewDemandDialog = async () => {
       editForm.reset()
       editForm.id = null
       editForm.name = ''
       editForm.sp_name = ''
-      isEditDialogVisible.value = true
+      editDialogVisible.value = true
       await nextTick()
       document.getElementById('id-editdemand-name')?.focus()
     }
@@ -80,9 +88,10 @@
       editForm.id = item.id
       editForm.name = item.name
       editForm.sp_name = item.sp_name
-      isEditDialogVisible.value = true
+      editDialogVisible.value = true
     }
 
+    // ActionMethods
     const saveEdit = () => {
       if (!isValidEdit) { return }
       if (editForm.id === null) {
@@ -92,12 +101,11 @@
       }
     }
     const cancelEdit = () => {
-      isEditDialogVisible.value = false
+      editDialogVisible.value = false
     }
     const deleteDemand = () => {
 
-      // TODO: create real confirm
-      if (confirm('really delete this?')) {
+      if (confirm('Do you really want to delete this?')) {
         editForm.delete(`/config-demands/${editForm.id}`, editFormOptions)
       }
 
@@ -105,7 +113,7 @@
 
   // #endregion
 
-  // #region data-table
+  // #region DemandTable
 
     const tableheaders = ref([
       { title: 'Name', key: 'name', minWidth: '50%' },
@@ -123,11 +131,11 @@
 
   <Head title="Anforderungen" />
 
-  <div class="app-ConfigDemands">
-    
-    <LcPagebar title="Anforderungen" :width="1200" @back="openInventory" />
-    
-    <div class="app-ConfigDemands--page">
+  <div class="page-configdemands">
+
+    <LcPagebar title="Anforderungen" @back="openInventory" />
+
+    <section>
 
       <v-toolbar>
         <v-spacer></v-spacer>
@@ -138,7 +146,7 @@
         </v-toolbar-items>
       </v-toolbar>
 
-      <v-data-table 
+      <v-data-table
         :items="demands" :headers="tableheaders"
         hide-default-footer :items-per-page="100">
         <template v-slot:item.sharepoint_use="{ item }">
@@ -148,16 +156,19 @@
           <span>{{ item.mail_use ? 'Ja' : 'Nein' }}</span>
         </template>
         <template v-slot:item.action="{ item }">
-          <v-btn small color="primary" @click="openEditDemandDialog(item)">
+          <v-btn small color="primary"
+            @click="openEditDemandDialog(item)">
             <v-icon icon="mdi-cog"></v-icon>
           </v-btn>
         </template>
       </v-data-table>
 
-    </div>
+    </section>
+
   </div>
 
-  <v-dialog v-model="isEditDialogVisible" max-width="750px">
+  <!-- EditDialog -->
+  <v-dialog v-model="editDialogVisible" max-width="750px">
     <v-card prepend-icon="mdi-file" :title="editDialogTitle" :disabled="editForm.processing" class="rounded-0">
 
       <v-divider></v-divider>
@@ -167,15 +178,15 @@
           Ein Artikel wird einer bestimmten Anforderung zugeordnet, damit die Bestellung im richtigen Fachbereich ankommt. <br>
           Du kannst auch festlegen, ob eine Bestellung im Sharepoint hinterlegt wird, oder per E-Mail gesendet werden soll.
         </p>
-        <v-text-field
-          v-model="editForm.name" id="id-editdemand-name"
+        <v-text-field v-model="editForm.name"
+          id="id-editdemand-name"
           label="Name" hide-details>
         </v-text-field>
 
         <v-divider></v-divider>
 
-        <v-text-field
-          v-model="editForm.sp_name" id="id-editdemand-sharepoint"
+        <v-text-field v-model="editForm.sp_name"
+          id="id-editdemand-sharepoint"
           label="Name der Sharepoint-Anforderung" hide-details >
         </v-text-field>
 
@@ -192,27 +203,31 @@
       <v-divider></v-divider>
 
       <v-card-actions class="mx-4 mb-2">
-        <v-btn color="error"
-          variant="tonal" v-if="editForm.id !== null"
+        <v-btn v-if="!isNewDemand"
+          color="error" variant="tonal"
           @click="deleteDemand">Löschen</v-btn>
         <v-spacer></v-spacer>
-        <v-btn @click="cancelEdit">Abbrechen</v-btn>
-        <v-btn color="primary" :loading="editForm.processing"
-          variant="tonal" :disabled="!isValidEdit"
-          @click="saveEdit">Speichern</v-btn>
+        <v-btn
+          @click="cancelEdit">Abbrechen
+        </v-btn>
+        <v-btn color="primary" variant="tonal"
+          :loading="editForm.processing" :disabled="!isValidEdit"
+          @click="saveEdit">Speichern
+        </v-btn>
       </v-card-actions>
 
     </v-card>
   </v-dialog>
 
-  <LcConfirm ref="confirm" :z="1" />
-  
+  <!-- Dialogs -->
+  <LcConfirm ref="confirm" />
+
 </template>
 <style lang="scss" scoped>
-.app-ConfigDemands {
+.page-configdemands {
 
-  &--page {
-    max-width: 1200px;
+  & section {
+    max-width: 850px;
     margin: .5rem auto;
   }
 
