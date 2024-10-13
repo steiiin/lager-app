@@ -1,13 +1,21 @@
 <script setup>
 
-// #region imports
+/**
+ * Welcome - Page component
+ *
+ * The root page.
+ *
+ */
+
+// #region Imports
 
   // Vue composables
-  import { ref, computed, onMounted, onUnmounted } from 'vue'
+  import { ref, onMounted, onUnmounted, computed } from 'vue'
   import { Head, router } from '@inertiajs/vue3'
 
   // Local composables
   import { useInventoryStore } from '@/Services/StoreService'
+  import InputService from '@/Services/InputService'
 
   // Local components
   import LcButton from '@/Components/LcButton.vue'
@@ -16,15 +24,13 @@
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
   import LcUsageInput from '@/Components/LcUsageInput.vue'
   import IdleCursor from '@/Components/IdleCursor.vue'
-  import InputService from '@/Services/InputService'
 
 // #endregion
-
-// #region props
+// #region Props
 
   const inventoryStore = useInventoryStore()
 
-  defineProps({
+  const props = defineProps({
     isUnlocked: {
       type: Boolean,
       required: true,
@@ -36,13 +42,14 @@
   })
 
 // #endregion
+// #region Navigation
 
-// #region navigation
-
+  // Router-Events
   const isRouting = ref(false)
   router.on('start', () => isRouting.value = true)
   router.on('finish', () => isRouting.value = false)
 
+  // Routes
   function openWhereIs() {
     router.get('/whereis')
   }
@@ -61,13 +68,13 @@
 
 // #endregion
 
-// #region locking/unlocking
+// #region Lock/Unlock-Logic
 
-  // ref
+  // DialogProps
   const unlockDialog = ref(null)
   const lockDialog = ref(null)
 
-  // methods
+  // Methods
   function unlockUi() {
     unlockDialog.value.open()
   }
@@ -75,9 +82,18 @@
     lockDialog.value.open()
   }
 
-// #endregion
+  // #region TemplateProps
 
-// #region touchmode
+    const pageClasses = computed(() => {
+      return 'page-welcome' + (props.isUnlocked
+        ? ''
+        : 'page-welcome--locked')
+    })
+
+  // #endregion
+
+// #endregion
+// #region Shortcuts
 
   const openKioskSettings = () => {
     if (typeof OpenKiosk != 'undefined') {
@@ -86,6 +102,10 @@
       console.warn('Lager-App: Not in OpenKiosk')
     }
   }
+
+// #endregion
+
+// #region Lifecycle
 
   onMounted(() => {
     InputService.registerK1(openBookOut)
@@ -109,50 +129,52 @@
   <Head title="Home" />
   <IdleCursor />
 
-  <div class="app-Welcome" :class="{ 'app-Welcome--locked': !isUnlocked }">
+  <div :class="pageClasses">
 
-    <LcButton class="app-Welcome--BookOut" 
+    <LcButton class="page-welcome__BookOut"
       type="primary" icon="mdi-barcode-scan"
       @click="openBookOut">Verbrauch<kbd v-if="!isTouchMode">1</kbd>
     </LcButton>
 
-    <LcButton class="app-Welcome--WhereIs"
+    <LcButton class="page-welcome__WhereIs"
       type="primary" icon="mdi-home-search-outline"
       @click="openWhereIs">Wo ist ... ?<kbd v-if="!isTouchMode">2</kbd>
     </LcButton>
 
-    <LcButton class="app-Welcome--BookIn"
+    <LcButton class="page-welcome__BookIn"
       icon="mdi-basket-outline"
       @click="openBookIn">Lieferung<kbd v-if="!isTouchMode">3</kbd>
     </LcButton>
 
-    <LcButton class="app-Welcome--Login" v-if="isUnlocked"
+    <LcButton class="page-welcome__Login" v-if="isUnlocked"
       icon="mdi-lock-outline"
       @click="lockUi">
     </LcButton>
-    <LcButton class="app-Welcome--Login" v-else
+    <LcButton class="page-welcome__Login" v-else
       icon="mdi-lock-open-variant-outline"
       @click="unlockUi">
     </LcButton>
 
-    <LcButton class="app-Welcome--Inventur" v-if="isUnlocked" 
+    <LcButton class="page-welcome__Inventur" v-if="isUnlocked"
       @click="openInventory">Inventur
     </LcButton>
 
   </div>
-  <div class="app-Welcome--invisibleUsageScanner">
+  <div class="page-welcome__invisible-usagescanner">
     <LcUsageInput :is-unlocked="isUnlocked"
       @select-usage="openBookOutWithUsage">
     </LcUsageInput>
   </div>
-  
+
+  <!-- Dialogs -->
   <LcUnlockDialog ref="unlockDialog" />
   <LcLockDialog ref="lockDialog" />
   <LcRouteOverlay v-show="isRouting" />
 
 </template>
 <style lang="scss" scoped>
-.app-Welcome {
+.page-welcome {
+
   width: 100%;
   height: 100%;
   display: grid;
@@ -174,23 +196,23 @@
       "BookOut BookOut BookOut BookIn BookIn Login";
   }
 
-  &--WhereIs {
+  &__WhereIs {
     grid-area: WhereIs;
   }
 
-  &--BookIn {
+  &__BookIn {
     grid-area: BookIn;
   }
 
-  &--BookOut {
+  &__BookOut {
     grid-area: BookOut;
   }
 
-  &--Login {
+  &__Login {
     grid-area: Login;
   }
 
-  &--Inventur {
+  &__Inventur {
     grid-area: Inventur;
   }
 
@@ -208,7 +230,7 @@
     height: 3rem;
   }
 
-  &--invisibleUsageScanner {
+  &__invisible-usagescanner {
     display: none;
   }
 
