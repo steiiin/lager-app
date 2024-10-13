@@ -1,34 +1,37 @@
 <script setup>
 
-// #region imports
+/**
+ * LcConfirm - Dialog component
+ *
+ * A dialog to get confirmation for an action.
+ *
+ * Props (via "open"):
+ *  - title (String): Title of the dialog.
+ *  - message (String): Message of the dialog.
+ *  - icon (optional|String): Icon that is shown near the title.
+ *
+ * Returns (via promise):
+ *  - Boolean, if confirmed or not.
+ *
+ */
+
+// #region Imports
 
   // Vue composables
   import { ref } from 'vue'
 
 // #endregion
 
-// #region props
+// #region Dialog-Logic
 
-  defineProps({
-    z: {
-      type: Number,
-      required: false,
-      default: 1000,
-    },
-  })
-
-// #endregion
-
-// #region dialog
-
-  // props
+  // DialogProps
   const isVisible = ref(false)
   const title = ref('')
   const message = ref('')
   const icon = ref('')
   let resolvePromise = null;
 
-  // methods
+  // DialogMethods
   const open = async (args) => {
 
     title.value = args?.title ?? 'Wirklich?'
@@ -55,7 +58,7 @@
 
 // #endregion
 
-// #region expose
+// #region Expose
 
   defineExpose({ open })
 
@@ -63,7 +66,7 @@
 
 </script>
 <template>
-  <v-dialog v-model="isVisible" max-width="450px" :persistent="true" :style="'z-index:'+z">
+  <v-dialog v-model="isVisible" max-width="450px" :persistent="true" style="z-index: 1000;">
     <v-card :prepend-icon="icon" :title="title" class="rounded-0">
       <v-divider></v-divider>
       <v-card-text>
@@ -71,8 +74,10 @@
       </v-card-text>
       <v-divider></v-divider>
       <v-card-actions class="mx-4 mb-2">
-        <v-btn @click="cancel">Nein</v-btn>
-        <v-btn color="primary" variant="tonal" 
+        <v-btn
+          @click="cancel">Nein
+        </v-btn>
+        <v-btn color="primary" variant="tonal"
           @click="accept">Ja
         </v-btn>
       </v-card-actions>
