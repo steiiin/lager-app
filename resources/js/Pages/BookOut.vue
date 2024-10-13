@@ -1,6 +1,18 @@
 <script setup>
 
-// #region imports
+/**
+ * BookOut - Page component
+ *
+ * This page let the user selects an usage and then scan or searching items
+ * if something was taken from inventory.
+ * After confirmation of the "booking-list" it is sent to backend.
+ *
+ * Props (via url-parameter)
+ *  - usageId (optional|Number): Preselected usage, to jump directly to item-picker.
+ *
+ */
+
+// #region Imports
 
   // Vue composables
   import { ref, computed, onMounted, onUnmounted } from 'vue'
@@ -8,6 +20,7 @@
 
   // Local composables
   import { useInventoryStore } from '@/Services/StoreService'
+  import InputService from '@/Services/InputService'
 
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
@@ -18,11 +31,9 @@
   import LcConfirm from '@/Dialogs/LcConfirm.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
   import IdleCursor from '@/Components/IdleCursor.vue'
-  import InputService from '@/Services/InputService'
 
 // #endregion
-
-// #region props
+// #region Props
 
   const inventoryStore = useInventoryStore()
 
@@ -38,18 +49,20 @@
   })
 
 // #endregion
+// #region Navigation
 
-// #region navigation
-
+  // Routing-Events
   const isRouting = ref(false)
   router.on('start', () => isRouting.value = true)
   router.on('finish', () => isRouting.value = false)
 
+  // ConfirmationDialog
   const confirmDialog = ref(null)
 
+  // Routes
   async function openWelcome() {
 
-    if (hasAnyBookings.value) {
+    if (hasItemsInCart.value) {
       const confirmed = await confirmDialog.value.open({
         title: 'Abbrechen?',
         message: 'Du hast bereits Material hinzugefügt! <br>Willst du die Entnahme <b>wirklich abbrechen?</b>',
@@ -60,166 +73,180 @@
 
   }
 
+  // #region Keyboard-Shortcuts
+
+    const handleEscape = () => {
+      const canExit = itemPicker?.value?.handleEscape() ?? true
+      if (canExit && !manuallyDialog.value.isVisible) {
+        openWelcome()
+      }
+    }
+
+  // #endregion
+
 // #endregion
 
-// #region booking
+// #region Booking-Logic
 
-  // #region form-data
+  // #region UsagePicker
 
-    const bookingsForm = useForm({
-      usage_id: null,
-      entries: [],
-    })
-    const bookingsFormOptions = {
-      preserveScroll: true,
-      onSuccess: () => {
-      },
+    // Props
+    const hasUsage = computed(() => bookoutForm.usage_id !== null)
+
+    // Methods
+    const getUsageById = (usage_id) => {
+      return inventoryStore.usages.find(u => u.id === usage_id) ?? null
     }
-    const sendBooking = () => {
-      if (hasAnyBookings.value && hasUsage.value)
-      bookingsForm.post('/bookout', bookingsFormOptions)
-    }
-
-  // #endregion
-
-  // #region usage
-
-    const hasUsage = computed(() => bookingsForm.usage_id !== null)
-    const getUsage = (usage_id) => {
-      return inventoryStore.usages.find(u => u.id === usage_id)
-    }
-
     const selectUsage = (usage) => {
-      bookingsForm.usage_id = usage.id
+      bookoutForm.usage_id = usage.id ?? null
     }
     const clearUsage = () => {
-      bookingsForm.usage_id = null
+      bookoutForm.usage_id = null
     }
 
   // #endregion
+  // #region ItemPicker
 
-  // #region item
+    const itemPicker = ref(null)
 
-    // computed
-    const hasAnyBookings = computed(() => bookingsForm.entries.length > 0)
-    const preparedBooking = computed(() => {
-      return  bookingsForm.entries.map(e => {
-        let item = inventoryStore.items.find(i => i.id === e.item_id)
-        if (!item) { return null; }
+    // Props
+    const hasItemsInCart = computed(() => bookoutForm.entries.length > 0)
 
-        return {
-          item: item,
-          name: item.name,
-          demand: item.demand.name,
-          amount: `${e.item_amount} ${item.basesize.unit}`,
-        }
-      }).filter(e => e)
-    })
+    // #region Table-Props
 
-    // refs
-    const itemInput = ref(null)
-    const amountCalc = ref(null)
+      // DataSource
+      const preparedCart = computed(() => {
+        return bookoutForm.entries.map(e => {
+          let item = inventoryStore.items.find(i => i.id === e.item_id)
+          if (!item) { return null; }
 
-    // methods
-    const selectItem = async (item, amount) => {
+          return {
+            item: item,
+            name: item.name,
+            demand: item.demand.name,
+            amount: `${e.item_amount} ${item.basesize.unit}`,
+          }
+        }).filter(e => e)
+      })
 
-      if (amount === null) {
-
-        // selected manually, show amount-dialog
-        const manualAmount = await amountCalc.value.open({
-          item: item
-        })
-        if (manualAmount !== null) {
-          setBookingAmount(item, manualAmount)
-        }
-
-      } else {
-
-        // per scan
-        setBookingAmount(item, amount, true)
-        notifyScan(item)
-
-      }
-
-    }
-    const reduceItem = async (row) => {
-
-      const entry = bookingsForm.entries.find(e => e.item_id === row.item.id)
-      if (entry.item_amount > 1) {
-        entry.item_amount = entry.item_amount - 1
-      } else {
-        const entryIndex = bookingsForm.entries.indexOf(entry);
-        if (entryIndex !== -1) {
-          bookingsForm.entries.splice(entryIndex, 1);
-        }
-      }
-
-    }
-
-    const setBookingAmount = (item, amount, add = false) => {
-
-      const entry = bookingsForm.entries.find(e => e.item_id === item.id)
-      if (!entry) {
-
-        // create entry
-        bookingsForm.entries.push({ item_id: item.id, item_amount: amount })
-
-      } else {
-
-        // set entry
-        entry.item_amount = add
-          ? (entry.item_amount + amount)
-          : amount;
-
-      }
-
-    }
-
-    // #region data-table
-
-      const bookingsHeaders = ref([
+      // TableConfig
+      const tableHeader = ref([
         { title: 'Material', key: 'name', minWidth: '50%' },
         { title: 'Menge', key: 'amount', align: 'end', minWidth: '5%' },
         { title: '', key: 'action', align: 'center', minWidth: '3%', sortable: false },
       ])
-
-      const bookingsSortBy = ref([
+      const tableSortBy = ref([
         { key: 'demand', order: 'asc' },
         { key: 'name', order: 'asc' },
       ])
 
     // #endregion
 
-    // #region scan-notification
+    // #region Select-Logic
 
-      const isScanNotificationVisible = ref(false)
-      const scanNotificationText = ref('')
+      const manuallyDialog = ref(null)
 
-      const notifyScan = (item) => {
-        scanNotificationText.value = `${item.name} wurde hinzugefügt!`
-        isScanNotificationVisible.value = true
+      const selectItem = async (item, amount) => {
+
+        if (amount === null) {
+
+          // selected manually, show amount-dialog
+          const manualAmount = await manuallyDialog.value.open({
+            item: item
+          })
+          if (manualAmount !== null) {
+            setAmountInCart(item, manualAmount)
+          }
+
+        } else {
+
+          // per scan
+          setAmountInCart(item, amount, true)
+          notifyScan(item)
+
+        }
+
       }
+      const reduceItem = async (row) => {
+
+      const entry = bookoutForm.entries.find(e => e.item_id === row.item.id)
+      if (entry.item_amount > 1) {
+        entry.item_amount = entry.item_amount - 1
+      } else {
+        const entryIndex = bookoutForm.entries.indexOf(entry);
+        if (entryIndex !== -1) {
+          bookoutForm.entries.splice(entryIndex, 1);
+        }
+      }
+
+      }
+
+      const setAmountInCart = (item, amount, add = false) => {
+
+        const entry = bookoutForm.entries.find(e => e.item_id === item.id)
+        if (!entry) {
+
+          // create entry
+          bookoutForm.entries.push({ item_id: item.id, item_amount: amount })
+
+        } else {
+
+          // set entry
+          entry.item_amount = add
+            ? (entry.item_amount + amount)
+            : amount;
+
+        }
+
+      }
+
+      // #region Scan-Notification
+
+        const scanNotificationVisible = ref(false)
+        const scanNotificationText = ref('')
+
+        const notifyScan = (item) => {
+          scanNotificationText.value = `${item.name} wurde hinzugefügt!`
+          scanNotificationVisible.value = true
+        }
+
+      // #endregion
 
     // #endregion
 
   // #endregion
 
+  // #region Finish
+
+    // Form
+    const bookoutForm = useForm({
+      usage_id: null,
+      entries: [],
+    })
+    const bookoutFormOptions = {
+      preserveScroll: true,
+      onSuccess: () => {
+      },
+    }
+
+    // Post
+    const finishBookOut = () => {
+      if (hasItemsInCart.value && hasUsage.value) {
+        bookoutForm.post('/bookout', bookoutFormOptions)
+      }
+    }
+
+  // #endregion
+
 // #endregion
 
-// #region touchmode
-
-  const handleEscape = () => {
-    const canExit = itemInput?.value?.handleEscape() ?? true
-    if (canExit && !amountCalc.value.isVisible) {
-      openWelcome()
-    }
-  }
+// #region Lifecycle
 
   onMounted(() => {
 
     // set usage, if set by props
     if (!!props.usageId) {
-      bookingsForm.usage_id = props.usageId
+      bookoutForm.usage_id = props.usageId
     }
 
     // register input
@@ -242,73 +269,77 @@
   <Head title="Verbrauch" />
   <IdleCursor />
 
-  <div class="app-BookOut">
+  <div class="app-bookout">
 
-    <LcPagebar title="Verbrauch" :disabled="bookingsForm.processing" @back="openWelcome"></LcPagebar>
+    <LcPagebar title="Verbrauch" :disabled="bookoutForm.processing" @back="openWelcome"></LcPagebar>
 
-    <div class="app-BookOut--page app-BookOut--usagepane">
+    <!-- UsagePicker -->
+    <section>
 
       <LcUsageInput v-if="!hasUsage" :is-unlocked="isUnlocked"
         @select-usage="selectUsage">
       </LcUsageInput>
 
-      <div v-else class="app-BookOut--usageBlock">
+      <div v-else class="app-bookout__usage">
 
-        <LcButton v-if="!bookingsForm.processing && !hasAnyBookings"
-          class="app-BookOut--usageBlock-clearBtn" prepend-icon="mdi-close"
+        <LcButton v-if="!bookoutForm.processing && !hasItemsInCart"
+          class="app-bookout__usage-clear" prepend-icon="mdi-close"
           @click="clearUsage">
         </LcButton>
 
         <v-spacer></v-spacer>
 
-        {{ getUsage(bookingsForm.usage_id)?.name ?? 'Keine Ahnung' }}
+        {{ getUsageById(bookoutForm.usage_id)?.name ?? 'Interne Verwendung' }}
         <v-icon icon="mdi-truck"></v-icon>
 
       </div>
 
-    </div>
+    </section>
 
-    <div class="app-BookOut--page app-BookOut--inputpane" v-if="hasUsage">
+    <!-- ItemPicker -->
+    <section v-if="hasUsage">
 
-      <LcItemInput ref="itemInput"
-        :cart="bookingsForm.entries"
+      <LcItemInput ref="itemPicker"
+        :cart="bookoutForm.entries"
         :result-specs="{ w: 850, i: 19 }"
-        :disabled="amountCalc?.isVisible || bookingsForm.processing"
+        :disabled="manuallyDialog?.isVisible || bookoutForm.processing"
         @select-item="selectItem"
-        @ctrl-finish="sendBooking">
+        @ctrl-finish="finishBookOut">
       </LcItemInput>
 
-    </div>
+    </section>
 
-    <div class="app-BookOut--page app-BookOut--resultpane" v-if="hasUsage && hasAnyBookings">
+    <!-- Cart -->
+    <section class="app-bookout__cart" v-if="hasUsage && hasItemsInCart">
 
-      <LcButton v-if="hasAnyBookings"
-        class="app-BookOut--finishBlock" :loading="bookingsForm.processing"
+      <LcButton
+        class="app-bookout__finish" :loading="bookoutForm.processing"
         type="primary" prepend-icon="mdi-invoice-check"
-        @click="sendBooking">{{ bookingsForm.processing ? 'Entnahme buchen ...' : 'Fertig mit der Entnahme' }}
+        @click="finishBookOut">{{ bookoutForm.processing ? 'Entnahme buchen ...' : 'Fertig mit der Entnahme' }}
       </LcButton>
 
-      <v-data-table v-if="!bookingsForm.processing"
-        :items="preparedBooking" :headers="bookingsHeaders" :sort-by="bookingsSortBy"
+      <v-data-table v-if="!bookoutForm.processing"
+        :items="preparedCart" :headers="tableHeader" :sort-by="tableSortBy"
         density="compact" :items-per-page="999"
-        hide-default-footer class="app-BookOut--resultpane-table">
+        hide-default-footer class="app-bookout__cart-table">
         <template v-slot:item.action="{ item }">
-          <v-btn variant="flat" class="app-BookOut--reduceBlock" @click="reduceItem(item)">
+          <v-btn variant="flat" class="app-bookout__cart-table--reduce"
+            @click="reduceItem(item)">
             <v-icon icon="mdi-delete"></v-icon>
           </v-btn>
         </template>
       </v-data-table>
 
-    </div>
+    </section>
 
     <!-- Dialogs -->
-    <LcBookManuallyDialog ref="amountCalc" />
+    <LcBookManuallyDialog ref="manuallyDialog" />
     <LcConfirm ref="confirmDialog" />
     <LcRouteOverlay v-show="isRouting" />
 
-
+    <!-- Scan-Notification -->
     <v-snackbar
-      v-model="isScanNotificationVisible"
+      v-model="scanNotificationVisible"
       color="green" :height="100" centered
       :timeout="2000"><div class="text-center">{{ scanNotificationText }}</div>
     </v-snackbar>
@@ -317,16 +348,16 @@
 
 </template>
 <style lang="scss" scoped>
-.app-BookOut {
+.app-bookout {
 
   height: 100%;
 
-  &--page {
+  & section {
     max-width: 850px;
     margin: 0.5rem auto;
   }
 
-  &--usageBlock {
+  &__usage {
     height: 4rem;
     background: var(--accent-primary-background);
     color: var(--accent-primary-foreground);
@@ -338,7 +369,7 @@
     font-size: 1.2rem;
     font-weight: bold;
 
-    &-clearBtn {
+    &-clear {
       width: 10rem;
       height: 100%;
       outline: 0.5rem solid var(--main-light);
@@ -352,18 +383,10 @@
     }
   }
 
-  &--finishBlock {
+  &__finish {
     width: 100%;
     height: 6rem;
     margin-bottom: 0.5rem;
-  }
-
-  &--reduceBlock {
-    width: 4rem;
-    height: 2rem;
-    margin: 0 -22px 0 -12px;
-    border-radius: 0;
-    font-size: 1.2rem;
   }
 
   & :deep(.v-data-table__th) {
@@ -379,13 +402,24 @@
     }
   }
 
-  &--resultpane {
+  &__cart {
 
     height: calc(100% - 20rem);
+
     &-table {
+
       height: calc(100% - 6.5rem);
       overflow-y: auto;
       overflow-x: hidden;
+
+      &--reduce {
+        width: 4rem;
+        height: 2rem;
+        margin: 0 -22px 0 -12px;
+        border-radius: 0;
+        font-size: 1.2rem;
+      }
+
     }
 
     &::-webkit-scrollbar {
