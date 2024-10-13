@@ -9,7 +9,7 @@
   import { VNumberInput } from 'vuetify/labs/VNumberInput'
 
   // Local composables
-  import { useBaseSize } from '@/Composables/CalcSizes'
+  import { useBaseSize } from '@/Composables/useBaseSize'
 
 // #endregion
 
@@ -77,7 +77,7 @@
     else { return 1 }
   })
 
-  watch(currentSize, (newSize, oldSize) => { 
+  watch(currentSize, (newSize, oldSize) => {
     if (!oldSize || !newSize) { return }
 
     if (newSize.amount < oldSize.amount) {

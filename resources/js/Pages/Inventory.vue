@@ -10,10 +10,11 @@
   import { VNumberInput } from 'vuetify/labs/VNumberInput'
 
   // Local composables
-  import { useBaseSize, useSizesCalc } from '@/Composables/CalcSizes'
   import IdleCursor from '@/Components/IdleCursor.vue'
   import InputService from '@/Services/InputService'
   import { useInventoryStore } from '@/Services/StoreService'
+  import { useBaseSize } from '@/Composables/useBaseSize'
+  import { useOptimalSize } from '@/Composables/useOptimalSize'
 
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
@@ -145,7 +146,7 @@
       }
       itemForm.min_stock = 0
       itemForm.max_stock = 0
-      
+
       itemForm.current_expiry = null
       currentExpiryMonth.value = new Date().getMonth() + 1
       currentExpiryYear.value = (new Date()).getFullYear()
@@ -342,14 +343,14 @@
 
     // #region editor-minmax
 
-      // computed 
+      // computed
       const { baseUnit } = useBaseSize(toRef(itemForm, 'sizes'))
-      const { text: minText } = useSizesCalc(toRef(itemForm, 'sizes'), toRef(itemForm, 'min_stock'))
-      const { text: maxText } = useSizesCalc(toRef(itemForm, 'sizes'), toRef(itemForm, 'max_stock'))
+      const { text: minText } = useOptimalSize(toRef(itemForm, 'sizes'), toRef(itemForm, 'min_stock'))
+      const { text: maxText } = useOptimalSize(toRef(itemForm, 'sizes'), toRef(itemForm, 'max_stock'))
 
       const minDefaultText = computed(() => `${itemForm.min_stock} ${baseUnit.value}`)
       const maxDefaultText = computed(() => `${itemForm.max_stock} ${baseUnit.value}`)
-      
+
       const minSizesDiffer = computed(() => minText.value != minDefaultText.value)
       const maxSizesDiffer = computed(() => maxText.value != maxDefaultText.value)
 
@@ -398,7 +399,7 @@
 
       // update
       const updateExpiry = () => {
-        if (!currentExpiryMonth.value || !currentExpiryYear.value) { 
+        if (!currentExpiryMonth.value || !currentExpiryYear.value) {
           itemForm.current_expiry = null
         } else {
           itemForm.current_expiry = new Date(currentExpiryYear.value, currentExpiryMonth.value, 0)
@@ -480,7 +481,7 @@
         <v-btn v-if="!isItemSelected" variant="flat"
           @click="openConfigDemands">Anforderungen
         </v-btn>
-        <v-btn v-if="!isItemSelected" variant="flat" 
+        <v-btn v-if="!isItemSelected" variant="flat"
           @click="openConfigUsages">Verwendungen
         </v-btn>
       </template>
@@ -490,9 +491,9 @@
 
       <template v-if="!isItemSelected">
 
-        <LcItemInput 
+        <LcItemInput
           :result-specs="{ w: 850, i: 14.5 }"
-          :admin-mode="true" 
+          :admin-mode="true"
           @create-new="createNew" @select-item="editItem">
         </LcItemInput>
 
@@ -500,7 +501,7 @@
         <v-card title="Verfall prüfen" class="mt-2" variant="outlined">
           <v-card-text>
 
-            <v-data-table 
+            <v-data-table
               :items="itemsNearExpiry" :headers="tableExpiry" :sort-by="sortExpiry"
               hide-default-footer :items-per-page="100">
               <template v-slot:item.demand="{ item }">
@@ -521,7 +522,7 @@
         <!-- <v-card title="In Bestellung" class="mt-2" variant="outlined">
           <v-card-text>
 
-            <v-data-table 
+            <v-data-table
               :items="itemsOrdered" :headers="tableOrdered" :sort-by="sortOrdered"
               hide-default-footer :items-per-page="100">
               <template v-slot:item.demand="{ item }">
@@ -553,7 +554,7 @@
         <v-expansion-panels class="mt-2" flat multiple
           v-model="editActivePanel" :disabled="itemForm.processing">
 
-          <v-expansion-panel class="mt-1" title="Allgemein" color="black" outlined> 
+          <v-expansion-panel class="mt-1" title="Allgemein" color="black" outlined>
             <v-expansion-panel-text>
 
               <v-text-field
@@ -589,11 +590,11 @@
               <v-alert v-if="!isValidDemand"
                 text="Du musst eine Anforderung angeben."
                 type="error"></v-alert>
-                
+
             </v-expansion-panel-text>
           </v-expansion-panel>
-          
-          <v-expansion-panel class="mt-1" title="Wo ist ... ?" color="black"> 
+
+          <v-expansion-panel class="mt-1" title="Wo ist ... ?" color="black">
             <v-expansion-panel-text>
 
               <v-text-field
@@ -616,8 +617,8 @@
 
             </v-expansion-panel-text>
           </v-expansion-panel>
-          
-          <v-expansion-panel class="mt-1" title="Packungsgrößen" color="black"> 
+
+          <v-expansion-panel class="mt-1" title="Packungsgrößen" color="black">
             <v-expansion-panel-text>
 
               <v-data-table :items="itemForm.sizes"
@@ -637,8 +638,8 @@
 
               </v-expansion-panel-text>
           </v-expansion-panel>
-          
-          <v-expansion-panel class="mt-1" title="Min- & Maxbestand" color="black"> 
+
+          <v-expansion-panel class="mt-1" title="Min- & Maxbestand" color="black">
             <v-expansion-panel-text>
 
               <v-form>
@@ -672,11 +673,11 @@
                 </v-row>
               </v-form>
 
-              
+
             </v-expansion-panel-text>
           </v-expansion-panel>
-          
-          <v-expansion-panel class="mt-1" title="Aktueller Bestand" color="black"> 
+
+          <v-expansion-panel class="mt-1" title="Aktueller Bestand" color="black">
             <v-expansion-panel-text>
 
               <v-form>
@@ -704,7 +705,7 @@
                       item-value="value"
                       required
                       hide-details
-                    ></v-select> 
+                    ></v-select>
                   </v-col>
                 </v-row>
                 <v-row class="mt-2">
@@ -721,7 +722,7 @@
                       :min="1"
                       :max="12"
                     ></v-number-input>
-                    <!-- <v-select 
+                    <!-- <v-select
                       v-model="currentExpiryMonth"
                       :items="selectableMonths"
                       label="Monat"
@@ -753,7 +754,7 @@
                 </v-row>
               </v-form>
 
-              
+
             </v-expansion-panel-text>
           </v-expansion-panel>
 
@@ -806,7 +807,7 @@
               label="Größenangabe" hide-details>
             </v-text-field>
 
-            <v-checkbox 
+            <v-checkbox
               label="In dieser Packungseinheit bestellen"
               v-model="currentEditSizeItem.is_default"
               hide-details>
