@@ -122,9 +122,9 @@
 
     // methods
     const selectItem = async (item, amount) => {
-      
+
       if (amount === null) {
-        
+
         // selected manually, show amount-dialog
         const manualAmount = await amountCalc.value.open({
           item: item
@@ -167,7 +167,7 @@
       } else {
 
         // set entry
-        entry.item_amount = add 
+        entry.item_amount = add
           ? (entry.item_amount + amount)
           : amount;
 
@@ -221,7 +221,7 @@
     if (!!props.usageId) {
       bookingsForm.usage_id = props.usageId
     }
-    
+
     // register input
     InputService.registerEsc(handleEscape)
 
@@ -255,7 +255,7 @@
       <div v-else class="app-BookOut--usageBlock">
 
         <LcButton v-if="!bookingsForm.processing && !hasAnyBookings"
-          class="app-BookOut--usageBlock-clearBtn" only-icon="mdi-close" 
+          class="app-BookOut--usageBlock-clearBtn" prepend-icon="mdi-close"
           @click="clearUsage">
         </LcButton>
 
@@ -307,8 +307,8 @@
     <LcRouteOverlay v-show="isRouting" />
 
 
-    <v-snackbar 
-      v-model="isScanNotificationVisible" 
+    <v-snackbar
+      v-model="isScanNotificationVisible"
       color="green" :height="100" centered
       :timeout="2000"><div class="text-center">{{ scanNotificationText }}</div>
     </v-snackbar>
