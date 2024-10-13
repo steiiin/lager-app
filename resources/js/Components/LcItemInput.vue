@@ -555,7 +555,7 @@
     & > * {
       opacity: .3;
     }
-    &--title {
+    &-title {
       font-weight: bold;
       font-size: 1.3rem;
     }
