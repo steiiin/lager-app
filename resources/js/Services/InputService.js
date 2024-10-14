@@ -1,4 +1,11 @@
-// #region state
+/**
+ * InputService
+ *
+ * To register keyboard-shortcuts and handle barcodescanner input.
+ *
+ */
+
+// #region State
 
   import { reactive } from 'vue'
   const state = reactive({
