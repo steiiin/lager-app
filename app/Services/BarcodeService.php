@@ -23,7 +23,7 @@ class BarcodeService
   private static int $branchCtrl = 2;
   private static int $branchItems = 1;
 
-  #region Ctrl-Codes 
+  #region Ctrl-Codes
 
     private static int $ctrlFinish = 1;
     private static int $ctrlUsages = 10000;
@@ -35,7 +35,7 @@ class BarcodeService
 
     // ##########################################
 
-    public static function generateCtrlBatch(): Array 
+    public static function generateCtrlBatch(): Array
     {
       return [
         self::generateCtrlFinish() => "finish"
@@ -53,7 +53,7 @@ class BarcodeService
 
     // ##########################################
 
-    public static function generateUsagesBatch(): Array 
+    public static function generateUsagesBatch(): Array
     {
       $codes = [];
       foreach (Usage::all() as $usage)
@@ -77,36 +77,30 @@ class BarcodeService
 
     // ##########################################
 
-    public static function generateItemsBatch(): Array 
+    public static function generateItemsBatch(): Array
     {
 
-      $items = Item::with('sizes')->get();
-      $codes = [];
+      $items = Item::with(['sizes', 'demand'])->get();
+      $codes = $items->flatMap(function ($item) {
+        return $item->sizes->mapWithKeys(function ($size) use ($item) {
+            return [BarcodeService::generateItem($item->id, $size->id) => [
+                "id" => $item->id,
+                "name" => $item->name,
+                "demand" => $item->demand->name,
+                "amount" => $size->amount,
+                "unit" => $size->unit,
+                "isdefault" => $size->is_default === 1,
+            ]];
+        });
+      });
 
-      // iterate through items
-      foreach ($items as $item)
-      {
+      return $codes->toArray();
 
-        // iterate through itemsizes
-        foreach ($item->sizes as $size)
-        {
-          $codes[self::generateItem($item->id, $size->id)] = [
-            "id" => $item->id,
-            "name" => $item->name,
-            "demand" => $item->demand->name,
-            "amount" => $size->amount,
-            "unit" => $size->unit,
-            "isdefault" => ($size->is_default === 1) ? true : false,
-          ];
-        }
-
-      }
-      return $codes;
     }
 
   // #endregion
 
-  public static function generateAll(): Array 
+  public static function generateAll(): Array
   {
     return [
       "ctrl" => self::generateCtrlBatch(),
