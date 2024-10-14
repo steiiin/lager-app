@@ -1,4 +1,11 @@
-// Services/ItemsStore.js
+/**
+ * StoreService - pinia data storage
+ *
+ * This Service contains app-wide data storage via pinia.
+ * Contains items and usages, so it only loads on app-start once.
+ *
+ */
+
 import { defineStore } from 'pinia'
 import axios from 'axios';
 
