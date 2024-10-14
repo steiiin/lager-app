@@ -87,7 +87,7 @@
     const pageClasses = computed(() => {
       return 'page-welcome' + (props.isUnlocked
         ? ''
-        : 'page-welcome--locked')
+        : ' page-welcome--locked')
     })
 
   // #endregion
