@@ -3,7 +3,7 @@ import { computed, toValue } from 'vue'
 import { findOptimalSize } from '@/Utils/sizeUtils' // Adjust the import path accordingly
 
 /**
- * useOptimalSize
+ * useOptimalSize - composable
  *
  * Calculates the optimal size based on the provided sizes array and amount.
  *

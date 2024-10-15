@@ -3,7 +3,7 @@
 import { computed, toValue } from 'vue'
 
 /**
- * useBaseSize
+ * useBaseSize - composable
  *
  * Computes the base size and its unit from the sizes array.
  *

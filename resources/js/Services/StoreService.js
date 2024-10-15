@@ -1,5 +1,5 @@
 /**
- * StoreService - pinia data storage
+ * StoreService - data storage
  *
  * This Service contains app-wide data storage via pinia.
  * Contains items and usages, so it only loads on app-start once.

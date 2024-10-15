@@ -1,5 +1,5 @@
 /**
- * InputService
+ * InputService - service
  *
  * To register keyboard-shortcuts and handle barcodescanner input.
  *
