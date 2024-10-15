@@ -7,55 +7,72 @@ use App\Models\Demand;
 use App\Models\Item;
 use App\Models\Order;
 use App\Models\Usage;
+use Carbon\CarbonInterval;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class ApiOrderController extends Controller
 {
 
-  private function getItemsBelowMinStock()
+  private function getItemsNeedingRestock(): Collection
   {
     $items = Item::withAll()->where('current_quantity', '<=', 'min_stock')->get();
-    return $items->filter(function ($item) {
-      return ($item->demanded_quantity <= $item->min_stock) && ($item->demanded_quantity < $item->max_stock);
-    });
+    return $items->filter(fn ($item) =>
+      $item->demanded_quantity <= $item->min_stock &&
+      $item->demanded_quantity < $item->max_stock
+    );
   }
+
+  // ####################################################################################
 
   public function check()
   {
-    $items = $this->getItemsBelowMinStock();
+    $items = $this->getItemsNeedingRestock();
     return response()->json([
       "hasSome" => $items->count() > 0
     ]);
   }
 
+  // ####################################################################################
+
   public function prepare()
   {
-    
-    // check if there are items to order
-    $items = $this->getItemsBelowMinStock();
+
+    $items = $this->getItemsNeedingRestock();
+
+    // cancel creation, if nothing to order
     if ($items->count() === 0) {
       return response()->noContent();
     }
 
-    // create demand data
-    $demandData = Demand::all()->mapWithKeys(function ($demand) 
-    {
-      return [
-        $demand->id => [
-          "id" => $demand->id,
-          "name" => $demand->name,
-          "sp_name" => $demand->sp_name,
-        ]
-      ];
-    })->toArray();
-
-    // save timestamp
+    $demandData = $this->prepareDemandData();
+    $orderData = $this->prepareOrderData($items);
     $prepareTime = Carbon::now()->timestamp;
 
-    // create orderdata
-    $orderData = $items->map(function ($item)
+    return response()->json([
+      "prepareTime" => $prepareTime,
+      "demandData" => $demandData,
+      "orderData" => $orderData,
+    ]);
+
+  }
+
+  private function prepareDemandData(): Collection
+  {
+    return Demand::all()->mapWithKeys(fn ($demand) => [
+      $demand->id => [
+        "id" => $demand->id,
+        "name" => $demand->name,
+        "sp_name" => $demand->sp_name,
+      ]
+    ]);
+  }
+
+  private function prepareOrderData(Collection $items): Collection
+  {
+    return $items->map(function ($item)
     {
 
       $order = (object)[];
@@ -77,39 +94,39 @@ class ApiOrderController extends Controller
       $order->amount_desired = $order->orderamount * $item->ordersize->amount;
 
       return $order;
-      
+
     })->values();
-
-    return response()->json([
-      "prepareTime" => $prepareTime,
-      "demandData" => $demandData,
-      "orderData" => $orderData,
-    ]);
-
   }
+
+  // ####################################################################################
 
   public function execute(Request $request)
   {
 
+    $minTimeRange = Carbon::now()->subWeek()->timestamp;
+    $maxTimeRange = Carbon::now()->addDay()->timestamp;
+
     $request->validate([
-      'prepareTime' => 'required|integer|min:1727100000|max:3000000000',
+      'prepareTime' => "required|integer|min:$minTimeRange|max:$maxTimeRange",
       'orderData' => 'required|array',
-      'orderData.0' => 'required',
       'orderData.*.item_id' => 'required|integer|exists:items,id',
       'orderData.*.amount_desired' => 'required|integer|min:1'
     ]);
+
     $orderData = collect($request['orderData']);
     $prepareTime = $request['prepareTime'];
 
-    DB::transaction(function () use ($orderData, $prepareTime) 
+    DB::transaction(function () use ($orderData, $prepareTime)
     {
 
-      // load all bookings before preparetime
-      $prepareDate = Carbon::createFromTimestamp($prepareTime);
-      $bookings = Booking::with(['usage'])->where('updated_at', '<=', $prepareDate)->get();
-      
+      // load all bookings before prepare time
+      $bookings = Booking::with(['usage'])
+        ->where('updated_at', '<=', Carbon::createFromTimestamp($prepareTime))
+        ->whereIn('item_id', $orderData->pluck('item_id'))
+        ->get();
+
       // create orders
-      $orderData->each(function ($orderDatum) use ($bookings, $prepareTime) 
+      $orderData->each(function ($orderDatum) use ($bookings, $prepareTime)
       {
 
         // create log
@@ -118,7 +135,7 @@ class ApiOrderController extends Controller
         $itemLog = $bookings->where('item_id', $orderDatum['item_id'])->map(function ($booking) use (&$desUsage, &$desChanged) {
 
           // get usage name
-          $usageName = $booking->usage_id < 0 
+          $usageName = $booking->usage_id < 0
             ? Usage::getInternalUsageName($booking->usage_id)
             : $booking->usage->name;
 
@@ -136,7 +153,7 @@ class ApiOrderController extends Controller
           ];
 
         })->values();
-        
+
         // create order
         Order::create([
           'item_id' => $orderDatum['item_id'],
@@ -156,9 +173,9 @@ class ApiOrderController extends Controller
         $booking->delete();
       });
 
-      return response()->noContent();
-
     });
+
+    return response()->noContent();
 
   }
 
