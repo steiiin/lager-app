@@ -1,5 +1,15 @@
 <?php
 
+/**
+ * ApiOrderController - controller
+ *
+ * Controller to handle order-api-endpoint.
+ * Check: to determine if something is to order
+ * Prepare: Create necessary order-amounts
+ * Execute: Execute order for prepared order-items.
+ *
+ */
+
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
