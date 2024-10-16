@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * InventoryController - controller
+ *
+ * Controller for Inventory page.
+ *
+ */
+
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
@@ -20,7 +27,7 @@ class InventoryController extends Controller
         return Inertia::render('Inventory', [
             'demands' => $demands,
         ]);
-        
+
     }
 
     public function store(Request $request)
@@ -35,9 +42,9 @@ class InventoryController extends Controller
             'search_tags' => 'nullable|string',
             'demand_id' => 'required|integer|exists:demands,id',
             'location' => 'required|array',
-            'location.room' => 'nullable|string', 
-            'location.cab' => 'nullable|string', 
-            'location.exact' => 'nullable|string', 
+            'location.room' => 'nullable|string',
+            'location.cab' => 'nullable|string',
+            'location.exact' => 'nullable|string',
             'min_stock' => 'required|numeric|min:0|max:999',
             'max_stock' => 'required|numeric|min:0|max:999|gte:min_stock',
 
@@ -48,26 +55,17 @@ class InventoryController extends Controller
             'sizes.*.is_default' => 'required|boolean'
         ]);
 
-        try
+        DB::transaction(function () use ($request)
         {
 
-            DB::transaction(function () use ($request) 
-            {
+            // create item
+            $newItem = Item::create($request->except('sizes'));
 
-                // create item
-                $newItem = Item::create($request->except('sizes'));
+            // handle sizes
+            $this->handleSizes($request->input('sizes'), $newItem);
 
-                // handle sizes
-                $this->handleSizes($request->input('sizes'), $newItem);
-
-            });
-            return redirect()->route('inventory.index');
-
-        }
-        catch (\Illuminate\Database\QueryException $e)
-        {
-            throw $e;
-        }
+        });
+        return redirect()->route('inventory.index');
 
     }
 
@@ -83,9 +81,9 @@ class InventoryController extends Controller
             'search_tags' => 'nullable|string',
             'demand_id' => 'required|integer|exists:demands,id',
             'location' => 'required|array',
-            'location.room' => 'nullable|string', 
-            'location.cab' => 'nullable|string', 
-            'location.exact' => 'nullable|string', 
+            'location.room' => 'nullable|string',
+            'location.cab' => 'nullable|string',
+            'location.exact' => 'nullable|string',
             'min_stock' => 'required|numeric|min:0|max:999',
             'max_stock' => 'required|numeric|min:0|max:999|gte:min_stock',
 
@@ -96,53 +94,45 @@ class InventoryController extends Controller
             'sizes.*.is_default' => 'required|boolean'
         ]);
 
-        try
+        DB::transaction(function () use ($request, $id)
         {
 
-            DB::transaction(function () use ($request, $id) 
+            // get item
+            $item = Item::findOrFail($id);
+            $stockChange = $item->current_quantity - $request->current_quantity;
+
+            // update item
+            $item->update($request->except('sizes'));
+
+            // handle sizes
+            $this->handleSizes($request->input('sizes'), $item);
+
+            // handle stockchange
+            if ($stockChange !== 0)
             {
+                Booking::create([
+                    'usage_id' => $request->stockchangeReason,
+                    'item_id' => $item->id,
+                    'item_amount' => $stockChange
+                ]);
+            }
 
-                // get item
-                $item = Item::findOrFail($id);
-                $stockChange = $item->current_quantity - $request->current_quantity;
+        });
 
-                // update item
-                $item->update($request->except('sizes'));
-
-                // handle sizes
-                $this->handleSizes($request->input('sizes'), $item);
-
-                // handle stockchange
-                if ($stockChange !== 0)
-                {
-                    Booking::create([
-                        'usage_id' => $request->stockchangeReason,
-                        'item_id' => $item->id,
-                        'item_amount' => $stockChange
-                    ]);
-                }
-
-            });
-
-            return redirect()->route('inventory.index');
-        }
-        catch (\Illuminate\Database\QueryException $e)
-        {
-            throw $e;
-        }
+        return redirect()->route('inventory.index');
 
     }
 
     private function handleSizes(Array $sizes, Item $item)
     {
-        if ($sizes) 
+        if ($sizes)
         {
 
             // Check if any 'is_default' is true
             $hasOrderSize = collect($sizes)->contains(function ($size) {
                 return isset($size['is_default']) && $size['is_default'] == true;
             });
-            if (!$hasOrderSize) 
+            if (!$hasOrderSize)
             {
 
                 // Find the item where 'amount' === 1 and set 'is_default' to true
@@ -153,12 +143,12 @@ class InventoryController extends Controller
                     }
                 }
                 unset($size); // Break the reference with the last element
-                
+
             }
 
             foreach ($sizes as $size) {
 
-                if ($size['id'] === null) 
+                if ($size['id'] === null)
                 {
                     Itemsize::create(array_merge($size, [ 'item_id' => $item->id ]));
                 }
@@ -176,27 +166,19 @@ class InventoryController extends Controller
     public function destroy($id)
     {
 
-        try
+        DB::transaction(function () use ($id)
         {
 
-            DB::transaction(function () use ($id) 
-            {
+            $item = Item::findOrFail($id);
+            $item->delete();
 
-                $item = Item::findOrFail($id);
-                $item->delete();
-                
-                Itemsize::where('item_id', $item->id)->delete();
+            Itemsize::where('item_id', $item->id)->delete();
 
-                // TODO: only if not on booking
+            // TODO: only if not on booking
 
-            });
+        });
 
-            return redirect()->route('inventory.index');
-        }
-        catch (\Illuminate\Database\QueryException $e)
-        {
-            throw $e;
-        }
+        return redirect()->route('inventory.index');
 
 
         $item = Item::findOrFail($id);

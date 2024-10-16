@@ -1,10 +1,17 @@
 <?php
 
+
+/**
+ * BookOutController - controller
+ *
+ * Controller for BookOut page.
+ *
+ */
+
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\Item;
-use App\Models\Usage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
@@ -23,7 +30,7 @@ class BookOutController extends Controller
             'isUnlocked' => Session::get('isUnlocked', false),
             'usageId' => $usageId
         ]);
-        
+
     }
 
     public function store(Request $request)
@@ -36,38 +43,29 @@ class BookOutController extends Controller
             'entries.*.item_amount' => 'required|integer|min:1'
         ]);
 
-        try
+        DB::transaction(function () use ($request)
         {
 
-            DB::transaction(function () use ($request) 
+            $usageId = $request['usage_id'];
+            $entries = $request['entries'];
+
+            foreach($entries as $entry)
             {
 
-                $usageId = $request['usage_id'];
-                $entries = $request['entries'];
+                Booking::create([
+                    'usage_id' => $usageId,
+                    'item_id' => $entry['item_id'],
+                    'item_amount' => $entry['item_amount']
+                ]);
 
-                foreach($entries as $entry)
-                {
+                $item = Item::findOrFail($entry['item_id']);
+                $item->decrement('current_quantity', $entry['item_amount']);
 
-                    Booking::create([
-                        'usage_id' => $usageId,
-                        'item_id' => $entry['item_id'],
-                        'item_amount' => $entry['item_amount']
-                    ]);
+            }
 
-                    $item = Item::findOrFail($entry['item_id']);
-                    $item->decrement('current_quantity', $entry['item_amount']);
+        });
 
-                }
-
-            });
-
-            return redirect()->route('welcome');
-
-        }
-        catch (\Illuminate\Database\QueryException $e)
-        {
-            throw $e;
-        }
+        return redirect()->route('welcome');
 
     }
 

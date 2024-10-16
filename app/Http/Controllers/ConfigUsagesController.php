@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * ConfigUsagesController - controller
+ *
+ * Controller for ConfigUsages page.
+ *
+ */
+
 namespace App\Http\Controllers;
 
 use App\Models\Usage;
@@ -7,7 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
-class UsagesController extends Controller
+class ConfigUsagesController extends Controller
 {
 
     public function index()
@@ -33,15 +40,8 @@ class UsagesController extends Controller
             'name.unique' => 'Diese Verwendung gibt es schon.',
         ]);
 
-        try
-        {
-            Usage::create($request->all());
-            return redirect()->route('config-usages.index');
-        }
-        catch (\Illuminate\Database\QueryException $e)
-        {
-            throw $e;
-        }
+        Usage::create($request->all());
+        return redirect()->route('config-usages.index');
 
     }
 
@@ -60,16 +60,10 @@ class UsagesController extends Controller
             'name.unique' => 'Diese Verwendung gibt es schon.',
         ]);
 
-        try
-        {
-            $usage = Usage::findOrFail($id);
-            $usage->update($request->all());
-            return redirect()->route('config-usages.index');
-        }
-        catch (\Illuminate\Database\QueryException $e)
-        {
-            throw $e;
-        }
+        $usage = Usage::findOrFail($id);
+        $usage->update($request->all());
+        return redirect()->route('config-usages.index');
+
     }
 
     public function destroy($id)

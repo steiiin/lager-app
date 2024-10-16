@@ -1,11 +1,17 @@
 <?php
 
+/**
+ * BookInController - controller
+ *
+ * Controller for BookIn page.
+ *
+ */
+
 namespace App\Http\Controllers;
 
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 
 class BookInController extends Controller
@@ -34,32 +40,23 @@ class BookInController extends Controller
             'order.*.amount_delivered' => 'required|integer|min:0',
         ]);
 
-        try
+        DB::transaction(function () use ($request)
         {
 
-            DB::transaction(function () use ($request)
+            $revisedData = $request['orders'];
+            foreach($revisedData as $revisedDatum)
             {
+                $order = Order::findOrFail($revisedDatum['id']);
+                $order->update([
+                    'amount_delivered' => $revisedDatum['amount_delivered'],
+                    'is_order_open' => false,
+                ]);
+                $order->item->increment('current_quantity', $revisedDatum['amount_delivered']);
+            }
 
-                $revisedData = $request['orders'];
-                foreach($revisedData as $revisedDatum)
-                {
-                    $order = Order::findOrFail($revisedDatum['id']);
-                    $order->update([
-                        'amount_delivered' => $revisedDatum['amount_delivered'],
-                        'is_order_open' => false,
-                    ]);
-                    $order->item->increment('current_quantity', $revisedDatum['amount_delivered']);
-                }
+        });
 
-            });
-
-            return redirect()->route('welcome');
-
-        }
-        catch (\Illuminate\Database\QueryException $e)
-        {
-            throw $e;
-        }
+        return redirect()->route('welcome');
 
     }
 

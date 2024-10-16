@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * ConfigDemandsController - controller
+ *
+ * Controller for ConfigDemands page.
+ *
+ */
+
 namespace App\Http\Controllers;
 
 use App\Models\Demand;
@@ -7,7 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
-class DemandsController extends Controller
+class ConfigDemandsController extends Controller
 {
 
     public function index()
@@ -37,15 +44,8 @@ class DemandsController extends Controller
             'sp_name.required' => 'Du musst eine Sharepoint-Anforderung angeben.',
         ]);
 
-        try
-        {
-            Demand::create($request->all());
-            return redirect()->route('config-demands.index');
-        }
-        catch (\Illuminate\Database\QueryException $e)
-        {
-            throw $e;
-        }
+        Demand::create($request->all());
+        return redirect()->route('config-demands.index');
 
     }
 
@@ -68,16 +68,10 @@ class DemandsController extends Controller
             'sp_name.required' => 'Du musst eine Sharepoint-Anforderung angeben.',
         ]);
 
-        try
-        {
-            $demand = Demand::findOrFail($id);
-            $demand->update($request->all());
-            return redirect()->route('config-demands.index');
-        }
-        catch (\Illuminate\Database\QueryException $e)
-        {
-            throw $e;
-        }
+        $demand = Demand::findOrFail($id);
+        $demand->update($request->all());
+        return redirect()->route('config-demands.index');
+
     }
 
     public function destroy($id)

@@ -1,5 +1,15 @@
 <?php
 
+/**
+ * ApiStatisticController - controller
+ *
+ * Controller to handle statistic-api-endpoint.
+ * Index: Create stats for each item.
+ * Logs: Fetch logs in the order table.
+ * Truncate: Remove saved logs, to save space.
+ *
+ */
+
 namespace App\Http\Controllers;
 
 use App\Models\Order;
@@ -44,7 +54,7 @@ class ApiStatisticController extends Controller
             'logs' => $mergedLogs,
             'orders' => $orderIds,
         ]);
-        
+
     }
 
     public function truncate(Request $request)
@@ -56,7 +66,7 @@ class ApiStatisticController extends Controller
             'orders.*' => 'integer|exists:orders,id',
         ]);
 
-        DB::transaction(function () use ($request) 
+        DB::transaction(function () use ($request)
         {
             foreach ($request->orders as $orderId)
             {
