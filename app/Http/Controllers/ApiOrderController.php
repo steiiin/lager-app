@@ -27,10 +27,10 @@ class ApiOrderController extends Controller
 
   private function getItemsNeedingRestock(): Collection
   {
-    $items = Item::withAll()->where('current_quantity', '<=', 'min_stock')->get();
+    $items = Item::withPending()->where('current_quantity', '<=', 'min_stock')->get();
     return $items->filter(fn ($item) =>
-      $item->demanded_quantity <= $item->min_stock &&
-      $item->demanded_quantity < $item->max_stock
+      $item->pending_quantity <= $item->min_stock &&
+      $item->pending_quantity < $item->max_stock
     );
   }
 
@@ -93,7 +93,7 @@ class ApiOrderController extends Controller
       $order->min = $item->min_stock;
       $order->max = $item->max_stock;
 
-      $needForMaxStock = ($item->max_stock - $item->demanded_quantity);
+      $needForMaxStock = ($item->max_stock - $item->pending_quantity);
 
       $order->orderunit = $item->ordersize->unit;
       $order->orderamount = floor($needForMaxStock / $item->ordersize->amount);

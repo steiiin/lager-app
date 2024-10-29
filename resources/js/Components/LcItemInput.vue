@@ -337,10 +337,10 @@
     // #region ItemProps-Getter (for pickerresult)
 
       const getQuantityColor = (item) => {
-        if (item.demanded_quantity <= item.min_stock) {
+        if (item.pending_quantity <= item.min_stock) {
           return 'error'
         }
-        else if (item.demanded_quantity <= (item.min_stock + item.max_stock/2)) {
+        else if (item.pending_quantity <= (item.min_stock + item.max_stock/2)) {
           return 'warning'
         }
         else {
@@ -469,10 +469,10 @@
       <template v-if="adminMode">
         <template v-if="item.hasAltNames || item.hasTags">
           <div class="lc-picker__result--item-tags" v-if="item.hasAltNames">
-            <v-chip size="small" label variant="outlined" v-for="tag in item.pp_search_altnames_list">{{ tag }}</v-chip>
+            <v-chip size="small" label variant="outlined" v-for="tag in item.pp_altnames_list">{{ tag }}</v-chip>
           </div>
           <div class="lc-picker__result--item-tags" v-if="adminMode && item.hasTags">
-            <v-chip size="x-small" v-for="tag in item.pp_search_tags_list">{{ tag }}</v-chip>
+            <v-chip size="x-small" v-for="tag in item.pp_tags_list">{{ tag }}</v-chip>
           </div>
         </template>
         <v-divider class="my-2"></v-divider>
@@ -493,15 +493,15 @@
           <v-chip
             :color="item.expiryColor" variant="flat" label><b>{{ item.expiryText }}</b></v-chip>
           <v-chip
-            :color="item.quantityColor" variant="flat" label><b>{{ item.demanded_quantity }} {{ item.basesize.unit }}</b></v-chip>
-          <v-chip v-if="item.current_quantity !== item.demanded_quantity"
+            :color="item.quantityColor" variant="flat" label><b>{{ item.pending_quantity }} {{ item.basesize.unit }}</b></v-chip>
+          <v-chip v-if="item.current_quantity !== item.pending_quantity"
             variant="flat" label>Ohne Bestellung:&nbsp;<b>{{ item.current_quantity }} {{ item.basesize.unit }}</b></v-chip>
         </div>
       </template>
       <template v-else>
         <template v-if="item.hasAltNames">
           <div class="lc-picker__result--item-tags" v-if="item.hasAltNames">
-            <v-chip size="small" label variant="outlined" v-for="tag in item.pp_search_altnames_list">{{ tag }}</v-chip>
+            <v-chip size="small" label variant="outlined" v-for="tag in item.pp_altnames_list">{{ tag }}</v-chip>
           </div>
         </template>
         <template v-if="item.isOnBooking">

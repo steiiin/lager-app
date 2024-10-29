@@ -17,7 +17,7 @@ class ApiStoreController extends Controller
     public function index()
     {
 
-        $items = Item::withAll()->get();
+        $items = Item::withPending()->get();
         $usages = Usage::select(['id', 'name', 'is_locked'])->get();
 
         return response()->json([
