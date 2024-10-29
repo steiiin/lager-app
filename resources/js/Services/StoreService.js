@@ -9,6 +9,10 @@
 import { defineStore } from 'pinia'
 import axios from 'axios';
 
+const tagCommata = (text, lowercase = false) => {
+  return (lowercase ? text?.toLowerCase() : text)?.trim().replace(/^,|,$/g, '').split(',').map(tag => tag.trim()).filter(tag => tag !== '') ?? []
+}
+
 export const useInventoryStore = defineStore('inventory', {
   state: () => ({
     items: [],
@@ -22,10 +26,12 @@ export const useInventoryStore = defineStore('inventory', {
       return state.items.map(item => ({
         ...item,
         pp_name: item.name.toLowerCase(),
+        pp_altnames_list: tagCommata(item.search_altnames),
+        pp_tags_list: tagCommata(item.search_tags),
         pp_search_altnames: item.search_altnames ? item.search_altnames.toLowerCase() : '',
-        pp_search_altnames_list: item.search_altnames?.toLowerCase().trim().replace(/^,|,$/g, '').split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
+        pp_search_altnames_list: tagCommata(item.search_altnames, true),
         pp_search_tags: item.search_tags ? item.search_tags.toLowerCase() : '',
-        pp_search_tags_list: item.search_tags?.toLowerCase().trim().replace(/^,|,$/g, '').split(',').map(tag => tag.trim()).filter(tag => tag !== ''),
+        pp_search_tags_list: tagCommata(item.search_tags, true),
       }))
     },
     findItemByBarcode: (state) => {
