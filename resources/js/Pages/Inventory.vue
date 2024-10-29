@@ -87,6 +87,7 @@
     const itemsNearExpiry = computed(() => {
       const thresholdDate = (new Date()); thresholdDate.setDate(thresholdDate.getDate() + 21); thresholdDate.setHours(0, 0, 0, 0);
       return inventoryStore.items.filter(item => {
+        if(!item.current_expiry) { return false }
         const expiryDate = new Date(item.current_expiry)
         return !isNaN(expiryDate) && expiryDate <= thresholdDate
       })
@@ -170,6 +171,7 @@
       itemForm.current_expiry = null
       currentExpiryMonth.value = new Date().getMonth() + 1
       currentExpiryYear.value = (new Date()).getFullYear()
+      currentNoExpiry.value = true
       updateExpiry()
 
       itemForm.current_quantity = 0
@@ -198,9 +200,10 @@
       itemForm.min_stock = item.min_stock
       itemForm.max_stock = item.max_stock
 
-      itemForm.current_expiry = new Date(item.current_expiry)
-      currentExpiryMonth.value = itemForm.current_expiry.getMonth()+1
-      currentExpiryYear.value = itemForm.current_expiry.getFullYear()
+      itemForm.current_expiry = !item.current_expiry ? null : new Date(item.current_expiry)
+      currentNoExpiry.value = !item.current_expiry
+      currentExpiryMonth.value = !itemForm.current_expiry ? null : itemForm.current_expiry.getMonth()+1
+      currentExpiryYear.value = itemForm.current_expiry?.getFullYear() ?? null
 
       itemForm.current_quantity = item.current_quantity
 
@@ -396,21 +399,20 @@
     // #endregion
     // #region Quantity/Expiry-Group
 
-      // Props
-      const isValidExpiry = computed(() => {
-        return itemForm.current_expiry !== null
-          && !isNaN(itemForm.current_expiry)
-      })
-
       const currentExpiryMonth = ref(null)
       const currentExpiryYear = ref(null)
+      const currentNoExpiry = ref(true)
       const selectableStockChangeReasons = ref([
         { name: "Abweichung", value: -1 },
       ])
 
+      const isValidExpiry = computed(() => currentNoExpiry.value || (itemForm.current_expiry !== null && !isNaN(itemForm.current_expiry)))
+
       // Expiry-Props
       const updateExpiry = () => {
-        if (!currentExpiryMonth.value || !currentExpiryYear.value) {
+        if (currentNoExpiry.value) {
+          itemForm.current_expiry = null
+        } else if (!currentExpiryMonth.value || !currentExpiryYear.value) {
           itemForm.current_expiry = null
         } else {
           itemForm.current_expiry = new Date(currentExpiryYear.value, currentExpiryMonth.value, 0)
@@ -420,6 +422,9 @@
         updateExpiry()
       })
       watch(currentExpiryYear, () => {
+        updateExpiry()
+      })
+      watch(currentNoExpiry, () => {
         updateExpiry()
       })
 
@@ -667,7 +672,7 @@
                   <v-col cols="3" class="align-content-center">
                     <v-number-input
                       v-model="currentExpiryMonth"
-                      :reverse="false"
+                      :reverse="false" :disabled="currentNoExpiry"
                       controlVariant="split"
                       :hideInput="false"
                       :inset="false" hide-details
@@ -678,7 +683,7 @@
                   <v-col cols="3" class="align-content-center">
                     <v-number-input
                       v-model="currentExpiryYear"
-                      :reverse="false"
+                      :reverse="false" :disabled="currentNoExpiry"
                       controlVariant="split"
                       :hideInput="false"
                       :inset="false" hide-details
@@ -686,12 +691,17 @@
                       :max="(new Date()).getFullYear() + 99"
                     ></v-number-input>
                   </v-col>
+                  <v-col cols="2">
+                    <v-checkbox v-model="currentNoExpiry"
+                      label="Ohne MHD" hide-details>
+                    </v-checkbox>
+                  </v-col>
                 </v-row>
                 <v-row class="mt-n5">
                   <v-col cols="4"></v-col>
                   <v-col cols="5">
                     <v-alert v-if="!isValidExpiry"
-                      text="Wann ist der nächste Verfall?"
+                      text="Gib einen Verfall ein."
                       type="error"></v-alert>
                   </v-col>
                 </v-row>
