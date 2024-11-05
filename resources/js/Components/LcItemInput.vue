@@ -349,6 +349,7 @@
       }
 
       const getExpiryColor = (item) => {
+        if (!item.current_expiry) { return 'success' }
         const daysDiff = Math.round(
           (new Date(item.current_expiry).getTime() - new Date().getTime()) /
           (1000 * 60 * 60 * 24))

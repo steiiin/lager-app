@@ -171,10 +171,6 @@
       <v-empty-state
         icon="mdi-invoice-remove-outline"
         title="Keine Bestellung auf dem Weg">
-        <template #text>
-          Es sind <b>keine offenen</b> Bestellungen im System. <br>
-          Einen Verlauf kannst du am Wachen-PC abrufen.
-        </template>
       </v-empty-state>
     </section>
 
@@ -230,9 +226,7 @@
 .page-bookin {
 
   &__empty {
-    position: absolute;
-    height: calc(100% - 6rem);
-    width: 100%;
+    margin-top: 6rem !important;
   }
 
   &__finish {
