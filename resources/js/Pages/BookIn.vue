@@ -116,6 +116,64 @@
     const hasOpenOrders = computed(() => props.openOrders.length>0)
 
     const groupedOpenOrders = computed(() => {
+      const groups = props.openOrders.reduce((groups, order) => {
+        const date = order.prepare_time;
+
+        // Initialize date group if it doesn't exist
+        if (!groups[date]) {
+          groups[date] = {};
+        }
+
+        // Initialize demand group within date group if it doesn't exist
+        const demandName = order.item.demand.name;
+        if (!groups[date][demandName]) {
+          groups[date][demandName] = [];
+        }
+
+        // Set additional properties on the order
+        order.changed = order.amount_desired !== order.amount_delivered;
+        if (order.amount_delivered > 0) {
+          const calc = findOptimalSize(order.item.sizes, order.amount_delivered);
+          order.ooSizeText = calc.text;
+          order.ooSizeUnit = calc.unit;
+          order.ooSizeAmount = calc.amount;
+        } else {
+          order.ooSizeText = 'Nicht Geliefert';
+          order.ooSizeUnit = order.item.basesize.unit;
+          order.ooSizeAmount = 0;
+        }
+
+        // Push the order into the respective demand group within the date group
+        groups[date][demandName].push(order);
+        return groups;
+      }, {});
+
+      // Sort the date groups, demand groups, and orders by the specified criteria
+      const sortedGroups = Object.keys(groups)
+      .sort((a, b) => new Date(a) - new Date(b)) // Sort dates ascending
+      .reduce((sorted, date) => {
+        // Sort each demand group by demand_id within each date
+        sorted[date] = Object.keys(groups[date])
+          .sort((demandA, demandB) => {
+            // Access the demand_id of the first order in each demand group for sorting
+            const demandIdA = groups[date][demandA][0].item.demand_id;
+            const demandIdB = groups[date][demandB][0].item.demand_id;
+            return demandIdA - demandIdB;
+          })
+          .reduce((sortedDemands, demandName) => {
+            // Sort orders within each demand group by the "name" property
+            sortedDemands[demandName] = groups[date][demandName].sort((orderA, orderB) =>
+              orderA.item.name.localeCompare(orderB.item.name)
+            );
+            return sortedDemands;
+          }, {});
+        return sorted;
+      }, {});
+      return sortedGroups;
+    });
+
+
+    const groupedOpenOrdersEx = computed(() => {
       return props.openOrders.reduce((groups, order) => {
         const date = order.prepare_time
         if (!groups[date]) {
@@ -184,29 +242,32 @@
 
       <v-timeline class="ml-4" side="end">
 
-        <v-timeline-item v-for="(orders, date) in groupedOpenOrders"
+        <v-timeline-item v-for="(demands, date) in groupedOpenOrders"
           class="my-4">
           <template v-slot:opposite>
             <b>{{ getOrderDate(date) }}</b>
           </template>
           <v-card class="rounded-0" variant="outlined">
             <v-card-text>
-              <v-row v-for="order in orders" :key="order.id"
-                class="page-bookin__order-row"
-                justify="space-between" align="center" dense>
-                <v-col cols="5">
-                  <span>{{ order.item.name }}</span>
-                </v-col>
-                <v-col cols="4" class="text-right" :class="{ 'text-red': order.changed }">
-                  <span class="font-weight-bold">{{ order.ooSizeText }}</span>
-                </v-col>
-                <v-col cols="3" class="text-right">
-                  <v-btn small variant="outlined"
-                    @click="adaptOrder(order)">
-                    <v-icon icon="mdi-cog"></v-icon>
-                  </v-btn>
-                </v-col>
-              </v-row>
+              <template v-for="(orders, demand) in demands">
+                <h3>{{ demand }}</h3>
+                <v-row v-for="order in orders" :key="order.id"
+                  class="page-bookin__order-row"
+                  justify="space-between" align="center" dense>
+                  <v-col cols="5">
+                    <span>{{ order.item.name }}</span>
+                  </v-col>
+                  <v-col cols="4" class="text-right" :class="{ 'text-red': order.changed }">
+                    <span class="font-weight-bold">{{ order.ooSizeText }}</span>
+                  </v-col>
+                  <v-col cols="3" class="text-right">
+                    <v-btn small variant="outlined"
+                      @click="adaptOrder(order)">
+                      <v-icon icon="mdi-cog"></v-icon>
+                    </v-btn>
+                  </v-col>
+                </v-row>
+              </template>
             </v-card-text>
           </v-card>
         </v-timeline-item>
