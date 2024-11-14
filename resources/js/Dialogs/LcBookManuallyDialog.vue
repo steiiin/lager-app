@@ -177,7 +177,7 @@
                   <div class="keys"><kbd sym>&larr;</kbd>/<kbd sym>&rarr;</kbd></div>
                   <div class="text">Menge ändern</div>
                 </div>
-                <div class="row">
+                <div class="row" v-show="sizesList.length > 1">
                   <div class="keys"><kbd sym>&uarr;</kbd>/<kbd sym>&darr;</kbd></div>
                   <div class="text">Größe ändern</div>
                 </div>

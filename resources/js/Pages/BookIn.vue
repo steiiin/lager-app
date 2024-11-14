@@ -61,6 +61,16 @@
 
   }
 
+  // #region Keyboard-Shortcuts
+
+    const handleEscape = () => {
+      if (!amountDialog.value.isVisible) {
+        openWelcome()
+      }
+    }
+
+  // #endregion
+
 // #endregion
 
 // #region BookIn-Logic
@@ -172,29 +182,6 @@
       return sortedGroups;
     });
 
-
-    const groupedOpenOrdersEx = computed(() => {
-      return props.openOrders.reduce((groups, order) => {
-        const date = order.prepare_time
-        if (!groups[date]) {
-          groups[date] = []
-        }
-        order.changed = order.amount_desired !== order.amount_delivered
-        if (order.amount_delivered>0) {
-          const calc = findOptimalSize(order.item.sizes, order.amount_delivered)
-          order.ooSizeText = calc.text
-          order.ooSizeUnit = calc.unit
-          order.ooSizeAmount = calc.amount
-        } else {
-          order.ooSizeText = 'Nicht Geliefert'
-          order.ooSizeUnit = order.item.basesize.unit
-          order.ooSizeAmount = 0
-        }
-        groups[date].push(order)
-        return groups
-      }, {})
-    })
-
     const getOrderDate = (dstr) => {
       return new Date(dstr*1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
     }
@@ -206,10 +193,10 @@
 // #region Lifecycle
 
   onMounted(() => {
-    InputService.registerEsc(openWelcome)
+    InputService.registerEsc(handleEscape)
   })
   onUnmounted(() => {
-    InputService.unregisterEsc(openWelcome)
+    InputService.unregisterEsc(handleEscape)
   })
 
 // #endregion
