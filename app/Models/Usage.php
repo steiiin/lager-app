@@ -21,6 +21,7 @@ class Usage extends Model
     public static function getInternalUsageName(int $id)
     {
         if ($id === -1) { return "Inv-Abweichung"; }
+        else if ($id === -2) { return "Inv-Rückbuchung"; }
         else { return "Inv-Andere"; }
     }
 

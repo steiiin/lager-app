@@ -404,6 +404,7 @@
       const currentNoExpiry = ref(true)
       const selectableStockChangeReasons = ref([
         { name: "Abweichung", value: -1 },
+        { name: "Rückbuchung", value: -2 },
       ])
 
       const isValidExpiry = computed(() => currentNoExpiry.value || (itemForm.current_expiry !== null && !isNaN(itemForm.current_expiry)))
