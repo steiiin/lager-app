@@ -23,12 +23,18 @@ class ApiStatisticController extends Controller
     public function index()
     {
         $statisticService = new StatisticService();
-        $stats = $statisticService->generateAll();
+        $stats = $statisticService->generateStatistic();
         return response()->json($stats);
     }
 
-    public function logs()
+    public function logs(Request $request)
     {
+
+        $request->validate([
+            'orders' => 'required|array',
+            'orders.0' => 'required',
+            'orders.*' => 'integer|exists:orders,id',
+        ]);
 
         $mergedLogs = [];
         $orderIds = [];
@@ -54,28 +60,6 @@ class ApiStatisticController extends Controller
             'logs' => $mergedLogs,
             'orders' => $orderIds,
         ]);
-
-    }
-
-    public function truncate(Request $request)
-    {
-
-        $request->validate([
-            'orders' => 'required|array',
-            'orders.0' => 'required',
-            'orders.*' => 'integer|exists:orders,id',
-        ]);
-
-        DB::transaction(function () use ($request)
-        {
-            foreach ($request->orders as $orderId)
-            {
-                $order = Order::findOrFail($orderId);
-                $order->update([
-                    'log' => [],
-                ]);
-            }
-        });
 
     }
 

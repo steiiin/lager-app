@@ -44,9 +44,9 @@ class Item extends Model
         return $this->hasMany(Order::class, 'item_id')->where('is_order_open', true);
     }
 
-    public function closedOrders()
+    public function allOrders()
     {
-        return $this->hasMany(Order::class, 'item_id')->where('is_order_open', false);
+        return $this->hasMany(Order::class, 'item_id');
     }
 
     // ##################################################################################
@@ -61,10 +61,10 @@ class Item extends Model
 
     public function scopeWithStats($query)
     {
-        return $query->with(['closedOrders'])
-            ->withSum('closedOrders', 'amount_desired')
-            ->withSum('closedOrders', 'amount_des_usage')
-            ->withSum('closedOrders', 'amount_des_changed');
+        return $query->with(['allOrders'])
+            ->withSum('allOrders', 'amount_desired')
+            ->withSum('allOrders', 'amount_des_usage')
+            ->withSum('allOrders', 'amount_des_changed');
     }
 
     // ##################################################################################
