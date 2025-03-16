@@ -74,6 +74,17 @@
       }
     }
 
+    const handleLeft = () => {
+      if (isItemSelected.value && !isEditSizeVisible.value && !minmaxDialog.value.isVisible) {
+        itemForm.current_quantity -= 1
+      }
+    }
+    const handleRight = () => {
+      if (isItemSelected.value && !isEditSizeVisible.value && !minmaxDialog.value.isVisible) {
+        itemForm.current_quantity += 1
+      }
+    }
+
   // #endregion
 
 // #endregion
@@ -451,12 +462,16 @@
 // #region Lifecycle
 
   onMounted(() => {
+    InputService.registerLeft(handleLeft)
+    InputService.registerRight(handleRight)
     InputService.registerEsc(handleEsc)
     InputService.registerEnter(handleEnter)
     inventoryStore.fetchStore(true)
     document.body.classList.remove('cursor-off')
   })
   onUnmounted(() => {
+    InputService.unregisterLeft(handleLeft)
+    InputService.unregisterRight(handleRight)
     InputService.unregisterEsc(handleEsc)
     InputService.unregisterEnter(handleEnter)
   })
@@ -712,6 +727,11 @@
             </v-expansion-panel-text>
           </v-expansion-panel>
 
+          <v-expansion-panel class="mt-1" title="Statistik" color="black">
+            <v-expansion-panel-text>
+              hlloao
+            </v-expansion-panel-text>
+          </v-expansion-panel>
         </v-expansion-panels>
 
         <v-card class="mt-2 rounded-0" variant="outlined" :disabled="itemForm.processing">
