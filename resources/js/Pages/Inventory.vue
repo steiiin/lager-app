@@ -27,7 +27,6 @@
   import LcPagebar from '@/Components/LcPagebar.vue'
   import LcItemInput from '@/Components/LcItemInput.vue'
   import LcItemAmountDialog from '@/Dialogs/LcItemAmountDialog.vue'
-  import IdleCursor from '@/Components/IdleCursor.vue'
 
 // #endregion
 // #region Props
@@ -405,6 +404,7 @@
       const selectableStockChangeReasons = ref([
         { name: "Abweichung", value: -1 },
         { name: "Rückbuchung", value: -2 },
+        { name: "Verfall", value: -3 },
       ])
 
       const isValidExpiry = computed(() => currentNoExpiry.value || (itemForm.current_expiry !== null && !isNaN(itemForm.current_expiry)))
@@ -454,6 +454,7 @@
     InputService.registerEsc(handleEsc)
     InputService.registerEnter(handleEnter)
     inventoryStore.fetchStore(true)
+    document.body.classList.remove('cursor-off')
   })
   onUnmounted(() => {
     InputService.unregisterEsc(handleEsc)
@@ -467,7 +468,6 @@
 <template>
 
   <Head title="Inventar" />
-  <IdleCursor />
 
   <div class="page-inventory">
 
