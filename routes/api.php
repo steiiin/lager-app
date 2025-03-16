@@ -15,4 +15,4 @@ Route::get('/order-prepare', [ApiOrderController::class, 'prepare']);
 Route::post('/order-execute', [ApiOrderController::class, 'execute']);
 
 Route::get('/statistic', [ApiStatisticController::class, 'index']);
-Route::post('/logs', [ApiStatisticController::class, 'logs']);
+Route::get('/logs', [ApiStatisticController::class, 'logs']);

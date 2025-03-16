@@ -143,11 +143,6 @@ class ApiOrderController extends Controller
         $desChanged = 0;
         $itemLog = $bookings->where('item_id', $orderDatum['item_id'])->map(function ($booking) use (&$desUsage, &$desChanged) {
 
-          // get usage name
-          $usageName = $booking->usage_id < 0
-            ? Usage::getInternalUsageName($booking->usage_id)
-            : $booking->usage->name;
-
           // increase stats values
           if ($booking->usage_id < 0) {
             $desUsage -= $booking->item_amount;
@@ -158,7 +153,7 @@ class ApiOrderController extends Controller
           return [
             'time' => $booking->updated_at,
             'amount' => $booking->item_amount,
-            'usage' => $usageName,
+            'usage' => Usage::getUsageName($booking),
           ];
 
         })->values();

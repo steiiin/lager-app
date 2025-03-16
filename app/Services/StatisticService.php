@@ -12,9 +12,192 @@ use Illuminate\Support\Collection;
 class StatisticService
 {
 
+  public function getLog(int $year, int $month)
+  {
+
+    $log = $this->collectLogOfMonth($year, $month);
+
+    return [
+      'by_item' => $log,
+      'timespan' => [
+        'month' => $month,
+        'year' => $year,
+      ]
+    ];
+
+  }
+
+
+
+
+  public const STATS_RANEMPTY = 'ran-empty';
+  public const STATS_PERITEM = 'item';
+
+  // #####################################################################
+
+  public function getItemsRanEmpty()
+  {
+
+    // filter orders
+    $lastQuarterTime = Carbon::now()->subMonths(3)->timestamp;
+    $lastMonthTime = Carbon::now()->subMonth()->timestamp;
+
+    $lastMonth = Order::where('prepare_time', '>=', $lastMonthTime)->get();
+    $lastQuarter = Order::where('prepare_time', '>=', $lastQuarterTime)->get();
+    $alltime = Order::all();
+
+    // get occurrences
+    return [
+      'last-month' => $this->getItemsRanEmptyFromOrders($lastMonth),
+      'last-quarter' => $this->getItemsRanEmptyFromOrders($lastQuarter),
+      'alltime' => $this->getItemsRanEmptyFromOrders($alltime),
+    ];
+
+  }
+
+  private function getItemRanEmpty(int $itemId)
+  {
+
+    // filter orders
+    $lastQuarterTime = Carbon::now()->subMonths(3)->timestamp;
+    $lastMonthTime = Carbon::now()->subMonth()->timestamp;
+
+    $lastMonth = Order::where('item_id', $itemId)->where('prepare_time', '>=', $lastMonthTime)->get();
+    $lastQuarter = Order::where('item_id', $itemId)->where('prepare_time', '>=', $lastQuarterTime)->get();
+    $alltime = Order::where('item_id', $itemId)->get();
+
+    // get occurrences
+    return [
+      'last-month' => $this->getItemsRanEmptyFromOrders($lastMonth, false)[0] ?? 0,
+      'last-quarter' => $this->getItemsRanEmptyFromOrders($lastQuarter, false)[0] ?? 0,
+      'alltime' => $this->getItemsRanEmptyFromOrders($alltime, false)[0] ?? 0,
+    ];
+
+  }
+
+  private function getItemsRanEmptyFromOrders($orders, $includeItemInfo = true)
+  {
+    $occurrences = [];
+    $orders->each(function ($order) use (&$occurrences, $includeItemInfo) {
+      $ordered = $order->amount_desired;
+      if ($ordered >= $order->item->min_stock) {
+        $itemId = $order->item->id;
+        if (!isset($occurrences[$itemId]))
+        {
+          $occurrences[$itemId] = [
+            'occurrences_count' => 0,
+            'occurrences' => [],
+          ];
+          if ($includeItemInfo) { $occurrences[$itemId] = array_merge($occurrences[$itemId], [ 'id' => $itemId, 'name' => $order->item->name ]); }
+        }
+        $occurrences[$itemId]['occurrences_count'] ++;
+        $occurrences[$itemId]['occurrences'][] = Carbon::createFromTimestamp($order->prepare_time);
+      }
+    });
+    return array_values($occurrences);
+  }
+
+  // #####################################################################
+
+  public function getItemStats(int $itemId)
+  {
+
+    $log = $this->collectLogEntries($itemId);
+    return [ 'test' => $itemId ];
+
+  }
+
+  // #####################################################################
+
+  private function collectLogOfMonth(int $year, int $month)
+  {
+
+    $log = collect();
+    $monthStart = Carbon::create($year, $month, 1, 0, 0, 0);
+    $monthEnd = $monthStart->copy()->endOfMonth();
+
+    $orders = Order::withLogs()->whereBetween('prepare_time', [$monthStart->timestamp, $monthEnd->timestamp])->get();
+    $orders->each(function ($order) use ($log) {
+      if (!is_array($order->log) || empty($order->log)) { return false; }
+      if (!$log->has($order->item_id)) { $log->put($order->item_id, [ 'name' => $order->item->name, 'ordered_once' => true, 'log' => collect() ]); }
+      foreach ($order->log as $entry) {
+        $log[$order->item_id]['log']->push($this->logEntry($entry['amount'], Carbon::parse($entry['time']), $entry['usage']));
+      }
+    });
+
+    $bookings = Booking::whereBetween('updated_at', [$monthStart, $monthEnd])->get();
+    $bookings->each(function ($booking) use ($log) {
+      if (!$log->has($booking->item_id)) { $log->put($booking->item_id, [ 'name' => $booking->item->name, 'ordered_once' => false, 'log' => collect() ]); }
+      $log[$booking->item_id]['log']->push($this->logEntry($booking->item_amount, $booking->updated_at, Usage::getUsageName($booking)));
+    });
+
+    return $log->sortKeys();
+
+  }
+
+  private function collectLogEntries(int $itemId)
+  {
+
+    $log = collect();
+    $once_ordered = false;
+
+    // get order logs
+    $orders = Order::withLogs()->where('item_id', $itemId)->get();
+    if ($orders->count() > 0) { $once_ordered = true; }
+    $orders->each(function ($order) use ($log) {
+      if (is_array($order->log) && !empty($order->log)) {
+        foreach ($order->log as $logEntry) {
+          if (!$logEntry['time']) { continue; }
+          $log->push($this->logEntry(
+            $logEntry['amount'],
+            Carbon::parse($logEntry['time']),
+            $logEntry['usage']
+          ));
+        }
+      }
+    });
+
+    // get bookings directly as log
+    $bookings = Booking::where('item_id', $itemId)->get();
+    $bookings->each(function ($booking) use ($log) {
+      $log->push($this->logEntry(
+        $booking->item_amount,
+        $booking->updated_at,
+        Usage::getUsageName($booking),
+      ));
+    });
+
+    return [
+      'once_ordered' => $once_ordered,
+      'log' => $log,
+    ];
+
+  }
+
+  private function logEntry(int $amount, Carbon $time, string $usage)
+  {
+    return [
+      'amount' => $amount,
+      'time' => $time,
+      'usage' => $usage,
+    ];
+  }
+
+  private function itemEntry(Item $item)
+  {
+    return [
+      'id' => $item->id,
+      'name' => $item->name,
+    ];
+  }
+
+
+
+
+
   private Collection $orderRanEmpty;
 
-  private function collectLogEntries()
+  private function collectLogEntriess()
   {
 
     $logEntriesByItem = collect();
@@ -56,18 +239,12 @@ class StatisticService
     // get bookings (not ordered yet)
     $bookings = Booking::all();
     $bookings->each(function ($booking) use ($logEntriesByItem) {
-
-      // get usage name
-      $usageName = $booking->usage_id < 0
-      ? Usage::getInternalUsageName($booking->usage_id)
-      : $booking->usage->name;
-
       $logEntriesByItem->push([
         'item_id' => $booking->item_id,
         'item' => $booking->item,
         'amount' => $booking->item_amount,
         'time' => $booking->updated_at,
-        'usage' => $usageName,
+        'usage' => Usage::getUsageName($booking),
       ]);
 
     });
@@ -106,13 +283,6 @@ class StatisticService
       $stats['last-quarter'] = array_merge($lastQuarter, [ 'ranEmpty' => $lastQuarterEmpty ]);
     }
 
-    $weekTime = Carbon::now()->subWeek();
-    $lastWeek = $this->generateItemStatsProperties($entries->where('time', '>=', $weekTime));
-    if ($lastWeek) {
-      $lastWeekEmpty = $this->orderRanEmpty->where('itemId', $item->id)->where('time', '>=', $weekTime)->count();
-      $stats['last-week'] = array_merge($lastWeek, [ 'ranEmpty' => $lastWeekEmpty ]);
-    }
-
     return [
       'item' => [
         'name' => $item->name,
@@ -136,6 +306,7 @@ class StatisticService
     $consumed_all = $entries->sum('amount');
     $inventory_corrected = $entries->where('usage', 'Inv-Abweichung')->sum('amount');
     $inventory_undo = $entries->where('usage', 'Inv-Rückbuchung')->sum('amount');
+    $inventory_spoiled = $entries->where('usage', 'Inv-Verfall')->sum('amount');
     $consumed_count = $entries->count();
 
     $timespan = $entries->min('time')->diffInWeeks($entries->max('time'));
@@ -147,6 +318,7 @@ class StatisticService
       'consumed_count' => $consumed_count,
       'inv-abweichung' => $inventory_corrected,
       'inv-rueckbuchung' => $inventory_undo,
+      'inv-verfall' => $inventory_spoiled,
     ];
 
   }
