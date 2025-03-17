@@ -12,33 +12,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Order;
 use App\Services\StatisticService;
 use Carbon\Carbon;
-use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Validator;
 
 class ApiStatisticController extends Controller
 {
 
   public function index(Request $request)
   {
-    $statisticService = new StatisticService();
-    $type = $request->query('type');
 
-    switch ($type) {
-      case StatisticService::STATS_RANEMPTY:
-        return response()->json($statisticService->getItemsRanEmpty());
-      case StatisticService::STATS_PERITEM:
-        $request->validate([
-          'id' => 'required|integer|exists:items,id',
-        ]);
-        return response()->json($statisticService->getItemStats($request->query('item')));
-      default:
-        return response()->json();
-    }
+    $data = $request->validate([
+      'item' => 'required|integer|exists:items,id',
+    ]);
+
+    $statisticService = new StatisticService();
+    return response()->json($statisticService->getStats($data['item']));
+
   }
 
   public function logs(Request $request)
