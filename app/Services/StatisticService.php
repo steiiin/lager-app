@@ -48,10 +48,9 @@ class StatisticService
     if (empty($logQuarter)) { return [ 'nostats' => true ]; }
     else if (empty($logTrend)) { return $logQuarter; }
 
-    $trendAvg = $logQuarter['ordered_stats']['amount_perorder']>0 ? (($logTrend['ordered_stats']['amount_perorder'] - $logQuarter['ordered_stats']['amount_perorder'])/$logQuarter['ordered_stats']['amount_perorder'])*100 : 0;
     $trendPerWeek = $logQuarter['ordered_stats']['amount_perweek']>0 ? (($logTrend['ordered_stats']['amount_perweek'] - $logQuarter['ordered_stats']['amount_perweek'])/$logQuarter['ordered_stats']['amount_perweek'])*100 : 0;
 
-    $logQuarter['trend'] = ['trend_avg' => $trendAvg, 'trend_perweek' => $trendPerWeek];
+    $logQuarter['trend'] = ['trend_perweek' => $trendPerWeek];
 
     return $logQuarter;
 
@@ -95,8 +94,9 @@ class StatisticService
     $log = [
       'item' => null,
       'ordered_once' => false,
-      'too_much' => collect(),
-      'ordered_stats' => [ 'amount_perweek' => 0, 'amount_perorder' => 0, 'max_amount' => 0 ],
+      'ordered_much' => collect(),
+      'changed_much' => collect(),
+      'ordered_stats' => [ 'amount_perweek' => 0, 'max_amount' => 0 ],
       'amounts' => collect(),
       'ran_empty' => collect(),
     ];
@@ -112,8 +112,9 @@ class StatisticService
       $orders->each(function ($order) use (&$log, $avgOrderedAmount, $orderedStdDev) {
         if (!is_array($order->log) || empty($order->log)) { return false; }
         if (!$log['item']) { $log['item'] = $order->item->name; $log['ordered_once'] = true; }
-        if ($order->amount_desired >= $order->item->min_stock) { $log['ran_empty']->push(Carbon::createFromTimestamp($order->prepare_time)); }
-        if ($order->amount_desired > ($orderedStdDev + $avgOrderedAmount)) { $log['too_much']->push([ 'time' => Carbon::createFromTimestamp($order->prepare_time), 'amount' => $order->amount_desired]); }
+        if ($order->amount_desired >= $order->item->max_stock) { $log['ran_empty']->push(Carbon::createFromTimestamp($order->prepare_time)); }
+        if ($order->amount_desired > ($orderedStdDev + $avgOrderedAmount)) { $log['ordered_much']->push([ 'time' => Carbon::createFromTimestamp($order->prepare_time), 'amount' => $order->amount_desired ]); }
+        if ($order->amount_des_changed > ($orderedStdDev + $avgOrderedAmount)) { $log['changed_much']->push([ 'time' => Carbon::createFromTimestamp($order->prepare_time), 'changed' => $order->amount_des_changed ]); }
         foreach ($order->log as $entry) {
           if (!$log['amounts']->has($entry['usage'])) { $log['amounts']->put($entry['usage'], 0); }
           $log['amounts'][$entry['usage']] += $entry['amount'];
@@ -149,13 +150,13 @@ class StatisticService
     // max ordered amount
     $log['ordered_stats']['max_amount'] = $maxOrderedAmount;
 
-    // avg ordered amount
-    $log['ordered_stats']['amount_perorder'] = $avgOrderedAmount;
+    $log['ordered_stats']['std_deviation'] = $orderedStdDev;
 
     // per week
     $weekSpan = $from->diffInWeeks($to);
 
     $log['ordered_stats']['amount_perweek'] = $weekSpan>0 ? $log['amounts']['Flow-Whole'] / $weekSpan : 0;
+    $log['ordered_stats']['changed_perweek'] = ($weekSpan>0 && isset($log['amounts']['Inv-Abweichung'])) ? $log['amounts']['Inv-Abweichung'] / $weekSpan : 0;
 
     return $log;
 

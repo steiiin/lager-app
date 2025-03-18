@@ -27,6 +27,10 @@
   import LcPagebar from '@/Components/LcPagebar.vue'
   import LcItemInput from '@/Components/LcItemInput.vue'
   import LcItemAmountDialog from '@/Dialogs/LcItemAmountDialog.vue'
+  import LcTrend from '@/Components/LcTrend.vue'
+
+  // 3rd party components
+  import axios from 'axios'
 
 // #endregion
 // #region Props
@@ -151,6 +155,10 @@
       stockchangeReason: -1,
 
     })
+
+    const itemStats = ref({ nostats: true })
+    const itemStatsLoading = ref(false)
+
     const itemFormOptions = {
       preserveScroll: true,
       onSuccess: () => {
@@ -192,6 +200,9 @@
       editorAccordionOpened.value = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
       selectedItem.value = { new: true }
 
+      itemStats.value = { nostats: true }
+      itemStatsLoading.value = false
+
     }
     const editItem = (item) => {
 
@@ -220,8 +231,10 @@
       itemForm.sizes = item.sizes
       item.stockchangeReason = -1
 
-      editorAccordionOpened.value = [ 4 ]
+      editorAccordionOpened.value = [ 4, 5 ]
       selectedItem.value = { edit: true }
+
+      loadStats()
 
     }
 
@@ -455,6 +468,41 @@
 
     // #endregion
 
+    // #region Stats-Group
+
+      const loadStats = async () => {
+
+        if (!itemForm.id) { return }
+        itemStatsLoading.value = true
+
+        try
+        {
+          const response = await axios.get('/api/statistic?item=' + itemForm.id);
+          itemStats.value = response.data
+        }
+        catch (err)
+        {
+          console.error('Failed to fetch item stats:', err);
+        }
+        finally
+        {
+          itemStatsLoading.value = false
+        }
+
+      }
+
+      const hasTrend = computed(() => !!itemStats?.value.trend)
+
+      const convertDate = (date) => {
+        const obj = new Date(date)
+        if (obj.isNaN) { return '' }
+        const day = obj.getDate().toString().padStart(2, '0')
+        const month = (obj.getMonth()+1).toString().padStart('0', 2)
+        return `${day}.${month}.${obj.getFullYear()}`
+      }
+
+    // #endregion
+
   // #endregion
 
 // #endregion
@@ -650,6 +698,68 @@
             </v-expansion-panel-text>
           </v-expansion-panel>
 
+          <v-expansion-panel class="mt-1" title="Statistik" color="black" v-if="!itemStats.nostats">
+            <v-expansion-panel-text>
+              <v-container>
+                <v-row >
+                  <v-col cols="3" class="page-inventory__table--result">Bestellt (Quartal)</v-col>
+                  <v-col cols="2">
+                    {{ itemStats.ordered_once ? 'Ja' : 'Nein' }}
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col cols="3" class="page-inventory__table--result">Verbrauch/Woche</v-col>
+                  <v-col cols="2">
+                    {{ `${itemStats.ordered_stats.amount_perweek.toFixed(2)} ${baseUnit}` }}
+                    <LcTrend :trend="itemStats.trend.trend_perweek" v-if="hasTrend" />
+                  </v-col>
+                  <v-col cols="3" class="page-inventory__table--result">Abweichung/Woche</v-col>
+                  <v-col cols="2">
+                    {{ `${itemStats.ordered_stats.changed_perweek.toFixed(2)} ${baseUnit}` }}
+                  </v-col>
+                </v-row>
+                <v-row class="mt-n5">
+                  <v-col cols="3" class="page-inventory__table--result">Maximalverbrauch</v-col>
+                  <v-col cols="2">
+                    {{ `${itemStats.ordered_stats.max_amount.toFixed(0)} ${baseUnit}` }}
+                  </v-col>
+                  <v-col cols="3" class="page-inventory__table--result">Standardabweichung</v-col>
+                  <v-col cols="2">
+                    {{ `${itemStats.ordered_stats.std_deviation.toFixed(2)} ${baseUnit}` }}
+                  </v-col>
+                </v-row>
+
+                <v-row v-if="itemStats.ran_empty.length>0">
+                  <v-col cols="3" class="page-inventory__table--result">
+                    <v-icon icon="mdi-alert-circle" color="error" class="mr-2"></v-icon>Leer Gelaufen</v-col>
+                  <v-col cols="2">
+                    <v-chip v-for="date in itemStats.ran_empty">
+                      {{ convertDate(date) }}</v-chip>
+                  </v-col>
+                </v-row>
+
+                <v-row v-if="itemStats.ordered_much.length>0">
+                  <v-col cols="3" class="page-inventory__table--result">
+                    <v-icon icon="mdi-alert-circle" color="warning" class="mr-2"></v-icon>Viel Bestellt</v-col>
+                  <v-col cols="2">
+                    <v-chip v-for="item in itemStats.ordered_much" style="max-width:999px">
+                      <b>{{ convertDate(item.time) }}</b>: {{ `${item.amount} ${baseUnit}` }}</v-chip>
+                  </v-col>
+                </v-row>
+
+                <v-row v-if="itemStats.changed_much.length>0">
+                  <v-col cols="3" class="page-inventory__table--result">
+                    <v-icon icon="mdi-alert-circle" color="warning" class="mr-2"></v-icon>Viel Korrigiert</v-col>
+                  <v-col cols="2">
+                    <v-chip v-for="item in itemStats.changed_much" style="max-width:999px">
+                      <b>{{ convertDate(item.time) }}</b>: {{ `${item.amount} ${baseUnit}` }}</v-chip>
+                  </v-col>
+                </v-row>
+
+              </v-container>
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+
           <v-expansion-panel class="mt-1" title="Aktueller Bestand" color="black">
             <v-expansion-panel-text>
 
@@ -727,11 +837,6 @@
             </v-expansion-panel-text>
           </v-expansion-panel>
 
-          <v-expansion-panel class="mt-1" title="Statistik" color="black">
-            <v-expansion-panel-text>
-              hlloao
-            </v-expansion-panel-text>
-          </v-expansion-panel>
         </v-expansion-panels>
 
         <v-card class="mt-2 rounded-0" variant="outlined" :disabled="itemForm.processing">
