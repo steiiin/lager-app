@@ -26,11 +26,17 @@ class BarcodeService
   #region Ctrl-Codes
 
     private static int $ctrlFinish = 1;
+    private static int $ctrlExpired = 10;
+
     private static int $ctrlUsages = 10000;
 
     public static function generateCtrlFinish()
     {
       return self::concatCode(self::$branchCtrl, self::$ctrlFinish);
+    }
+    public static function generateCtrlExpired()
+    {
+      return self::concatCode(self::$branchCtrl, self::$ctrlExpired);
     }
 
     // ##########################################
@@ -38,7 +44,8 @@ class BarcodeService
     public static function generateCtrlBatch(): Array
     {
       return [
-        self::generateCtrlFinish() => "finish"
+        self::generateCtrlFinish() => "finish",
+        self::generateCtrlExpired() => "expired",
       ];
     }
 

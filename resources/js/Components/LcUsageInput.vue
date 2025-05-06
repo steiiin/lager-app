@@ -10,6 +10,8 @@
  *
  * Emits:
  *  - selectUsage: Is emitted when the user selects/scans an usage.
+ *  - ctrlFinish: Emitted when the user scanned the finish-code.
+ *  - ctrlExpired: Emitted when the user scanned the expired-code.
  *
  */
 
@@ -49,6 +51,8 @@
 
   const emit = defineEmits([
     'selectUsage',
+    'ctrlFinish',
+    'ctrlExpired',
   ])
 
 // #endregion
@@ -58,9 +62,23 @@
   const selectUsage = (usage) => {
     emit('selectUsage', usage)
   }
+
   const findUsage = (code) => {
+
+    // emit ctrl-codes
+    if (code === 'LC-2000001000') {
+      emit('ctrlFinish')
+      return
+    }
+    if (code === 'LC-2000010000') {
+      emit('ctrlExpired')
+      return
+    }
+
+    // search usage
     const found = inventoryStore.usages.find(u => u.barcode === code)
     if (!!found) { selectUsage(found) }
+
   }
 
 // #endregion
@@ -106,6 +124,11 @@
           @click="selectUsage(usage)">{{ usage.name }}
         </LcButton>
       </template>
+
+      <LcButton
+        class="lc-picker__result-usage"
+        @click="emit('ctrlExpired')">Verfall
+      </LcButton>
 
     </div>
 

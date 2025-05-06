@@ -103,6 +103,29 @@
     const clearUsage = () => {
       bookoutForm.usage_id = null
     }
+    const selectInternalBookUndo = () => {
+      bookoutForm.usage_id = -2 // "Inv-Rückbuchung"
+    }
+    const selectInternalExpired = () => {
+      bookoutForm.usage_id = -3 // "Inv-Verfall"
+    }
+
+    const getUsageName = () => {
+
+      if (!bookoutForm.usage_id) { return '' }
+      if (bookoutForm.usage_id == -2) { return 'Rückbuchung' }
+      if (bookoutForm.usage_id == -3) { return 'Verfall' }
+      return getUsageById(bookoutForm.usage_id)?.name ?? 'Interne Verwendung'
+
+    }
+
+    const UsageIcon = computed(() => {
+
+      if (bookoutForm.usage_id == -2) { return "mdi-undo" }
+      if (bookoutForm.usage_id == -3) { return "mdi-clock-alert" }
+      return "mdi-truck"
+
+    })
 
   // #endregion
   // #region ItemPicker
@@ -277,7 +300,9 @@
     <section>
 
       <LcUsageInput v-if="!hasUsage" :is-unlocked="isUnlocked"
-        @select-usage="selectUsage">
+        @select-usage="selectUsage"
+        @ctrl-finish="openWelcome"
+        @ctrl-expired="selectInternalExpired">
       </LcUsageInput>
 
       <div v-else class="page-bookout__usage">
@@ -289,8 +314,8 @@
 
         <v-spacer></v-spacer>
 
-        {{ getUsageById(bookoutForm.usage_id)?.name ?? 'Interne Verwendung' }}
-        <v-icon icon="mdi-truck"></v-icon>
+        {{ getUsageName() }}
+        <v-icon :icon="UsageIcon"></v-icon>
 
       </div>
 
@@ -304,7 +329,8 @@
         :result-specs="{ w: 850, i: 19 }"
         :disabled="manuallyDialog?.isVisible || bookoutForm.processing"
         @select-item="selectItem"
-        @ctrl-finish="finishBookOut">
+        @ctrl-finish="finishBookOut"
+        @ctrl-expired="selectInternalExpired">
       </LcItemInput>
 
     </section>

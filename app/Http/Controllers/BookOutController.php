@@ -15,6 +15,8 @@ use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class BookOutController extends Controller
@@ -36,12 +38,23 @@ class BookOutController extends Controller
     public function store(Request $request)
     {
 
-        $request->validate([
-            'usage_id' => 'required|integer|exists:usages,id',
-            'entries' => 'required|array',
-            'entries.*.item_id' => 'required|integer|exists:items,id',
-            'entries.*.item_amount' => 'required|integer|min:1'
+        $validator = Validator::make($request->all(), [
+            'usage_id'               => 'required|integer',
+            'entries'                => 'required|array',
+            'entries.*.item_id'      => 'required|integer|exists:items,id',
+            'entries.*.item_amount'  => 'required|integer|min:1',
         ]);
+        $validator->sometimes(
+            'usage_id',
+            Rule::in([-2, -3]),
+            fn($input) => $input->usage_id < 0
+        );
+        $validator->sometimes(
+            'usage_id',
+            'exists:usages,id',
+            fn($input) => $input->usage_id >= 0
+        );
+        $validator->validate();
 
         DB::transaction(function () use ($request)
         {

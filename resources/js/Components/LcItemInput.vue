@@ -16,6 +16,7 @@
  *  - createNew: Emitted when the user wants a new item.
  *  - selectItem: Emitted when the user scanned an item.
  *  - ctrlFinish: Emitted when the user scanned the finish-code.
+ *  - ctrlExpired: Emitted when the user scanned the expired-code.
  *
  */
 
@@ -91,6 +92,7 @@
     'createNew',
     'selectItem',
     'ctrlFinish',
+    'ctrlExpired',
   ])
 
   const selectItemBySearch = (item) => {
@@ -144,6 +146,10 @@
       // emit ctrl-codes
       if (code === 'LC-2000001000') {
         emit('ctrlFinish')
+        return
+      }
+      if (code === 'LC-2000010000') {
+        emit('ctrlExpired')
         return
       }
 
@@ -207,6 +213,9 @@
           else if (item.pp_name.startsWith(lcSearchText)) {
             relevance += 30
           }
+          else if (item.pp_name.includes(lcSearchText)) {
+            relevance += 10
+          }
 
           if (item.pp_search_altnames_list?.includes(lcSearchText)) {
             relevance += 20
@@ -264,11 +273,11 @@
           results.sort((a, b) => b.relevance - a.relevance)
         }
 
-        // slice over 3
-        if (results.length > 3) {
+        // slice over 3, if search item length > 3
+        if (lcSearchText.length && results.length > 3) {
           const firstScore = results[0].relevance
           let cutAfter = 4
-          while ((results.length > cutAfter) && (cutAfter < 10) && results[cutAfter - 1].relevance === firstScore) {
+          while ((results.length > cutAfter) && (cutAfter < 10) && results[cutAfter - 1].relevance >= firstScore) {
             cutAfter += 1
           }
           results.splice(cutAfter-1)
@@ -340,11 +349,11 @@
         if (item.pending_quantity <= item.min_stock) {
           return 'error'
         }
-        else if (item.pending_quantity <= (item.min_stock + item.max_stock/2)) {
-          return 'warning'
+        else if (item.pending_quantity >= item.max_stock) {
+          return 'success'
         }
         else {
-          return 'success'
+          return 'warning'
         }
       }
 
@@ -463,7 +472,7 @@
       class="lc-picker__result--item" link variant="flat"
       @click="selectItemBySearch(item)">
       <div class="lc-picker__result--item-head">
-        <div class="lc-picker__result--item-head-name">{{ item.name }}</div>
+        <div class="lc-picker__result--item-head-name">{{ item.name }}</div><!-- {{ item.relevance }} -->
         <v-spacer></v-spacer>
         <div class="lc-picker__result--item-head-demand">{{ item.demand?.name }}</div>
       </div>
