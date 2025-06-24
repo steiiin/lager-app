@@ -20,7 +20,7 @@ class Usage extends Model
 
     public static function getUsageName(Booking $booking)
     {
-        return $booking->usage_id < 0 ? Usage::getInternalUsageName($booking->usage_id) : $booking->usage->name;
+        return ($booking->usage_id < 0 || !$booking->usage) ? Usage::getInternalUsageName($booking->usage_id) : $booking->usage->name;
     }
 
     public static function getInternalUsageName(int $id)
