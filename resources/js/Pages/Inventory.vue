@@ -229,13 +229,17 @@
       itemForm.current_quantity = item.current_quantity
 
       itemForm.sizes = item.sizes
-      item.stockchangeReason = -1
+      itemForm.stockchangeReason = -1
 
       editorAccordionOpened.value = [ 4, 5 ]
       selectedItem.value = { edit: true }
 
       loadStats()
 
+    }
+    const changeItem = (item) => {
+      clearSelectedItem()
+      editItem(item)
     }
 
     // ActionMethods
@@ -580,6 +584,11 @@
       </template>
       <template v-else>
 
+        <div v-show="false">
+          <LcItemInput @select-item="changeItem" :only-scan="true">
+          </LcItemInput>
+        </div>
+
         <v-toolbar flat>
           <v-app-bar-nav-icon
             icon="mdi-arrow-left" :disabled="itemForm.processing"
@@ -698,68 +707,6 @@
             </v-expansion-panel-text>
           </v-expansion-panel>
 
-          <v-expansion-panel class="mt-1" title="Statistik" color="black" v-if="!itemStats.nostats">
-            <v-expansion-panel-text>
-              <v-container>
-                <v-row >
-                  <v-col cols="3" class="page-inventory__table--result">Bestellt (Quartal)</v-col>
-                  <v-col cols="2">
-                    {{ itemStats.ordered_once ? 'Ja' : 'Nein' }}
-                  </v-col>
-                </v-row>
-                <v-row>
-                  <v-col cols="3" class="page-inventory__table--result">Verbrauch/Woche</v-col>
-                  <v-col cols="2">
-                    {{ `${itemStats.ordered_stats.amount_perweek.toFixed(2)} ${baseUnit}` }}
-                    <LcTrend :trend="itemStats.trend.trend_perweek" v-if="hasTrend" />
-                  </v-col>
-                  <v-col cols="3" class="page-inventory__table--result">Abweichung/Woche</v-col>
-                  <v-col cols="2">
-                    {{ `${itemStats.ordered_stats.changed_perweek.toFixed(2)} ${baseUnit}` }}
-                  </v-col>
-                </v-row>
-                <v-row class="mt-n5">
-                  <v-col cols="3" class="page-inventory__table--result">Maximalverbrauch</v-col>
-                  <v-col cols="2">
-                    {{ `${itemStats.ordered_stats.max_amount.toFixed(0)} ${baseUnit}` }}
-                  </v-col>
-                  <v-col cols="3" class="page-inventory__table--result">Standardabweichung</v-col>
-                  <v-col cols="2">
-                    {{ `${itemStats.ordered_stats.std_deviation.toFixed(2)} ${baseUnit}` }}
-                  </v-col>
-                </v-row>
-
-                <v-row v-if="itemStats.ran_empty.length>0">
-                  <v-col cols="3" class="page-inventory__table--result">
-                    <v-icon icon="mdi-alert-circle" color="error" class="mr-2"></v-icon>Leer Gelaufen</v-col>
-                  <v-col cols="2">
-                    <v-chip v-for="date in itemStats.ran_empty">
-                      {{ convertDate(date) }}</v-chip>
-                  </v-col>
-                </v-row>
-
-                <v-row v-if="itemStats.ordered_much.length>0">
-                  <v-col cols="3" class="page-inventory__table--result">
-                    <v-icon icon="mdi-alert-circle" color="warning" class="mr-2"></v-icon>Viel Bestellt</v-col>
-                  <v-col cols="2">
-                    <v-chip v-for="item in itemStats.ordered_much" style="max-width:999px">
-                      <b>{{ convertDate(item.time) }}</b>: {{ `${item.amount} ${baseUnit}` }}</v-chip>
-                  </v-col>
-                </v-row>
-
-                <v-row v-if="itemStats.changed_much.length>0">
-                  <v-col cols="3" class="page-inventory__table--result">
-                    <v-icon icon="mdi-alert-circle" color="warning" class="mr-2"></v-icon>Viel Korrigiert</v-col>
-                  <v-col cols="2">
-                    <v-chip v-for="item in itemStats.changed_much" style="max-width:999px">
-                      <b>{{ convertDate(item.time) }}</b>: {{ `${item.amount} ${baseUnit}` }}</v-chip>
-                  </v-col>
-                </v-row>
-
-              </v-container>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-
           <v-expansion-panel class="mt-1" title="Aktueller Bestand" color="black">
             <v-expansion-panel-text>
 
@@ -834,6 +781,69 @@
               </v-form>
 
 
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+
+
+          <v-expansion-panel class="mt-1" title="Statistik" color="black" v-if="!itemStats.nostats">
+            <v-expansion-panel-text>
+              <v-container>
+                <v-row >
+                  <v-col cols="3" class="page-inventory__table--result">Bestellt (Quartal)</v-col>
+                  <v-col cols="2">
+                    {{ itemStats.ordered_once ? 'Ja' : 'Nein' }}
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col cols="3" class="page-inventory__table--result">Verbrauch/Woche</v-col>
+                  <v-col cols="2">
+                    {{ `${itemStats.ordered_stats.amount_perweek.toFixed(2)} ${baseUnit}` }}
+                    <LcTrend :trend="itemStats.trend.trend_perweek" v-if="hasTrend" />
+                  </v-col>
+                  <v-col cols="3" class="page-inventory__table--result">Abweichung/Woche</v-col>
+                  <v-col cols="2">
+                    {{ `${itemStats.ordered_stats.changed_perweek.toFixed(2)} ${baseUnit}` }}
+                  </v-col>
+                </v-row>
+                <v-row class="mt-n5">
+                  <v-col cols="3" class="page-inventory__table--result">Maximalverbrauch</v-col>
+                  <v-col cols="2">
+                    {{ `${itemStats.ordered_stats.max_amount.toFixed(0)} ${baseUnit}` }}
+                  </v-col>
+                  <v-col cols="3" class="page-inventory__table--result">Standardabweichung</v-col>
+                  <v-col cols="2">
+                    {{ `${itemStats.ordered_stats.std_deviation.toFixed(2)} ${baseUnit}` }}
+                  </v-col>
+                </v-row>
+
+                <v-row v-if="itemStats.ran_empty.length>0">
+                  <v-col cols="3" class="page-inventory__table--result">
+                    <v-icon icon="mdi-alert-circle" color="error" class="mr-2"></v-icon>Leer Gelaufen</v-col>
+                  <v-col cols="2">
+                    <v-chip v-for="date in itemStats.ran_empty">
+                      {{ convertDate(date) }}</v-chip>
+                  </v-col>
+                </v-row>
+
+                <v-row v-if="itemStats.ordered_much.length>0">
+                  <v-col cols="3" class="page-inventory__table--result">
+                    <v-icon icon="mdi-alert-circle" color="warning" class="mr-2"></v-icon>Viel Bestellt</v-col>
+                  <v-col cols="2">
+                    <v-chip v-for="item in itemStats.ordered_much" style="max-width:999px">
+                      <b>{{ convertDate(item.time) }}</b>: {{ `${item.amount} ${baseUnit}` }}</v-chip>
+                  </v-col>
+                </v-row>
+
+                <v-row v-if="itemStats.changed_much.length>0">
+                  <v-col cols="3" class="page-inventory__table--result">
+                    <v-icon icon="mdi-alert-circle" color="warning" class="mr-2"></v-icon>Viel Korrigiert</v-col>
+                  <v-col cols="2">
+                    <v-chip v-for="item in itemStats.changed_much" style="max-width:999px">
+                      <b>{{ convertDate(item.time) }}</b>: {{ `${item.amount} ${baseUnit}` }}</v-chip>
+                  </v-col>
+                </v-row>
+
+              </v-container>
             </v-expansion-panel-text>
           </v-expansion-panel>
 

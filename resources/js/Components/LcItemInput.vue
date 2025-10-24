@@ -45,6 +45,10 @@
       type: Boolean,
       default: true,
     },
+    onlyScan: {
+      type: Boolean,
+      default: false,
+    },
     adminMode: {
       type: Boolean,
       default: false,
@@ -310,7 +314,11 @@
       const receiveKeys = async (keys) => {
 
         // change to textmode if in scanmode
-        if (inScanMode.value) { changeModeToText() }
+        if (inScanMode.value)
+        {
+          if(props.onlyScan) { return }
+          changeModeToText()
+        }
 
         // focus searchbox if it is not active element
         if (document.getElementById('id-picker-searchbox') !== document.activeElement) {
@@ -433,7 +441,7 @@
 
     <template v-if="!disabled">
 
-      <LcButton v-if="hasAnyItems"
+      <LcButton v-if="hasAnyItems && !onlyScan"
         class="lc-picker__action" icon="mdi-form-textbox"
         @click="changeModeToText()">Suchen
       </LcButton>
