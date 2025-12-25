@@ -95,6 +95,13 @@
 
 // #region Inventory-Logic
 
+  const isPwa = computed(() => {
+    const standaloneDisplay = window.matchMedia?.('(display-mode: standalone)').matches;
+    const iosStandalone = window.navigator.standalone === true;
+    const displayMode = document.referrer?.startsWith?.('android-app://');
+    return standaloneDisplay || iosStandalone || displayMode;
+  })
+
   // #region Dashboard
 
     // FilterProps
@@ -538,7 +545,7 @@
 
   <div class="page-inventory">
 
-    <LcPagebar title="Inventar" @back="openWelcome">
+    <LcPagebar :title="isPwa ? 'Inventar-App' : 'Inventar'" @back="openWelcome" :disabled="isPwa">
       <template #actions>
         <v-btn v-if="!isItemSelected" variant="flat"
           @click="openConfigDemands">Anforderungen
