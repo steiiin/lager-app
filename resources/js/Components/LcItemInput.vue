@@ -27,6 +27,7 @@
 
   // 3rd-party composables
   import { debounce } from 'lodash'
+  import { StreamBarcodeReader } from "vue-barcode-reader";
 
   // Local composables
   import InputService from '@/Services/InputService'
@@ -66,6 +67,14 @@
       required: false,
       default: [],
     },
+  })
+
+
+  const isPwa = computed(() => {
+    const standaloneDisplay = window.matchMedia?.('(display-mode: standalone)').matches;
+    const iosStandalone = window.navigator.standalone === true;
+    const displayMode = document.referrer?.startsWith?.('android-app://');
+    return standaloneDisplay || iosStandalone || displayMode;
   })
 
   // #region TemplateProps
@@ -162,6 +171,13 @@
       if (!found) { return }
       selectItemByScan(found.item, found.amount)
 
+    }
+
+    const onCamScannerDetected = (e) => {
+      console.log(e)
+    }
+    const onCamScannerLoaded = (e) => {
+      console.log('CamScanner active')
     }
 
   // #endregion
@@ -428,7 +444,13 @@
 
   <section class="lc-picker" v-if="inScanMode">
 
-    <div class="lc-picker__scanner">
+    <StreamBarcodeReader v-if="isPwa"
+      torch no-front-cameras
+      @decode="onCamScannerDetected"
+      @loaded="onCamScannerLoaded">
+    </StreamBarcodeReader>
+
+    <div class="lc-picker__scanner" v-else>
       <LcScanIndicator
         :active="hasAnyItems && !disabled">
       </LcScanIndicator>
