@@ -14,9 +14,6 @@
   import { ref, computed, nextTick, watch, toRef, onMounted, onUnmounted } from 'vue'
   import { Head, router, useForm } from '@inertiajs/vue3'
 
-  // Vue components
-  import { VNumberInput } from 'vuetify/labs/VNumberInput'
-
   // Local composables
   import { useBaseSize } from '@/Composables/useBaseSize'
   import { useOptimalSize } from '@/Composables/useOptimalSize'

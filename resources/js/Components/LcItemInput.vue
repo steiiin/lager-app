@@ -27,7 +27,7 @@
 
   // 3rd-party composables
   import { debounce } from 'lodash'
-  import { StreamBarcodeReader } from "vue-barcode-reader";
+  import { StreamBarcodeReader } from '@teckel/vue-barcode-reader'
 
   // Local composables
   import InputService from '@/Services/InputService'

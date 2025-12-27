@@ -20,9 +20,6 @@
   // Vue composables
   import { ref, computed, onMounted, onUnmounted } from 'vue'
 
-  // Vuetify components
-  import { VNumberInput } from 'vuetify/labs/VNumberInput'
-
   // Local composables
   import InputService from '@/Services/InputService'
 
