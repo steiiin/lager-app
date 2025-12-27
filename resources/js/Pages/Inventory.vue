@@ -114,6 +114,13 @@
       })
     })
 
+    const itemsMoreOnVehicle = computed(() => {
+      return inventoryStore.items.filter(item => {
+        if (!item.current_expiry) { return false }
+        return (item.onvehicle_stock >= item.pending_quantity)
+      })
+    })
+
     // Getter
     const getExpiryText = (dstr) => {
       return new Date(dstr).toLocaleDateString(undefined, { year: 'numeric', month: 'short' }).replace(' ', '-').replace('.', '');
@@ -127,6 +134,11 @@
     ])
     const sortExpiry = ref([
       { key: 'current_expiry', order: 'asc' }
+    ])
+
+    const tableMoreOnVehicle = ref([
+      { title: 'Name', key: 'name' },
+      { title: '', key: 'action', sortable: false },
     ])
 
   // #endregion
@@ -601,6 +613,22 @@
               <template v-slot:item.current_expiry="{ item }">
                 {{ getExpiryText(item.current_expiry) }}
               </template>
+              <template v-slot:item.action="{ item }">
+                <v-btn small variant="outlined" @click="editItem(item)">
+                  <v-icon icon="mdi-cog"></v-icon>
+                </v-btn>
+              </template>
+            </v-data-table>
+
+          </v-card-text>
+        </v-card>
+
+        <v-card title="Fahrzeugbestand prüfen" class="mt-2" variant="outlined">
+          <v-card-text>
+
+            <v-data-table :items="itemsMoreOnVehicle"
+              :headers="tableMoreOnVehicle"
+              hide-default-footer :items-per-page="100">
               <template v-slot:item.action="{ item }">
                 <v-btn small variant="outlined" @click="editItem(item)">
                   <v-icon icon="mdi-cog"></v-icon>
