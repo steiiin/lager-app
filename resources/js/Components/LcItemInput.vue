@@ -27,6 +27,7 @@
 
   // 3rd-party composables
   import { debounce } from 'lodash'
+  import { StreamBarcodeReader } from "vue-barcode-reader";
 
   // Local composables
   import InputService from '@/Services/InputService'
@@ -66,6 +67,14 @@
       required: false,
       default: [],
     },
+  })
+
+
+  const isPwa = computed(() => {
+    const standaloneDisplay = window.matchMedia?.('(display-mode: standalone)').matches;
+    const iosStandalone = window.navigator.standalone === true;
+    const displayMode = document.referrer?.startsWith?.('android-app://');
+    return standaloneDisplay || iosStandalone || displayMode;
   })
 
   // #region TemplateProps
@@ -129,12 +138,20 @@
       searchText.value = ''
       if (!props.allowScan) { return }
       currentMode.value = 'SCAN'
+      enableAppOverflow()
     }
     const changeModeToText = async (text = '') => {
       searchText.value = text
       currentMode.value = 'TEXT'
       await nextTick()
       document.getElementById('id-picker-searchbox')?.focus()
+    }
+
+    const disableAppOverflow = () => {
+      document.getElementById('app')?.classList.add('no-overscroll')
+    }
+    const enableAppOverflow = () => {
+      document.getElementById('app')?.classList.remove('no-overscroll')
     }
 
   // #endregion
@@ -162,6 +179,13 @@
       if (!found) { return }
       selectItemByScan(found.item, found.amount)
 
+    }
+
+    const onCamScannerDetected = (e) => {
+      console.log(e)
+    }
+    const onCamScannerLoaded = (e) => {
+      console.log('CamScanner active')
     }
 
   // #endregion
@@ -277,14 +301,9 @@
           results.sort((a, b) => b.relevance - a.relevance)
         }
 
-        // slice over 3, if search item length > 3
-        if (lcSearchText.length && results.length > 3) {
-          const firstScore = results[0].relevance
-          let cutAfter = 4
-          while ((results.length > cutAfter) && (cutAfter < 10) && results[cutAfter - 1].relevance >= firstScore) {
-            cutAfter += 1
-          }
-          results.splice(cutAfter-1)
+        // slice over 15
+        if (lcSearchText.length && results.length > 15) {
+          results.splice(14)
         }
 
         return results
@@ -294,6 +313,13 @@
       // TemplateProps
       const hasAnyResults = computed(() => filteredItems.value.length > 0)
       const hasExactlyOneResult = computed(() => filteredItems.value.length === 1)
+      watch(() => hasAnyResults.value, (val) => {
+        if (val) {
+          disableAppOverflow()
+        } else {
+          enableAppOverflow()
+        }
+      })
 
       // Methods
       const getFirstResult = () => (filteredItems.value[0] ?? null)
@@ -426,13 +452,19 @@
 </script>
 <template>
 
-  <section class="lc-picker" v-if="inScanMode">
+  <section class="lc-picker" :class="{ isPwa }" v-if="inScanMode">
 
-    <div class="lc-picker__scanner">
+    <StreamBarcodeReader v-if="isPwa"
+      torch no-front-cameras class="lc-picker__camscanner"
+      @decode="onCamScannerDetected"
+      @loaded="onCamScannerLoaded">
+    </StreamBarcodeReader>
+    <div class="lc-picker__scanner" v-else>
       <LcScanIndicator
         :active="hasAnyItems && !disabled">
       </LcScanIndicator>
     </div>
+
     <div class="lc-picker__description">
       <div class="lc-picker__description-title">
         {{ pickerDescriptionTitle }}
@@ -442,11 +474,11 @@
     <template v-if="!disabled">
 
       <LcButton v-if="hasAnyItems && !onlyScan"
-        class="lc-picker__action" icon="mdi-form-textbox"
+        class="lc-picker__action lc-picker__actionsearch" icon="mdi-form-textbox"
         @click="changeModeToText()">Suchen
       </LcButton>
       <LcButton v-if="adminMode"
-        class="lc-picker__action" icon="mdi-plus"
+        class="lc-picker__action lc-picker__actionnew" icon="mdi-plus"
         @click="createNew">Neu
       </LcButton>
 
@@ -561,6 +593,9 @@
   &__scanner {
     background: var(--accent-secondary-background);
   }
+  &__camscanner {
+    grid-area: CamScanner;
+  }
 
   &__description {
     flex: 1;
@@ -570,6 +605,7 @@
     display: flex;
     flex-direction: column;
     justify-content: end;
+    grid-area: Description;
 
     & > * {
       opacity: .3;
@@ -578,6 +614,13 @@
       font-weight: bold;
       font-size: 1.3rem;
     }
+  }
+
+  &__actionsearch {
+    grid-area: ButtonSearch;
+  }
+  &__actionnew {
+    grid-area: ButtonNew;
   }
 
   &__search {
@@ -677,5 +720,14 @@
 
   }
 
+}
+
+.lc-picker.isPwa {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  grid-template-rows: 1fr auto;
+  grid-template-areas:
+    "CamScanner Description ButtonSearch"
+    "CamScanner Description ButtonNew";
 }
 </style>

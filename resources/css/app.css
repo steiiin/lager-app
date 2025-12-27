@@ -47,6 +47,10 @@
   margin: 0.5rem auto;
 }
 
+#app.no-overscroll {
+  overflow: hidden;
+}
+
 /* hides the cursor and disable hover styles, if set in document body */
 .cursor-off {
 

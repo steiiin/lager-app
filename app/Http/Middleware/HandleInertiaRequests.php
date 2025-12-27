@@ -14,6 +14,14 @@ class HandleInertiaRequests extends Middleware
      */
     protected $rootView = 'app';
 
+    public function rootView(Request $request): string
+    {
+        if ($request->is('inventory') || $request->is('inventory/*')) {
+            return 'inventory';
+        }
+        return $this->rootView; // 'app'
+    }
+
     /**
      * Determine the current asset version.
      */

@@ -95,6 +95,13 @@
 
 // #region Inventory-Logic
 
+  const isPwa = computed(() => {
+    const standaloneDisplay = window.matchMedia?.('(display-mode: standalone)').matches;
+    const iosStandalone = window.navigator.standalone === true;
+    const displayMode = document.referrer?.startsWith?.('android-app://');
+    return standaloneDisplay || iosStandalone || displayMode;
+  })
+
   // #region Dashboard
 
     // FilterProps
@@ -104,6 +111,13 @@
         if(!item.current_expiry) { return false }
         const expiryDate = new Date(item.current_expiry)
         return !isNaN(expiryDate) && expiryDate <= thresholdDate
+      })
+    })
+
+    const itemsMoreOnVehicle = computed(() => {
+      return inventoryStore.items.filter(item => {
+        if (!item.current_expiry) { return false }
+        return (item.onvehicle_stock >= item.pending_quantity)
       })
     })
 
@@ -120,6 +134,11 @@
     ])
     const sortExpiry = ref([
       { key: 'current_expiry', order: 'asc' }
+    ])
+
+    const tableMoreOnVehicle = ref([
+      { title: 'Name', key: 'name' },
+      { title: '', key: 'action', sortable: false },
     ])
 
   // #endregion
@@ -147,6 +166,7 @@
       location: { room:'', cab:'', exact:'' },
       min_stock: 0,
       max_stock: 0,
+      onvehicle_stock: 0,
       current_expiry: null,
       current_quantity: 0,
 
@@ -220,6 +240,7 @@
       }
       itemForm.min_stock = item.min_stock
       itemForm.max_stock = item.max_stock
+      itemForm.onvehicle_stock = item.onvehicle_stock
 
       itemForm.current_expiry = !item.current_expiry ? null : new Date(item.current_expiry)
       currentNoExpiry.value = !item.current_expiry
@@ -260,6 +281,27 @@
 
     }
 
+    // #region WhereIs-Group
+
+      // Props
+      const { text: onvehicle } = useOptimalSize(toRef(itemForm, 'sizes'), toRef(itemForm, 'onvehicle_stock'))
+      const onvehicleDefault = computed(() => `${itemForm.onvehicle_stock} ${baseUnit.value}`)
+      const onvehicleDiffer = computed(() => onvehicle.value != onvehicleDefault.value)
+
+      // OpenMethods
+      const openOnVehicleCalc = async () => {
+        const newOnVehicle = await minmaxDialog.value.open({
+          title: 'Fahrzeugbestand berechnen',
+          message: 'Gib eine Packungsgröße und eine Menge ein, um einen neuen Fahrzeugbestand zu errechnen.',
+          sizes: itemForm.sizes,
+          selectedSize: itemForm.sizes.find(e=>e.is_default),
+        })
+
+        if (newOnVehicle === null) { return }
+        itemForm.onvehicle_stock = newOnVehicle
+      }
+
+    // #endregion
     // #region Sizes-Group
 
       // DialogProps
@@ -538,7 +580,7 @@
 
   <div class="page-inventory">
 
-    <LcPagebar title="Inventar" @back="openWelcome">
+    <LcPagebar :title="isPwa ? 'Inventar-App' : 'Inventar'" @back="openWelcome" :disabled="isPwa">
       <template #actions>
         <v-btn v-if="!isItemSelected" variant="flat"
           @click="openConfigDemands">Anforderungen
@@ -571,6 +613,22 @@
               <template v-slot:item.current_expiry="{ item }">
                 {{ getExpiryText(item.current_expiry) }}
               </template>
+              <template v-slot:item.action="{ item }">
+                <v-btn small variant="outlined" @click="editItem(item)">
+                  <v-icon icon="mdi-cog"></v-icon>
+                </v-btn>
+              </template>
+            </v-data-table>
+
+          </v-card-text>
+        </v-card>
+
+        <v-card title="Fahrzeugbestand prüfen" class="mt-2" variant="outlined">
+          <v-card-text>
+
+            <v-data-table :items="itemsMoreOnVehicle"
+              :headers="tableMoreOnVehicle"
+              hide-default-footer :items-per-page="100">
               <template v-slot:item.action="{ item }">
                 <v-btn small variant="outlined" @click="editItem(item)">
                   <v-icon icon="mdi-cog"></v-icon>
@@ -645,6 +703,22 @@
               <v-text-field v-model="itemForm.location.exact"
                 label="Genauer Ort (z.B. Schublade)" hide-details>
               </v-text-field>
+
+              <v-form style="margin-top: 1rem;">
+                <v-row>
+                  <v-col cols="5">
+                    <v-btn prepend-icon="mdi-calculator" variant="outlined"
+                      @click="openOnVehicleCalc">Fahrzeugbestand ändern
+                    </v-btn>
+                  </v-col>
+                  <v-col cols="2" class="page-inventory__table--result-centered">
+                    {{ onvehicleDefault }}
+                  </v-col>
+                  <v-col cols="2" class="page-inventory__table--result-centered" v-if="onvehicleDiffer">
+                    bzw. {{ onvehicle }}
+                  </v-col>
+                </v-row>
+              </v-form>
 
             </v-expansion-panel-text>
           </v-expansion-panel>

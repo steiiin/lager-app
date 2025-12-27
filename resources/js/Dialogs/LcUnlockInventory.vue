@@ -33,6 +33,10 @@
     isVisible.value = false
   }
 
+  function openInventory() {
+    router.get('/inventory')
+  }
+
 // #endregion
 // #region Unlock-Logic
 
@@ -48,7 +52,10 @@
 
       onSuccess: (page) => {
         if (page.props.isUnlocked) {
+
+          openInventory()
           cancel()
+
         } else {
           isUnlockFailed.value = true
           isUnlocking.value = false

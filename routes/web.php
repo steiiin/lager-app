@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\BookInController;
 use App\Http\Controllers\BookOutController;
+use App\Http\Controllers\ConfigDemandsController;
+use App\Http\Controllers\ConfigUsagesController;
+use App\Http\Controllers\InventoryController;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Session;
@@ -55,5 +58,10 @@ Route::resource('/bookout', BookOutController::class);
 Route::resource('/bookin', BookInController::class);
 
 #endregion
+#region Inventory
 
-require(dirname(__FILE__).'/config.php');
+Route::resource('/config-usages', ConfigUsagesController::class);
+Route::resource('/config-demands', ConfigDemandsController::class);
+Route::resource('/inventory', InventoryController::class);
+
+#endregion

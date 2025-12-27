@@ -19,10 +19,10 @@
 
   // Local components
   import LcButton from '@/Components/LcButton.vue'
-  import LcLockDialog from '@/Dialogs/LcLockDialog.vue'
-  import LcUnlockDialog from '@/Dialogs/LcUnlockDialog.vue'
+  import LcUnlockInventory from '@/Dialogs/LcUnlockInventory.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
   import LcUsageInput from '@/Components/LcUsageInput.vue'
+  import LcFeedback from '@/Components/LcFeedback.vue'
   import IdleCursor from '@/Components/IdleCursor.vue'
 
 // #endregion
@@ -62,9 +62,6 @@
   function openBookIn() {
     router.get('/bookin')
   }
-  function openInventory() {
-    router.get('/inventory')
-  }
 
 // #endregion
 
@@ -72,25 +69,11 @@
 
   // DialogProps
   const unlockDialog = ref(null)
-  const lockDialog = ref(null)
 
   // Methods
-  function unlockUi() {
+  function unlockInventory() {
     unlockDialog.value.open()
   }
-  function lockUi() {
-    lockDialog.value.open()
-  }
-
-  // #region TemplateProps
-
-    const pageClasses = computed(() => {
-      return 'page-welcome' + (props.isUnlocked
-        ? ''
-        : ' page-welcome--locked')
-    })
-
-  // #endregion
 
 // #endregion
 // #region Shortcuts
@@ -101,6 +84,15 @@
     } else {
       console.warn('Lager-App: Not in OpenKiosk')
     }
+  }
+
+// #endregion
+// #region Feedback
+
+  const feedback = ref(null)
+
+  const warnAboutUsage = () => {
+    feedback.value.usageError()
   }
 
 // #endregion
@@ -129,7 +121,7 @@
   <Head title="Home" />
   <IdleCursor />
 
-  <div :class="pageClasses">
+  <div class="page-welcome">
 
     <LcButton class="page-welcome__BookOut"
       type="primary" icon="mdi-barcode-scan"
@@ -146,29 +138,21 @@
       @click="openBookIn">Lieferung<kbd v-if="!isTouchMode">3</kbd>
     </LcButton>
 
-    <LcButton class="page-welcome__Login" v-if="isUnlocked"
-      icon="mdi-lock-outline"
-      @click="lockUi">
-    </LcButton>
-    <LcButton class="page-welcome__Login" v-else
+    <LcButton class="page-welcome__Inventory"
       icon="mdi-lock-open-variant-outline"
-      @click="unlockUi">
-    </LcButton>
-
-    <LcButton class="page-welcome__Inventory" v-if="isUnlocked"
-      @click="openInventory">Inventar
+      @click="unlockInventory">
     </LcButton>
 
   </div>
   <div class="page-welcome__invisible-usagescanner">
     <LcUsageInput :is-unlocked="isUnlocked"
-      @select-usage="openBookOutWithUsage">
+      @select-usage="openBookOutWithUsage" @other-code="warnAboutUsage">
     </LcUsageInput>
   </div>
 
   <!-- Dialogs -->
-  <LcUnlockDialog ref="unlockDialog" />
-  <LcLockDialog ref="lockDialog" />
+  <LcFeedback ref="feedback" />
+  <LcUnlockInventory ref="unlockDialog" />
   <LcRouteOverlay v-show="isRouting" />
 
 </template>
@@ -182,19 +166,11 @@
   background: var(--main-light);
   color: var(--main-dark);
   grid-template-columns: repeat(6, 0.5fr);
-  grid-template-rows: 1.5fr 0.5fr 0.5fr;
+  grid-template-rows: 1.5fr 0.5fr;
   gap: 1rem;
   grid-template-areas:
     "BookOut BookOut BookOut WhereIs WhereIs WhereIs"
-    "BookOut BookOut BookOut BookIn BookIn Login"
-    "Inventory Inventory Inventory Inventory Inventory Inventory";
-
-  &--locked {
-    grid-template-rows: 1.5fr 0.5fr;
-    grid-template-areas:
-      "BookOut BookOut BookOut WhereIs WhereIs WhereIs"
-      "BookOut BookOut BookOut BookIn BookIn Login";
-  }
+    "BookOut BookOut BookOut BookIn BookIn Inventory";
 
   &__WhereIs {
     grid-area: WhereIs;
@@ -206,10 +182,6 @@
 
   &__BookOut {
     grid-area: BookOut;
-  }
-
-  &__Login {
-    grid-area: Login;
   }
 
   &__Inventory {
