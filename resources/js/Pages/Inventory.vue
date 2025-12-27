@@ -154,6 +154,7 @@
       location: { room:'', cab:'', exact:'' },
       min_stock: 0,
       max_stock: 0,
+      onvehicle_stock: 0,
       current_expiry: null,
       current_quantity: 0,
 
@@ -227,6 +228,7 @@
       }
       itemForm.min_stock = item.min_stock
       itemForm.max_stock = item.max_stock
+      itemForm.onvehicle_stock = item.onvehicle_stock
 
       itemForm.current_expiry = !item.current_expiry ? null : new Date(item.current_expiry)
       currentNoExpiry.value = !item.current_expiry
@@ -267,6 +269,27 @@
 
     }
 
+    // #region WhereIs-Group
+
+      // Props
+      const { text: onvehicle } = useOptimalSize(toRef(itemForm, 'sizes'), toRef(itemForm, 'onvehicle_stock'))
+      const onvehicleDefault = computed(() => `${itemForm.onvehicle_stock} ${baseUnit.value}`)
+      const onvehicleDiffer = computed(() => onvehicle.value != onvehicleDefault.value)
+
+      // OpenMethods
+      const openOnVehicleCalc = async () => {
+        const newOnVehicle = await minmaxDialog.value.open({
+          title: 'Fahrzeugbestand berechnen',
+          message: 'Gib eine Packungsgröße und eine Menge ein, um einen neuen Fahrzeugbestand zu errechnen.',
+          sizes: itemForm.sizes,
+          selectedSize: itemForm.sizes.find(e=>e.is_default),
+        })
+
+        if (newOnVehicle === null) { return }
+        itemForm.onvehicle_stock = newOnVehicle
+      }
+
+    // #endregion
     // #region Sizes-Group
 
       // DialogProps
@@ -652,6 +675,22 @@
               <v-text-field v-model="itemForm.location.exact"
                 label="Genauer Ort (z.B. Schublade)" hide-details>
               </v-text-field>
+
+              <v-form style="margin-top: 1rem;">
+                <v-row>
+                  <v-col cols="5">
+                    <v-btn prepend-icon="mdi-calculator" variant="outlined"
+                      @click="openOnVehicleCalc">Fahrzeugbestand ändern
+                    </v-btn>
+                  </v-col>
+                  <v-col cols="2" class="page-inventory__table--result-centered">
+                    {{ onvehicleDefault }}
+                  </v-col>
+                  <v-col cols="2" class="page-inventory__table--result-centered" v-if="onvehicleDiffer">
+                    bzw. {{ onvehicle }}
+                  </v-col>
+                </v-row>
+              </v-form>
 
             </v-expansion-panel-text>
           </v-expansion-panel>

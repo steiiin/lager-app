@@ -47,6 +47,7 @@ class InventoryController extends Controller
             'location.exact' => 'nullable|string',
             'min_stock' => 'required|numeric|min:0|max:999',
             'max_stock' => 'required|numeric|min:0|max:999|gte:min_stock',
+            'onvehicle_stock' => 'required|numeric|min:0|max:999',
 
             'sizes' => 'required|array',
             'sizes.*.id' => 'nullable|integer|exists:itemsizes,id',
@@ -86,6 +87,7 @@ class InventoryController extends Controller
             'location.exact' => 'nullable|string',
             'min_stock' => 'required|numeric|min:0|max:999',
             'max_stock' => 'required|numeric|min:0|max:999|gte:min_stock',
+            'onvehicle_stock' => 'required|numeric|min:0|max:999',
 
             'sizes' => 'required|array',
             'sizes.*.id' => 'nullable|integer|exists:itemsizes,id',
