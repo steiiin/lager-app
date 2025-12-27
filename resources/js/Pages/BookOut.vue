@@ -128,6 +128,10 @@
 
     })
 
+    const warnAboutUsage = () => {
+      feedback.value.usageError()
+    }
+
   // #endregion
   // #region ItemPicker
 
@@ -299,7 +303,7 @@
     <section>
 
       <LcUsageInput v-if="!hasUsage" :is-unlocked="isUnlocked"
-        @select-usage="selectUsage"
+        @select-usage="selectUsage" @other-code="warnAboutUsage"
         @ctrl-finish="openWelcome"
         @ctrl-expired="selectInternalExpired">
       </LcUsageInput>
