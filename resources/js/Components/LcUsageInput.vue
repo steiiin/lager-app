@@ -10,8 +10,8 @@
  *
  * Emits:
  *  - selectUsage: Is emitted when the user selects/scans an usage.
- *  - ctrlFinish: Emitted when the user scanned the finish-code.
  *  - ctrlExpired: Emitted when the user scanned the expired-code.
+ *  - otherCode: Emitted when the scanner detected other scancodes, eg. item code.
  *
  */
 
@@ -53,6 +53,7 @@
     'selectUsage',
     'ctrlFinish',
     'ctrlExpired',
+    'otherCode',
   ])
 
 // #endregion
@@ -78,6 +79,7 @@
     // search usage
     const found = inventoryStore.usages.find(u => u.barcode === code)
     if (!!found) { selectUsage(found) }
+    else { emit('otherCode') }
 
   }
 

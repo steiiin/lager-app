@@ -22,6 +22,7 @@
   import LcUnlockInventory from '@/Dialogs/LcUnlockInventory.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
   import LcUsageInput from '@/Components/LcUsageInput.vue'
+  import LcFeedback from '@/Components/LcFeedback.vue'
   import IdleCursor from '@/Components/IdleCursor.vue'
 
 // #endregion
@@ -86,6 +87,15 @@
   }
 
 // #endregion
+// #region Feedback
+
+  const feedback = ref(null)
+
+  const warnAboutUsage = () => {
+    feedback.value.usageError()
+  }
+
+// #endregion
 
 // #region Lifecycle
 
@@ -136,11 +146,12 @@
   </div>
   <div class="page-welcome__invisible-usagescanner">
     <LcUsageInput :is-unlocked="isUnlocked"
-      @select-usage="openBookOutWithUsage">
+      @select-usage="openBookOutWithUsage" @other-code="warnAboutUsage">
     </LcUsageInput>
   </div>
 
   <!-- Dialogs -->
+  <LcFeedback ref="feedback" />
   <LcUnlockInventory ref="unlockDialog" />
   <LcRouteOverlay v-show="isRouting" />
 

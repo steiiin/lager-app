@@ -22,6 +22,7 @@
     },
     "dependencies": {
         "@teckel/vue-barcode-reader": "^1.1.8",
+        "@vueuse/sound": "^2.1.3",
         "lodash": "^4.17.21",
         "onscan.js": "^1.5.2",
         "pinia": "^2.2.4",

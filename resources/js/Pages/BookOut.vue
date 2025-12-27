@@ -30,6 +30,7 @@
   import LcBookManuallyDialog from '@/Dialogs/LcBookManuallyDialog.vue'
   import LcConfirm from '@/Dialogs/LcConfirm.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
+  import LcFeedback from '@/Components/LcFeedback.vue'
   import IdleCursor from '@/Components/IdleCursor.vue'
 
 // #endregion
@@ -225,12 +226,10 @@
 
       // #region Scan-Notification
 
-        const scanNotificationVisible = ref(false)
-        const scanNotificationText = ref('')
+        const feedback = ref(null)
 
         const notifyScan = (item) => {
-          scanNotificationText.value = `${item.name} wurde hinzugefügt!`
-          scanNotificationVisible.value = true
+          feedback.value.scanSuccess(item.name)
         }
 
       // #endregion
@@ -362,13 +361,7 @@
     <LcBookManuallyDialog ref="manuallyDialog" />
     <LcConfirm ref="confirmDialog" />
     <LcRouteOverlay v-show="isRouting" />
-
-    <!-- Scan-Notification -->
-    <v-snackbar
-      v-model="scanNotificationVisible"
-      color="green" :height="100" centered
-      :timeout="2000"><div class="text-center">{{ scanNotificationText }}</div>
-    </v-snackbar>
+    <LcFeedback ref="feedback" />
 
   </div>
 
