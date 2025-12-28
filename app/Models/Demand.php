@@ -10,7 +10,6 @@ class Demand extends Model
     protected $table = 'demands';
     protected $fillable = [
         'name',
-        'sp_name',
     ];
     public $timestamps = false;
 
