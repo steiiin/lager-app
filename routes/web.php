@@ -7,40 +7,31 @@ use App\Http\Controllers\ConfigUsagesController;
 use App\Http\Controllers\InventoryController;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 #region Welcome
 
-Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'isUnlocked' => Session::get('isUnlocked', false),
-        'isTouchMode' => Config::get('app.app_touchmode', false),
-    ]);
+Route::get('/', function (Request $request) {
+  return Inertia::render('Welcome', [
+    'isTouchMode' => Config::get('app.app_touchmode', false),
+  ]);
 })->name('welcome');
 
-Route::post('/', function(Illuminate\Http\Request $request) {
+Route::post('/', function (Request $request) {
 
-    $action = $request->input('action', '');
-    if ($action === 'UNLOCK')
-    {
-        // load passwords
-        $passKey = Config::get('auth.unlock_password', null);
-        $passInput = $request->input('password');
-
-        // verify & update session
-        $isUnlocked = $passKey !== null && $passInput === $passKey;
-        Session::put('isUnlocked', $isUnlocked);
-
+  $action = $request->input('action', '');
+  if ($action === 'UNLOCK') {
+    $passKey   = Config::get('auth.unlock_password');
+    $passInput = $request->input('password');
+    if ($passKey !== null && hash_equals((string) $passKey, (string) $passInput)) {
+      return Redirect::route('inventory.index');
     }
-    else if ($action === 'LOCK')
-    {
-        // clear session
-        Session::put('isUnlocked', false);
-    }
+  }
 
-    // interia respone
-    return redirect()->route('welcome');
+  throw ValidationException::withMessages([ 'password' => 'wrong password' ]);
 
 });
 
@@ -48,7 +39,7 @@ Route::post('/', function(Illuminate\Http\Request $request) {
 #region WhereIs
 
 Route::get('/whereis', function () {
-    return Inertia::render('WhereIs');
+  return Inertia::render('WhereIs');
 })->name('whereis');
 
 #endregion
