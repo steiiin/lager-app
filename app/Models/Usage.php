@@ -9,7 +9,7 @@ class Usage extends Model
 {
 
     protected $table = 'usages';
-    protected $fillable = ['name', 'is_locked'];
+    protected $fillable = ['name'];
     public $timestamps = false;
     protected $appends = ['barcode'];
 

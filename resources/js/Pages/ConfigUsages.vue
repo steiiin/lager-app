@@ -48,7 +48,6 @@
     const editForm = useForm({
       id: null,
       name: '',
-      is_locked: false,
     })
     const editFormOptions = {
       preserveScroll: true,
@@ -78,7 +77,6 @@
       editForm.reset()
       editForm.id = null
       editForm.name = ''
-      editForm.is_locked = false
       editDialogVisible.value = true
       await nextTick()
       document.getElementById('id-editusage-name')?.focus()
@@ -87,7 +85,6 @@
       editForm.reset()
       editForm.id = item.id
       editForm.name = item.name
-      editForm.is_locked = item.is_locked ? true : false
       editDialogVisible.value = true
     }
 
@@ -116,8 +113,7 @@
   // #region UsageTable
 
     const tableheaders = ref([
-      { title: 'Name', key: 'name', minWidth: '60%' },
-      { title: 'Nur für Verantwortlichen', key: 'is_locked' },
+      { title: 'Name', key: 'name', minWidth: '90%' },
       { title: 'Bearbeiten', key: 'action', sortable: false },
     ])
 
@@ -149,9 +145,6 @@
       <v-data-table
         :items="usages" :headers="tableheaders"
         hide-default-footer :items-per-page="100">
-        <template v-slot:item.is_locked="{ item }">
-          <span>{{ item.is_locked ? 'Ja' : 'Nein' }}</span>
-        </template>
         <template v-slot:item.action="{ item }">
           <v-btn small color="primary" @click="openEditUsageDialog(item)">
             <v-icon icon="mdi-cog"></v-icon>
@@ -178,8 +171,6 @@
           v-model="editForm.name" id="id-editusage-name"
           label="Name" hide-details>
         </v-text-field>
-        <v-checkbox v-model="editForm.is_locked"
-          label="Nur für den Verantwortlichen" hide-details></v-checkbox>
 
         <v-alert v-if="editForm.errors.name" type="error">
           {{ editForm.errors.name }}
