@@ -19,7 +19,7 @@ class ApiStoreController extends Controller
     {
 
         $items = Item::withPending()->get();
-        $usages = Usage::select(['id', 'name', 'is_locked'])->get();
+        $usages = Usage::select(['id', 'name'])->get();
 
         return response()->json([
             'usages' => $usages,
