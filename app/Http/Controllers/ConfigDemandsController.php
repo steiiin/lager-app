@@ -35,13 +35,8 @@ class ConfigDemandsController extends Controller
                     return $query->whereRaw('LOWER(name) = ?', [strtolower(request('name'))]);
                 })
             ],
-            'sp_name' => [
-                'required',
-                'string',
-            ],
         ], [
             'name.unique' => 'Diese Anforderung gibt es schon.',
-            'sp_name.required' => 'Du musst eine Sharepoint-Anforderung angeben.',
         ]);
 
         Demand::create($request->all());
@@ -59,13 +54,9 @@ class ConfigDemandsController extends Controller
                     return $query->whereRaw('LOWER(name) = ?', [strtolower(request('name'))]);
                 })
             ],
-            'sp_name' => [
-                'required',
-                'string',
-            ],
-        ], [
+        ],
+        [
             'name.unique' => 'Diese Anforderung gibt es schon.',
-            'sp_name.required' => 'Du musst eine Sharepoint-Anforderung angeben.',
         ]);
 
         $demand = Demand::findOrFail($id);
