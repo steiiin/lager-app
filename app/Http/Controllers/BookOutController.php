@@ -29,7 +29,6 @@ class BookOutController extends Controller
         $usageId = !$usageId ? null : intval($usageId);
 
         return Inertia::render('BookOut', [
-            'isUnlocked' => Session::get('isUnlocked', false),
             'usageId' => $usageId
         ]);
 

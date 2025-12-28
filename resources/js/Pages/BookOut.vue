@@ -39,10 +39,6 @@
   const inventoryStore = useInventoryStore()
 
   const props = defineProps({
-    isUnlocked: {
-      type: Boolean,
-      default: false,
-    },
     usageId: {
       type: Number,
       default: null,
@@ -302,7 +298,7 @@
     <!-- UsagePicker -->
     <section>
 
-      <LcUsageInput v-if="!hasUsage" :is-unlocked="isUnlocked"
+      <LcUsageInput v-if="!hasUsage"
         @select-usage="selectUsage" @other-code="warnAboutUsage"
         @ctrl-finish="openWelcome"
         @ctrl-expired="selectInternalExpired">

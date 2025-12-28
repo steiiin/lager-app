@@ -31,10 +31,6 @@
   const inventoryStore = useInventoryStore()
 
   const props = defineProps({
-    isUnlocked: {
-      type: Boolean,
-      required: true,
-    },
     isTouchMode: {
       type: Boolean,
       required: true,
@@ -145,8 +141,9 @@
 
   </div>
   <div class="page-welcome__invisible-usagescanner">
-    <LcUsageInput :is-unlocked="isUnlocked"
-      @select-usage="openBookOutWithUsage" @other-code="warnAboutUsage">
+    <LcUsageInput
+      @select-usage="openBookOutWithUsage"
+      @other-code="warnAboutUsage">
     </LcUsageInput>
   </div>
 
