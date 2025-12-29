@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::table('items', function (Blueprint $table) {
             $table->integer('onvehicle_stock')->default(1);
+            $table->date('checked_at')->nullable();
+            $table->integer('max_order_quantity')->default(1);
         });
     }
 
@@ -23,6 +25,8 @@ return new class extends Migration
     {
         Schema::table('items', function (Blueprint $table) {
             $table->dropColumn('onvehicle_stock');
+            $table->dropColumn('checked_at');
+            $table->dropColumn('max_order_quantity');
         });
     }
 };
