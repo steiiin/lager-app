@@ -27,6 +27,10 @@
       default: 'secondary',
       validator: value => ['primary', 'secondary'].includes(value),
     },
+    selected: {
+      type: Boolean,
+      default: false,
+    },
     loading: {
       type: Boolean,
       default: false,
@@ -43,6 +47,7 @@
     'lc-button--primary': props.type === 'primary',
     'lc-button--secondary': props.type === 'secondary',
     'lc-button--loading': props.loading,
+    'selected': props.selected,
   }))
 
 // #endregion
@@ -106,7 +111,8 @@
     color: var(--main-light);
 
     &:hover,
-    &:focus-visible {
+    &:focus-visible,
+    &.selected {
       color: var(--main-dark);
       background: var(--main-light);
       & :deep(kbd) {
@@ -129,7 +135,8 @@
     color: var(--accent-primary-foreground);
 
     &:hover,
-    &:focus-visible {
+    &:focus-visible,
+    &.selected {
       color: var(--accent-primary-background);
       background: var(--accent-primary-foreground);
       & :deep(kbd) {

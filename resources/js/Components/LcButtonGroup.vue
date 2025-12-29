@@ -50,7 +50,7 @@ const switchValue = (value) => {
 <template>
   <div class="lc-button-group">
     <LcButton v-for="item in items" :key="item.value"
-      class="lc-button-group__btn" :type="item.value == currentValue ? 'primary' : 'secondary'"
+      class="lc-button-group__btn" type="primary" :selected="item.value == currentValue"
       @click="switchValue(item.value)">{{ item.label }}
     </LcButton>
   </div>
