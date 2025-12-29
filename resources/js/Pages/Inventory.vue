@@ -19,10 +19,16 @@
   import { useOptimalSize } from '@/Composables/useOptimalSize'
   import { useInventoryStore } from '@/Services/StoreService'
   import InputService from '@/Services/InputService'
+  import { useIsPwa } from '@/Composables/useIsPwa'
+  const { isPwa } = useIsPwa()
+  import { useSpeech } from '@/Composables/useSpeech'
+  const { speakNumber, isSpeaking, stop } = useSpeech()
 
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
   import LcItemInput from '@/Components/LcItemInput.vue'
+  import LcButton from '@/Components/LcButton.vue'
+  import LcButtonGroup from '@/Components/LcButtonGroup.vue'
   import LcItemAmountDialog from '@/Dialogs/LcItemAmountDialog.vue'
   import LcTrend from '@/Components/LcTrend.vue'
 
@@ -92,12 +98,23 @@
 
 // #region Inventory-Logic
 
-  const isPwa = computed(() => {
-    const standaloneDisplay = window.matchMedia?.('(display-mode: standalone)').matches;
-    const iosStandalone = window.navigator.standalone === true;
-    const displayMode = document.referrer?.startsWith?.('android-app://');
-    return standaloneDisplay || iosStandalone || displayMode;
-  })
+  // #region Modes
+
+    const inventoryMode = ref('edit')
+    const inEditMode = computed(() => inventoryMode.value == 'edit')
+    const inCheckMode = computed(() => inventoryMode.value == 'check')
+
+    const toEditMode = () => {
+      inventoryMode.value = 'edit'
+      editorAccordionOpened.value = []
+    }
+
+    const toCheckMode = () => {
+      inventoryMode.value = 'check'
+      editorAccordionOpened.value = [ 4, 5 ]
+    }
+
+  // #endregion
 
   // #region Dashboard
 
@@ -152,6 +169,17 @@
   // #endregion
   // #region ItemEditor
 
+    const editorTitle = computed(() => {
+      if (isNewItem.value) { return 'Neuer Artikel' }
+      if (inCheckMode.value) { return `Bestand prüfen: ${itemForm.name}` }
+      return `Artikel bearbeiten: ${itemForm.name}`
+    })
+
+    const saveBtnLabel = computed(() => {
+      if (inCheckMode.value) { return 'Geprüft' }
+      return 'Speichern'
+    })
+
     // Form
     const itemForm = useForm({
 
@@ -163,9 +191,11 @@
       location: { room:'', cab:'', exact:'' },
       min_stock: 0,
       max_stock: 0,
-      onvehicle_stock: 0,
       current_expiry: null,
       current_quantity: 0,
+      onvehicle_stock: 0,
+      checked_at: null,
+      max_order_quantity: 0,
 
       sizes: [],
 
@@ -188,6 +218,7 @@
     // OpenMethods
     const createNew = () => {
 
+      inventoryMode.value = 'edit'
       itemForm.reset()
 
       itemForm.id = null
@@ -202,6 +233,7 @@
       }
       itemForm.min_stock = 0
       itemForm.max_stock = 0
+      itemForm.onvehicle_stock = 1
 
       itemForm.current_expiry = null
       currentExpiryMonth.value = new Date().getMonth() + 1
@@ -210,6 +242,8 @@
       updateExpiry()
 
       itemForm.current_quantity = 0
+      itemForm.checked_at = null
+      itemForm.max_order_quantity = 0
 
       itemForm.sizes.splice(0, itemForm.sizes.length)
       itemForm.sizes.push({ id: null, unit: 'Stk.', amount: 1, is_default: true })
@@ -245,14 +279,17 @@
       currentExpiryYear.value = itemForm.current_expiry?.getFullYear() ?? null
 
       itemForm.current_quantity = item.current_quantity
+      itemForm.checked_at = !item.checked_at ? null : new Date(item.checked_at)
+      itemForm.max_order_quantity = item.max_order_quantity
 
       itemForm.sizes = item.sizes
       itemForm.stockchangeReason = -1
 
-      editorAccordionOpened.value = [ 4, 5 ]
+      editorAccordionOpened.value = inCheckMode.value ? [ 4, 5 ] : []
       selectedItem.value = { edit: true }
 
       loadStats()
+      loadSpeechIfNecessary()
 
     }
     const changeItem = (item) => {
@@ -277,6 +314,27 @@
       }
 
     }
+
+    // #region TemplateProps
+
+      const isNewItem = computed(() => itemForm.id === null)
+      const editorAccordionOpened = ref([])
+
+      // Validation
+      const isValidName = computed(() => itemForm.name.trim().length>0 )
+      const isValidDemand = computed(() => !!itemForm.demand_id )
+      const isValidItem = computed(() => isValidName.value && isValidDemand.value )
+
+      // Check
+      const lastCheckedLabel = computed(() => {
+        if (!itemForm.checked_at) { return 'Nie geprüft' }
+        const day = itemForm.checked_at.getDate()
+        const month = itemForm.checked_at.getMonth()+1
+        const year = itemForm.checked_at.getFullYear()
+        return `${day}.${month}.${year}`
+      })
+
+    // #endregion
 
     // #region WhereIs-Group
 
@@ -496,21 +554,13 @@
         updateExpiry()
       })
 
-    // #endregion
-
-    // #region TemplateProps
-
-      const isNewItem = computed(() => itemForm.id === null)
-      const editorAccordionOpened = ref([])
-
-      // Validation
-      const isValidName = computed(() => itemForm.name.trim().length>0 )
-      const isValidDemand = computed(() => !!itemForm.demand_id )
-      const isValidItem = computed(() => isValidName.value && isValidDemand.value )
-
+      const loadSpeechIfNecessary = () => {
+        if (inCheckMode.value && !isNewItem.value) {
+          setTimeout(() => speakNumber(itemForm.current_quantity), 500)
+        }
+      }
 
     // #endregion
-
     // #region Stats-Group
 
       const loadStats = async () => {
@@ -577,7 +627,7 @@
 
   <div class="page-inventory">
 
-    <LcPagebar :title="isPwa ? 'Inventar-App' : 'Inventar'" @back="openWelcome" :disabled="isPwa">
+    <LcPagebar :title="isPwa ? 'Inventar-App' : 'Inventar'" @back="openWelcome" :disabled="isPwa || isItemSelected">
       <template #actions>
         <v-btn v-if="!isItemSelected" variant="flat"
           @click="openConfigDemands">Anforderungen
@@ -592,8 +642,13 @@
 
       <template v-if="!isItemSelected">
 
-        <LcItemInput :admin-mode="true"
-          :result-specs="{ w: 850, i: 14.5 }"
+        <LcButtonGroup v-model="inventoryMode" :items="[
+          { label: 'Bearbeiten', value: 'edit' },
+          { label: 'Prüfen', value: 'check' },
+        ]"></LcButtonGroup>
+
+        <LcItemInput
+          :result-specs="{ w: 850, i: 19.0 }" :allow-new="inEditMode"
           @create-new="createNew" @select-item="editItem">
         </LcItemInput>
 
@@ -639,24 +694,33 @@
       </template>
       <template v-else>
 
-        <div v-show="false">
-          <LcItemInput @select-item="changeItem" :only-scan="true">
-          </LcItemInput>
-        </div>
+        <LcItemInput @select-item="changeItem" hidden></LcItemInput>
 
         <v-toolbar flat>
           <v-app-bar-nav-icon
             icon="mdi-arrow-left" :disabled="itemForm.processing"
             @click="clearSelectedItem"></v-app-bar-nav-icon>
           <v-toolbar-title>
-            {{ isNewItem ? 'Neuer Artikel' : 'Artikel bearbeiten - ' + itemForm.name }}
+            {{ editorTitle }}
           </v-toolbar-title>
+          <v-toolbar-items>
+            <v-btn v-if="inCheckMode"
+              @click="toEditMode"
+              icon="mdi-wrench"
+              v-tooltip:bottom="'Artikel bearbeiten'"
+            ></v-btn>
+            <v-btn v-if="inEditMode && !isNewItem"
+              @click="toCheckMode"
+              icon="mdi-check"
+              v-tooltip:bottom="'Nur Prüfen'"
+            ></v-btn>
+          </v-toolbar-items>
         </v-toolbar>
 
         <v-expansion-panels class="mt-2" flat multiple
           v-model="editorAccordionOpened" :disabled="itemForm.processing">
 
-          <v-expansion-panel class="mt-1" title="Allgemein" color="black" outlined>
+          <v-expansion-panel class="mt-1" title="Allgemein" color="black" outlined v-show="inEditMode">
             <v-expansion-panel-text>
 
               <v-text-field v-model="itemForm.name"
@@ -686,7 +750,7 @@
             </v-expansion-panel-text>
           </v-expansion-panel>
 
-          <v-expansion-panel class="mt-1" title="Wo ist ... ?" color="black">
+          <v-expansion-panel class="mt-1" title="Wo ist ... ?" color="black" v-show="inEditMode">
             <v-expansion-panel-text>
 
               <v-text-field v-model="itemForm.location.room"
@@ -720,7 +784,7 @@
             </v-expansion-panel-text>
           </v-expansion-panel>
 
-          <v-expansion-panel class="mt-1" title="Packungsgrößen" color="black">
+          <v-expansion-panel class="mt-1" title="Packungsgrößen" color="black" v-show="inEditMode">
             <v-expansion-panel-text>
 
               <v-data-table :items="itemForm.sizes"
@@ -742,7 +806,7 @@
               </v-expansion-panel-text>
           </v-expansion-panel>
 
-          <v-expansion-panel class="mt-1" title="Min- & Maxbestand" color="black">
+          <v-expansion-panel class="mt-1" title="Min- & Maxbestand" color="black" v-show="inEditMode">
             <v-expansion-panel-text>
 
               <v-form>
@@ -855,8 +919,7 @@
             </v-expansion-panel-text>
           </v-expansion-panel>
 
-
-          <v-expansion-panel class="mt-1" title="Statistik" color="black" v-if="!itemStats.nostats">
+          <v-expansion-panel class="mt-1" title="Statistik" color="black" v-if="!itemStats.nostats" v-show="inCheckMode">
             <v-expansion-panel-text>
               <v-container>
                 <v-row >
@@ -925,16 +988,20 @@
 
             <v-form>
               <v-row>
-                <v-col cols="3" v-if="!isNewItem">
-                  <v-btn color="error" variant="flat" block v-if="!isNewItem"
+                <v-col cols="3" v-if="!isNewItem && inEditMode">
+                  <v-btn color="error" variant="flat" block
                     @click="deleteItem">
                     Löschen
                   </v-btn>
                 </v-col>
+                <v-col cols="3" style="display:flex" v-if="inCheckMode">
+                  <v-chip class="lastcheck-chip" prepend-icon="mdi-progress-clock">
+                    <b>{{lastCheckedLabel}}</b></v-chip>
+                </v-col>
                 <v-col :cols="isNewItem ? 12 : 9">
                   <v-btn color="success" variant="flat" block :disabled="!isValidItem" :loading="itemForm.processing"
                     @click="saveItem">
-                    Speichern
+                    {{ saveBtnLabel }}
                   </v-btn>
                 </v-col>
               </v-row>
@@ -1026,5 +1093,9 @@
     }
   }
 
+}
+.lastcheck-chip {
+  width: 100%;
+  height: calc(var(--v-btn-height) + 0px);
 }
 </style>

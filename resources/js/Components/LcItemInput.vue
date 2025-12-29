@@ -7,7 +7,8 @@
  *
  * Props:
  *  - allowScan (Boolean): Enables the scan-mode.
- *  - adminMode (Boolean): Show additional info per item and enables new-item button.
+ *  - allowNew (Boolean): Enables the new button.
+ *  - hidden (Boolean): hides the input for scanning only.
  *  - disabled (Boolean): Disables the component for scanning/searching.
  *  - resultSpecs (Object): Set the width (w) and indent (i) of the absolute placed result panel.
  *  - cart (String): The current booking table, to show booking info in results.
@@ -32,6 +33,8 @@
   // Local composables
   import InputService from '@/Services/InputService'
   import { useInventoryStore } from '@/Services/StoreService'
+  import { useIsPwa } from '@/Composables/useIsPwa'
+  const { isPwa } = useIsPwa()
 
   // Local components
   import LcButton from '@/Components/LcButton.vue'
@@ -46,11 +49,11 @@
       type: Boolean,
       default: true,
     },
-    onlyScan: {
+    allowNew: {
       type: Boolean,
       default: false,
     },
-    adminMode: {
+    hidden: {
       type: Boolean,
       default: false,
     },
@@ -67,14 +70,6 @@
       required: false,
       default: [],
     },
-  })
-
-
-  const isPwa = computed(() => {
-    const standaloneDisplay = window.matchMedia?.('(display-mode: standalone)').matches;
-    const iosStandalone = window.navigator.standalone === true;
-    const displayMode = document.referrer?.startsWith?.('android-app://');
-    return standaloneDisplay || iosStandalone || displayMode;
   })
 
   // #region TemplateProps
@@ -270,10 +265,6 @@
 
           if (relevance > 1) {
 
-            const quantityColor = props.adminMode ? getQuantityColor(item) : null
-            const expiryColor = props.adminMode ? getExpiryColor(item) : null
-            const expiryText = props.adminMode ? getExpiryText(item) : null
-
             const bookingEntry = bookings.get(item.id) || null
             const isOnBooking = bookingEntry !== null
             const bookingText = isOnBooking
@@ -342,7 +333,7 @@
         // change to textmode if in scanmode
         if (inScanMode.value)
         {
-          if(props.onlyScan) { return }
+          if(props.hidden) { return }
           changeModeToText()
         }
 
@@ -373,43 +364,6 @@
         }
         return true
 
-      }
-
-    // #endregion
-
-    // #region ItemProps-Getter (for pickerresult)
-
-      const getQuantityColor = (item) => {
-        if (item.pending_quantity <= item.min_stock) {
-          return 'error'
-        }
-        else if (item.pending_quantity >= item.max_stock) {
-          return 'success'
-        }
-        else {
-          return 'warning'
-        }
-      }
-
-      const getExpiryColor = (item) => {
-        if (!item.current_expiry) { return 'success' }
-        const daysDiff = Math.round(
-          (new Date(item.current_expiry).getTime() - new Date().getTime()) /
-          (1000 * 60 * 60 * 24))
-        if (daysDiff > 21) {
-          return 'success'
-        }
-        else if (daysDiff > 14) {
-          return 'warning'
-        }
-        else {
-          return 'error'
-        }
-      }
-
-      const getExpiryText = (item) => {
-        if (!item.current_expiry) { return "n/v" }
-        return new Date(item.current_expiry).toLocaleDateString(undefined, { year: 'numeric', month: 'short' }).replace(' ', '-').replace('.', '');
       }
 
     // #endregion
@@ -452,7 +406,7 @@
 </script>
 <template>
 
-  <section class="lc-picker" :class="{ isPwa }" v-if="inScanMode">
+  <section class="lc-picker" v-show="!hidden" :class="{ isPwa }" v-if="inScanMode">
 
     <StreamBarcodeReader v-if="isPwa"
       torch no-front-cameras class="lc-picker__camscanner"
@@ -473,11 +427,11 @@
 
     <template v-if="!disabled">
 
-      <LcButton v-if="hasAnyItems && !onlyScan"
+      <LcButton v-if="hasAnyItems && !hidden"
         class="lc-picker__action lc-picker__actionsearch" icon="mdi-form-textbox"
         @click="changeModeToText()">Suchen
       </LcButton>
-      <LcButton v-if="adminMode"
+      <LcButton v-if="allowNew"
         class="lc-picker__action lc-picker__actionnew" icon="mdi-plus"
         @click="createNew">Neu
       </LcButton>
@@ -516,50 +470,26 @@
         <v-spacer></v-spacer>
         <div class="lc-picker__result--item-head-demand">{{ item.demand?.name }}</div>
       </div>
-      <template v-if="adminMode">
-        <template v-if="item.hasAltNames || item.hasTags">
-          <div class="lc-picker__result--item-tags" v-if="item.hasAltNames">
-            <v-chip size="small" label variant="outlined" v-for="tag in item.pp_altnames_list">{{ tag }}</v-chip>
-          </div>
-          <div class="lc-picker__result--item-tags" v-if="adminMode && item.hasTags">
-            <v-chip size="x-small" v-for="tag in item.pp_tags_list">{{ tag }}</v-chip>
-          </div>
-        </template>
-        <v-divider class="my-2"></v-divider>
-        <div class="lc-picker__result--item-location">
-          <v-chip prepend-icon="mdi-domain" variant="text">{{ item.location.room }}</v-chip>
-          <template v-if="!!item.location.cab">
-            <v-chip prepend-icon="mdi-fridge" variant="text">{{ item.location.cab }}</v-chip>
-          </template>
-          <div v-if="!!item.location.exact">
-            <v-chip prepend-icon="mdi-archive-marker-outline" variant="text">{{ item.location.exact }}</v-chip>
-          </div>
-        </div>
-        <v-divider class="my-2"></v-divider>
-        <div class="lc-picker__result--item-stock">
-          <v-chip prepend-icon="mdi-gauge-low" label>Min: {{ item.min_stock }} {{ item.basesize.unit }}</v-chip>
-          <v-chip prepend-icon="mdi-gauge-full" label>Max: {{ item.max_stock }} {{ item.basesize.unit }}</v-chip>
-          <v-spacer></v-spacer>
-          <v-chip
-            :color="item.expiryColor" variant="flat" label><b>{{ item.expiryText }}</b></v-chip>
-          <v-chip
-            :color="item.quantityColor" variant="flat" label><b>{{ item.pending_quantity }} {{ item.basesize.unit }}</b></v-chip>
-          <v-chip v-if="item.current_quantity !== item.pending_quantity"
-            variant="flat" label>Ohne Bestellung:&nbsp;<b>{{ item.current_quantity }} {{ item.basesize.unit }}</b></v-chip>
+      <template v-if="item.hasAltNames">
+        <div class="lc-picker__result--item-tags" v-if="item.hasAltNames">
+          <v-chip size="small" label variant="outlined" v-for="tag in item.pp_altnames_list">{{ tag }}</v-chip>
         </div>
       </template>
-      <template v-else>
-        <template v-if="item.hasAltNames">
-          <div class="lc-picker__result--item-tags" v-if="item.hasAltNames">
-            <v-chip size="small" label variant="outlined" v-for="tag in item.pp_altnames_list">{{ tag }}</v-chip>
-          </div>
+      <v-divider class="my-2"></v-divider>
+      <div class="lc-picker__result--item-location">
+        <v-chip prepend-icon="mdi-domain" variant="text">{{ item.location.room }}</v-chip>
+        <template v-if="!!item.location.cab">
+          <v-chip prepend-icon="mdi-fridge" variant="text">{{ item.location.cab }}</v-chip>
         </template>
-        <template v-if="item.isOnBooking">
-          <v-divider class="my-2"></v-divider>
-          <div class="d-flex flex-row-reverse">
-            <v-chip color="black" label prepend-icon="mdi-check-circle" variant="flat">Schon im Warenkorb:&nbsp;<b>{{ item.bookingText }}</b></v-chip>
-          </div>
-        </template>
+        <div v-if="!!item.location.exact">
+          <v-chip prepend-icon="mdi-archive-marker-outline" variant="text">{{ item.location.exact }}</v-chip>
+        </div>
+      </div>
+      <template v-if="item.isOnBooking">
+        <v-divider class="my-2"></v-divider>
+        <div class="d-flex flex-row-reverse">
+          <v-chip color="black" label prepend-icon="mdi-check-circle" variant="flat">Schon im Warenkorb:&nbsp;<b>{{ item.bookingText }}</b></v-chip>
+        </div>
       </template>
     </v-card>
 
@@ -677,11 +607,6 @@
         align-items: center;
         margin-top: 4px;
       }
-      &-stock {
-        display: flex;
-        gap: 4px;
-      }
-
 
     }
 
@@ -730,4 +655,5 @@
     "CamScanner Description ButtonSearch"
     "CamScanner Description ButtonNew";
 }
+
 </style>

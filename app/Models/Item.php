@@ -9,7 +9,7 @@ class Item extends Model
 {
 
     protected $table = 'items';
-    protected $fillable = ['name', 'location', 'search_altnames', 'search_tags', 'demand_id', 'min_stock', 'max_stock', 'onvehicle_stock', 'current_expiry', 'current_quantity'];
+    protected $fillable = ['name', 'location', 'search_altnames', 'search_tags', 'demand_id', 'min_stock', 'max_stock', 'onvehicle_stock', 'current_expiry', 'current_quantity', 'checked_at', 'max_order_quantity'];
     protected $casts = [ 'location' => 'array' ];
     protected $appends = [ 'barcodes', 'pending_quantity' ];
 

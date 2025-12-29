@@ -53,7 +53,7 @@ class InventoryController extends Controller
             'sizes.*.id' => 'nullable|integer|exists:itemsizes,id',
             'sizes.*.unit' => 'required|string',
             'sizes.*.amount' => 'required|numeric|min:1|max:999',
-            'sizes.*.is_default' => 'required|boolean'
+            'sizes.*.is_default' => 'required|boolean',
         ]);
 
         DB::transaction(function () use ($request)
@@ -93,7 +93,9 @@ class InventoryController extends Controller
             'sizes.*.id' => 'nullable|integer|exists:itemsizes,id',
             'sizes.*.unit' => 'required|string',
             'sizes.*.amount' => 'required|numeric|min:1|max:999',
-            'sizes.*.is_default' => 'required|boolean'
+            'sizes.*.is_default' => 'required|boolean',
+
+            'max_order_quantity' => 'required|numeric|min:0|max:999',
         ]);
 
         DB::transaction(function () use ($request, $id)
@@ -101,7 +103,6 @@ class InventoryController extends Controller
 
             // get item
             $item = Item::findOrFail($id);
-            $stockChange = $item->current_quantity - $request->current_quantity;
 
             // update item
             $item->update($request->except('sizes'));
@@ -109,15 +110,11 @@ class InventoryController extends Controller
             // handle sizes
             $this->handleSizes($request->input('sizes'), $item);
 
+            // handle check
+            $this->handleCheck($item);
+
             // handle stockchange
-            if ($stockChange !== 0)
-            {
-                Booking::create([
-                    'usage_id' => $request->stockchangeReason,
-                    'item_id' => $item->id,
-                    'item_amount' => $stockChange
-                ]);
-            }
+            $this->handleStockChange($request, $item);
 
         });
 
@@ -162,6 +159,24 @@ class InventoryController extends Controller
 
             }
 
+        }
+    }
+
+    private function handleCheck(Item $item)
+    {
+        $item->touch('checked_at');
+    }
+
+    private function handleStockChange(Request $request, Item $item)
+    {
+        $change = $item->current_quantity - $request->current_quantity;
+        if ($change !== 0)
+        {
+            Booking::create([
+                'usage_id' => $request->stockchangeReason,
+                'item_id' => $item->id,
+                'item_amount' => $change
+            ]);
         }
     }
 
