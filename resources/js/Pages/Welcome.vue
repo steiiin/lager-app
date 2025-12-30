@@ -124,13 +124,8 @@
       @click="openBookOut">Verbrauch<kbd v-if="!isTouchMode">1</kbd>
     </LcButton>
 
-    <LcButton class="page-welcome__WhereIs"
-      type="primary" icon="mdi-home-search-outline"
-      @click="openWhereIs">Wo ist ... ?<kbd v-if="!isTouchMode">2</kbd>
-    </LcButton>
-
     <LcButton class="page-welcome__BookIn"
-      icon="mdi-basket-outline"
+      type="primary" icon="mdi-basket-outline"
       @click="openBookIn">Lieferung<kbd v-if="!isTouchMode">3</kbd>
     </LcButton>
 
@@ -155,6 +150,12 @@
 </template>
 <style lang="scss" scoped>
 .page-welcome {
+  // grid-template-columns: repeat(6, 0.5fr);
+  // grid-template-rows: 1.5fr 0.5fr;
+  // gap: 1rem;
+  // grid-template-areas:
+  //   "BookOut BookOut BookOut WhereIs WhereIs WhereIs"
+  //   "BookOut BookOut BookOut BookIn BookIn Inventory";
 
   width: 100%;
   height: 100%;
@@ -162,12 +163,12 @@
   padding: 10vh 10vw;
   background: var(--main-light);
   color: var(--main-dark);
-  grid-template-columns: repeat(6, 0.5fr);
+  grid-template-columns: 0.5fr 0.5fr;
   grid-template-rows: 1.5fr 0.5fr;
   gap: 1rem;
   grid-template-areas:
-    "BookOut BookOut BookOut WhereIs WhereIs WhereIs"
-    "BookOut BookOut BookOut BookIn BookIn Inventory";
+    "BookOut BookIn"
+    "BookOut Inventory";
 
   &__WhereIs {
     grid-area: WhereIs;

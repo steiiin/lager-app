@@ -365,7 +365,8 @@
 
       const handleEnter = () => {
 
-        if (inTextMode.value && hasAnyItems.value && !hasExactlyOneResult.value) {
+        if (inTextMode.value && hasAnyItems.value) {
+          if (hasExactlyOneResult.value) { selectFirstResult() }
           return false
         }
         return true
