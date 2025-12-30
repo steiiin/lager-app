@@ -363,6 +363,15 @@
 
       }
 
+      const handleEnter = () => {
+
+        if (inTextMode.value && hasAnyItems.value && !hasExactlyOneResult.value) {
+          return false
+        }
+        return true
+
+      }
+
     // #endregion
 
   // #endregion
@@ -396,7 +405,7 @@
 // #endregion
 // #region Expose
 
-  defineExpose({ handleEscape })
+  defineExpose({ handleEscape, handleEnter })
 
 // #endregion
 

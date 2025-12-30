@@ -79,6 +79,13 @@
       }
     }
 
+    const handleEnter = () => {
+      const canExit = itemPicker?.value?.handleEnter() ?? false
+      if (canExit && !manuallyDialog.value.isVisible) {
+        finishBookOut()
+      }
+    }
+
   // #endregion
 
 // #endregion
@@ -273,6 +280,7 @@
 
     // register input
     InputService.registerEsc(handleEscape)
+    InputService.registerEnter(handleEnter)
 
     // load store
     inventoryStore.fetchStore()
@@ -280,6 +288,7 @@
   })
   onUnmounted(() => {
     InputService.unregisterEsc(handleEscape)
+    InputService.unregisterEnter(handleEnter)
   })
 
 // #endregion
