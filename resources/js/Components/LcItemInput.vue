@@ -276,9 +276,6 @@
               relevance,
               hasAltNames: !!item.pp_search_altnames_list,
               hasTags: !!item.pp_search_tags_list,
-              quantityColor,
-              expiryColor,
-              expiryText,
               isOnBooking,
               bookingText,
             })

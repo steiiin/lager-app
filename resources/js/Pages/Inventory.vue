@@ -27,10 +27,9 @@
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
   import LcItemInput from '@/Components/LcItemInput.vue'
-  import LcButton from '@/Components/LcButton.vue'
   import LcStockAmount from '@/Components/LcStockAmount.vue'
   import LcButtonGroup from '@/Components/LcButtonGroup.vue'
-  import LcItemAmountDialog from '@/Dialogs/LcItemAmountDialog.vue'
+  import LcItemSizeDialog from '@/Dialogs/LcItemSizeDialog.vue'
   import LcTrend from '@/Components/LcTrend.vue'
 
   // 3rd party components
@@ -345,132 +344,20 @@
 
     // #region Sizes-Group
 
-      // DialogProps
-      const isEditSizeNew = computed(() => !currentEditSizeItem.value?.origOneUnit )
-
-      const isEditSizeUnitExisting = computed(() => {
-        return itemForm.sizes.some(e => (
-          (e.unit.toLowerCase() === currentEditSizeItem.value?.unit.toLowerCase()) &&
-          (e.unit.toLowerCase() !== currentEditSizeItem.value?.origOneUnit)
-        ))
-      })
-      const isEditSizeAmountExisting = computed(() => {
-        return itemForm.sizes.some(e => (
-          (e.amount === currentEditSizeItem.value?.amount) &&
-          (e.amount !== currentEditSizeItem.value?.origOneAmount)
-        ))
-      })
-      const isEditSizeEmpty = computed(() => {
-        return !currentEditSizeItem.value?.unit || !currentEditSizeItem.value?.amount
-      })
-      const isEditSizeDefault = computed(() => {
-        return currentEditSizeItem.value?.defaultOne ?? false
-      })
-      const isEditSizeTooLow = computed(() => {
-        return ((currentEditSizeItem.value?.amount < 2) && !currentEditSizeItem.value?.defaultOne)
-      })
-      const isValidSizeEdit = computed(() => {
-        return !isEditSizeEmpty.value && !isEditSizeUnitExisting.value && !isEditSizeAmountExisting.value;
-      })
-
-      const currentEditSizeItem = ref({
-        id: null,
-        item_id: null,
-        unit: '',
-        amount: 0,
-        is_default: false,
-        origOneUnit: '',
-        origOneAmount: 0,
-        defaultOne: false,
-      })
-
-      // OpenMethods
-      const beginAddSize = async () => {
-        currentEditSizeItem.value = {
-          id: null,
-          item_id: null,
-          unit: 'Stk-'+(itemForm.sizes.length+1),
-          amount: Math.max(...itemForm.sizes.map(obj => obj.amount))+1,
-          is_default: false,
-          origOneUnit: '',
-          origOneAmount: 0,
-          defaultOne: false,
-        }
-        isSizeDialogVisible.value = true
-        await nextTick()
-        document.getElementById('id-editsize-amount')?.select()
-        document.getElementById('id-editsize-amount')?.focus()
-      }
-      const beginEditSize = (item) => {
-        currentEditSizeItem.value = {
-          id: item.id ?? null,
-          item_id: item.item_id ?? null,
-          unit: item.unit,
-          amount: item.amount,
-          is_default: item.is_default,
-          origOneUnit: (' ' + item.unit.toLowerCase()).slice(1),
-          origOneAmount: item.amount,
-          defaultOne: item.amount === 1,
-        }
-        isSizeDialogVisible.value = true
-      }
-
-      // ActionMethods
-      const cancelEditSize = () => {
-        currentEditSizeItem.value = null
-        isSizeDialogVisible.value = false
-      }
-      const deleteEditSize = (item) => {
-        const toDelete = itemForm.sizes.find(e => e.unit === item.unit)
-        isSizeDialogVisible.value = false
-      }
-      const acceptEditSize = () => {
-        if (isEditSizeNew.value) {
-
-          // append new size
-          if (currentEditSizeItem.value.is_default) {
-            itemForm.sizes.forEach( item => item.is_default = false)
-          }
-          itemForm.sizes.push(currentEditSizeItem.value)
-
-        } else {
-
-          // edit size
-          const existing = itemForm.sizes.find(e => e.amount === currentEditSizeItem.value.origOneAmount)
-          if (!!existing) {
-            if (currentEditSizeItem.value.is_default) {
-              itemForm.sizes.forEach( item => item.is_default = false)
-            }
-            existing.unit = currentEditSizeItem.value.unit
-            existing.amount = currentEditSizeItem.value.amount
-            existing.is_default = currentEditSizeItem.value.is_default
-            if (existing.amount === 1 && !existing.is_default && !itemForm.sizes.some( item => item.is_default )) {
-              existing.is_default = true
-            }
-          }
-
-        }
-        cancelEditSize()
-      }
-
-      // #region Table
-
-        const sizesHeaders = ref([
-          { title: 'Einheit', key: 'unit', minWidth: '30%' },
-          { title: 'Menge', key: 'amount', minWidth: '20%' },
-          { title: 'Bearbeiten', key: 'action', sortable: false },
-        ])
-        const sizesSortBy = ref([
-          { key: 'amount', order: 'asc' }
-        ])
-
-      // #endregion
-
-    // #endregion
-    // #region MinMax-Group
-
-      // Props
       const { baseUnit } = useBaseSize(toRef(itemForm, 'sizes'))
+
+      const sizeDialog = ref(null)
+      const createSize = () => sizeDialog.value?.create()
+      const editSize = (item) => sizeDialog.value?.edit(item)
+
+      const sizesHeaders = ref([
+        { title: 'Einheit', key: 'unit', minWidth: '30%' },
+        { title: 'Menge', key: 'amount', minWidth: '20%' },
+        { title: 'Bearbeiten', key: 'action', sortable: false },
+      ])
+      const sizesSortBy = ref([
+        { key: 'amount', order: 'asc' }
+      ])
 
     // #endregion
     // #region Quantity/Expiry-Group
@@ -727,7 +614,7 @@
                 :headers="sizesHeaders" :sort-by="sizesSortBy"
                 hide-default-footer :items-per-page="100">
                 <template v-slot:item.action="{ item }">
-                  <v-btn small variant="outlined" @click="beginEditSize(item)">
+                  <v-btn small variant="outlined" @click="editSize(item)">
                     <v-icon icon="mdi-cog"></v-icon>
                   </v-btn>
                 </template>
@@ -736,7 +623,7 @@
               <v-divider></v-divider>
 
               <v-btn color="primary" variant="outlined" class="mt-4" prepend-icon="mdi-plus"
-                @click="beginAddSize()">Hinzufügen
+                @click="createSize()">Hinzufügen
               </v-btn>
 
               </v-expansion-panel-text>
@@ -749,6 +636,7 @@
 
                 <LcStockAmount
                   v-model:stock="itemForm.min_stock"
+                  v-model:visible="isStockDialogVisible"
                   :sizes="itemForm.sizes"
                   title="Min-Bestand berechnen"
                   message="Gib eine Packungsgröße und eine Menge ein, um einen neuen Min-Bestand zu errechnen."
@@ -757,6 +645,7 @@
 
                 <LcStockAmount
                   v-model:stock="itemForm.max_stock"
+                  v-model:visible="isStockDialogVisible"
                   :sizes="itemForm.sizes"
                   title="Max-Bestand berechnen"
                   message="Gib eine Packungsgröße und eine Menge ein, um einen neuen Max-Bestand zu errechnen."
@@ -768,6 +657,7 @@
 
                 <LcStockAmount
                   v-model:stock="itemForm.onvehicle_stock"
+                  v-model:visible="isStockDialogVisible"
                   :sizes="itemForm.sizes"
                   title="Fahrzeugbestand berechnen"
                   message="Gib eine Packungsgröße und eine Menge ein, um einen neuen Fahrzeugbestand zu errechnen."
@@ -779,6 +669,7 @@
 
                 <LcStockAmount
                   v-model:stock="itemForm.max_bookin_quantity"
+                  v-model:visible="isStockDialogVisible"
                   :sizes="itemForm.sizes"
                   title="Max/Buchung berechnen"
                   message="Gib eine Packungsgröße und eine Menge ein, um die maximal Menge pro Buchung einzugeben."
@@ -787,6 +678,7 @@
 
                 <LcStockAmount
                   v-model:stock="itemForm.max_order_quantity"
+                  v-model:visible="isStockDialogVisible"
                   :sizes="itemForm.sizes"
                   title="Max/Bestellung berechnen"
                   message="Gib eine Packungsgröße und eine Menge ein, um die maximal Menge pro Bestellung einzugeben."
@@ -970,66 +862,11 @@
 
       </template>
 
-      <!-- ItemSize-Dialog -->
-      <v-dialog v-model="isSizeDialogVisible" max-width="420px">
-        <v-card prepend-icon="mdi-package-variant-closed" v-if="currentEditSizeItem" class="rounded-0"
-          :title="isEditSizeNew ? 'Neue Packungsgröße' : 'Packungsgröße bearbeiten'">
-          <v-divider></v-divider>
-          <v-card-text>
-
-            <p class="mb-4">
-              Gib eine Packungsgröße an.
-            </p>
-
-            <v-text-field v-model="currentEditSizeItem.amount"
-              :disabled="currentEditSizeItem.defaultOne"
-              label="Menge" type="number" :min="2" hide-details>
-            </v-text-field>
-
-            <v-text-field v-model="currentEditSizeItem.unit"
-              class="mt-2" id="id-editsize-unit"
-              label="Größenangabe" hide-details>
-            </v-text-field>
-
-            <v-checkbox v-model="currentEditSizeItem.is_default"
-              label="In dieser Packungseinheit bestellen" hide-details>
-            </v-checkbox>
-
-            <v-alert class="mt-2" v-if="isEditSizeUnitExisting"
-              text="Diese Einheit existiert bereits." type="error">
-            </v-alert>
-            <v-alert class="mt-2" v-else-if="isEditSizeAmountExisting"
-              text="Diese Menge exisitert bereits." type="error">
-            </v-alert>
-            <v-alert class="mt-2" v-else-if="isEditSizeEmpty"
-              text="Du musst alles ausfüllen." type="error">
-            </v-alert>
-            <v-alert class="mt-2" v-else-if="isEditSizeTooLow"
-              text="Du kannst nicht unter die Standardgröße." type="error">
-            </v-alert>
-
-          </v-card-text>
-
-          <v-divider></v-divider>
-
-          <v-card-actions class="mx-4 mb-2">
-            <v-btn color="error" variant="tonal" v-if="!isEditSizeNew && !isEditSizeDefault"
-              @click="deleteEditSize">Delete
-            </v-btn>
-            <v-spacer></v-spacer>
-            <v-btn
-              @click="cancelEditSize">Abbrechen
-            </v-btn>
-            <v-btn color="primary" variant="tonal" :disabled="!isValidSizeEdit"
-              @click="acceptEditSize">Speichern
-            </v-btn>
-          </v-card-actions>
-
-        </v-card>
-      </v-dialog>
-
-      <!-- Dialogs -->
-      <LcItemAmountDialog ref="minmaxDialog" />
+      <!-- DIALOGS -->
+      <LcItemSizeDialog ref="sizeDialog"
+        v-model:visible="isSizeDialogVisible"
+        :sizes="itemForm.sizes">
+      </LcItemSizeDialog>
 
     </section>
 
