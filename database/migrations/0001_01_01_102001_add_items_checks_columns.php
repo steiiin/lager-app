@@ -15,6 +15,7 @@ return new class extends Migration
             $table->integer('onvehicle_stock')->default(1);
             $table->date('checked_at')->nullable();
             $table->integer('max_order_quantity')->default(0);
+            $table->integer('max_bookin_quantity')->default(0);
         });
     }
 
@@ -27,6 +28,7 @@ return new class extends Migration
             $table->dropColumn('onvehicle_stock');
             $table->dropColumn('checked_at');
             $table->dropColumn('max_order_quantity');
+            $table->dropColumn('max_bookin_quantity');
         });
     }
 };

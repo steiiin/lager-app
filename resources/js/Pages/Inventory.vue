@@ -28,6 +28,7 @@
   import LcPagebar from '@/Components/LcPagebar.vue'
   import LcItemInput from '@/Components/LcItemInput.vue'
   import LcButton from '@/Components/LcButton.vue'
+  import LcStockAmount from '@/Components/LcStockAmount.vue'
   import LcButtonGroup from '@/Components/LcButtonGroup.vue'
   import LcItemAmountDialog from '@/Dialogs/LcItemAmountDialog.vue'
   import LcTrend from '@/Components/LcTrend.vue'
@@ -76,18 +77,18 @@
       }
     }
     const handleEnter = () => {
-      if (isItemSelected.value && !isEditSizeVisible.value && !minmaxDialog.value.isVisible) {
+      if (isItemSelected.value && !isSizeDialogVisible.value && !isStockDialogVisible.value) {
         saveItem()
       }
     }
 
     const handleLeft = () => {
-      if (isItemSelected.value && !isEditSizeVisible.value && !minmaxDialog.value.isVisible) {
+      if (isItemSelected.value && !isSizeDialogVisible.value && !isStockDialogVisible.value) {
         itemForm.current_quantity -= 1
       }
     }
     const handleRight = () => {
-      if (isItemSelected.value && !isEditSizeVisible.value && !minmaxDialog.value.isVisible) {
+      if (isItemSelected.value && !isSizeDialogVisible.value && !isStockDialogVisible.value) {
         itemForm.current_quantity += 1
       }
     }
@@ -196,6 +197,7 @@
       onvehicle_stock: 0,
       checked_at: null,
       max_order_quantity: 0,
+      max_bookin_quantity: 0,
 
       sizes: [],
 
@@ -244,6 +246,7 @@
       itemForm.current_quantity = 0
       itemForm.checked_at = null
       itemForm.max_order_quantity = 0
+      itemForm.max_bookin_quantity = 0
 
       itemForm.sizes.splice(0, itemForm.sizes.length)
       itemForm.sizes.push({ id: null, unit: 'Stk.', amount: 1, is_default: true })
@@ -281,6 +284,7 @@
       itemForm.current_quantity = item.current_quantity
       itemForm.checked_at = !item.checked_at ? null : new Date(item.checked_at)
       itemForm.max_order_quantity = item.max_order_quantity
+      itemForm.max_bookin_quantity = item.max_bookin_quantity
 
       itemForm.sizes = item.sizes
       itemForm.stockchangeReason = -1
@@ -334,33 +338,14 @@
         return `${day}.${month}.${year}`
       })
 
-    // #endregion
-
-    // #region WhereIs-Group
-
-      // Props
-      const { text: onvehicle } = useOptimalSize(toRef(itemForm, 'sizes'), toRef(itemForm, 'onvehicle_stock'))
-      const onvehicleDefault = computed(() => `${itemForm.onvehicle_stock} ${baseUnit.value}`)
-      const onvehicleDiffer = computed(() => onvehicle.value != onvehicleDefault.value)
-
-      // OpenMethods
-      const openOnVehicleCalc = async () => {
-        const newOnVehicle = await minmaxDialog.value.open({
-          title: 'Fahrzeugbestand berechnen',
-          message: 'Gib eine Packungsgröße und eine Menge ein, um einen neuen Fahrzeugbestand zu errechnen.',
-          sizes: itemForm.sizes,
-          selectedSize: itemForm.sizes.find(e=>e.is_default),
-        })
-
-        if (newOnVehicle === null) { return }
-        itemForm.onvehicle_stock = newOnVehicle
-      }
+      const isSizeDialogVisible = ref(false)
+      const isStockDialogVisible = ref(false)
 
     // #endregion
+
     // #region Sizes-Group
 
       // DialogProps
-      const isEditSizeVisible = ref(false)
       const isEditSizeNew = computed(() => !currentEditSizeItem.value?.origOneUnit )
 
       const isEditSizeUnitExisting = computed(() => {
@@ -411,7 +396,7 @@
           origOneAmount: 0,
           defaultOne: false,
         }
-        isEditSizeVisible.value = true
+        isSizeDialogVisible.value = true
         await nextTick()
         document.getElementById('id-editsize-amount')?.select()
         document.getElementById('id-editsize-amount')?.focus()
@@ -427,17 +412,17 @@
           origOneAmount: item.amount,
           defaultOne: item.amount === 1,
         }
-        isEditSizeVisible.value = true
+        isSizeDialogVisible.value = true
       }
 
       // ActionMethods
       const cancelEditSize = () => {
         currentEditSizeItem.value = null
-        isEditSizeVisible.value = false
+        isSizeDialogVisible.value = false
       }
       const deleteEditSize = (item) => {
         const toDelete = itemForm.sizes.find(e => e.unit === item.unit)
-        isEditSizeVisible.value = false
+        isSizeDialogVisible.value = false
       }
       const acceptEditSize = () => {
         if (isEditSizeNew.value) {
@@ -486,39 +471,6 @@
 
       // Props
       const { baseUnit } = useBaseSize(toRef(itemForm, 'sizes'))
-      const { text: minText } = useOptimalSize(toRef(itemForm, 'sizes'), toRef(itemForm, 'min_stock'))
-      const { text: maxText } = useOptimalSize(toRef(itemForm, 'sizes'), toRef(itemForm, 'max_stock'))
-
-      const minDefaultText = computed(() => `${itemForm.min_stock} ${baseUnit.value}`)
-      const maxDefaultText = computed(() => `${itemForm.max_stock} ${baseUnit.value}`)
-
-      const minSizesDiffer = computed(() => minText.value != minDefaultText.value)
-      const maxSizesDiffer = computed(() => maxText.value != maxDefaultText.value)
-
-      // DialogProps
-      const minmaxDialog = ref(null)
-
-      // OpenMethods
-      const openMinCalc = async () => {
-        const newMin = await minmaxDialog.value.open({
-          title: 'Min-Bestand berechnen',
-          message: 'Gib eine Packungsgröße und eine Menge ein, um einen neuen Min-Bestand zu errechnen.',
-          sizes: itemForm.sizes,
-          selectedSize: itemForm.sizes.find(e=>e.is_default),
-        })
-        if (newMin === null) { return }
-        itemForm.min_stock = newMin
-      }
-      const openMaxCalc = async () => {
-        const newMax = await minmaxDialog.value.open({
-          title: 'Max-Bestand berechnen',
-          message: 'Gib eine Packungsgröße und eine Menge ein, um einen neuen Max-Bestand zu errechnen.',
-          sizes: itemForm.sizes,
-          selectedSize: itemForm.sizes.find(e=>e.is_default),
-        })
-        if (newMax === null) { return }
-        itemForm.max_stock = newMax
-      }
 
     // #endregion
     // #region Quantity/Expiry-Group
@@ -765,22 +717,6 @@
                 label="Genauer Ort (z.B. Schublade)" hide-details>
               </v-text-field>
 
-              <v-form style="margin-top: 1rem;">
-                <v-row>
-                  <v-col cols="5">
-                    <v-btn prepend-icon="mdi-calculator" variant="outlined"
-                      @click="openOnVehicleCalc">Fahrzeugbestand ändern
-                    </v-btn>
-                  </v-col>
-                  <v-col cols="2" class="page-inventory__table--result-centered">
-                    {{ onvehicleDefault }}
-                  </v-col>
-                  <v-col cols="2" class="page-inventory__table--result-centered" v-if="onvehicleDiffer">
-                    bzw. {{ onvehicle }}
-                  </v-col>
-                </v-row>
-              </v-form>
-
             </v-expansion-panel-text>
           </v-expansion-panel>
 
@@ -809,33 +745,54 @@
           <v-expansion-panel class="mt-1" title="Min- & Maxbestand" color="black" v-show="inEditMode">
             <v-expansion-panel-text>
 
-              <v-form>
-                <v-row>
-                  <v-col cols="4">
-                    <v-btn prepend-icon="mdi-calculator" variant="outlined"
-                      @click="openMinCalc">Min-Bestand ändern
-                    </v-btn>
-                  </v-col>
-                  <v-col cols="2" class="page-inventory__table--result-centered">
-                    {{ minDefaultText }}
-                  </v-col>
-                  <v-col cols="2" class="page-inventory__table--result-centered" v-if="minSizesDiffer">
-                    bzw. {{ minText }}
-                  </v-col>
-                </v-row>
-                <v-row class="mt-2">
-                  <v-col cols="4">
-                    <v-btn prepend-icon="mdi-calculator" variant="outlined"
-                      @click="openMaxCalc">Max-Bestand ändern
-                    </v-btn>
-                  </v-col>
-                  <v-col cols="2" class="page-inventory__table--result-centered">
-                    {{ maxDefaultText }}
-                  </v-col>
-                  <v-col cols="2" class="page-inventory__table--result-centered" v-if="maxSizesDiffer">
-                    bzw. {{ maxText }}
-                  </v-col>
-                </v-row>
+              <v-form class="mb-6">
+
+                <LcStockAmount
+                  v-model:stock="itemForm.min_stock"
+                  :sizes="itemForm.sizes"
+                  title="Min-Bestand berechnen"
+                  message="Gib eine Packungsgröße und eine Menge ein, um einen neuen Min-Bestand zu errechnen."
+                  button-text="Min-Bestand ändern">
+                </LcStockAmount>
+
+                <LcStockAmount
+                  v-model:stock="itemForm.max_stock"
+                  :sizes="itemForm.sizes"
+                  title="Max-Bestand berechnen"
+                  message="Gib eine Packungsgröße und eine Menge ein, um einen neuen Max-Bestand zu errechnen."
+                  button-text="Max-Bestand ändern">
+                </LcStockAmount>
+
+              </v-form>
+              <v-form class="mb-6">
+
+                <LcStockAmount
+                  v-model:stock="itemForm.onvehicle_stock"
+                  :sizes="itemForm.sizes"
+                  title="Fahrzeugbestand berechnen"
+                  message="Gib eine Packungsgröße und eine Menge ein, um einen neuen Fahrzeugbestand zu errechnen."
+                  button-text="Fahrzeugbestand ändern">
+                </LcStockAmount>
+
+              </v-form>
+              <v-form class="pb-3">
+
+                <LcStockAmount
+                  v-model:stock="itemForm.max_bookin_quantity"
+                  :sizes="itemForm.sizes"
+                  title="Max/Buchung berechnen"
+                  message="Gib eine Packungsgröße und eine Menge ein, um die maximal Menge pro Buchung einzugeben."
+                  button-text="Max/Buchung ändern">
+                </LcStockAmount>
+
+                <LcStockAmount
+                  v-model:stock="itemForm.max_order_quantity"
+                  :sizes="itemForm.sizes"
+                  title="Max/Bestellung berechnen"
+                  message="Gib eine Packungsgröße und eine Menge ein, um die maximal Menge pro Bestellung einzugeben."
+                  button-text="Max/Bestellung ändern">
+                </LcStockAmount>
+
               </v-form>
 
 
@@ -983,6 +940,7 @@
 
         </v-expansion-panels>
 
+        <!-- DIALOG BUTTONS -->
         <v-card class="mt-2 rounded-0" variant="outlined" :disabled="itemForm.processing">
           <v-card-text class="pa-4">
 
@@ -1013,7 +971,7 @@
       </template>
 
       <!-- ItemSize-Dialog -->
-      <v-dialog v-model="isEditSizeVisible" max-width="420px">
+      <v-dialog v-model="isSizeDialogVisible" max-width="420px">
         <v-card prepend-icon="mdi-package-variant-closed" v-if="currentEditSizeItem" class="rounded-0"
           :title="isEditSizeNew ? 'Neue Packungsgröße' : 'Packungsgröße bearbeiten'">
           <v-divider></v-divider>
