@@ -168,6 +168,34 @@ import { includes } from 'lodash'
       return inventoryStore.items
         .map(item => { return { ...item, tags: findCheckTags(item)} })
         .filter(item => item.tags.length>0)
+        .sort((a, b) => {
+
+            if (!a.checked_at && !b.checked_at) {
+            } else if (!a.checked_at) {
+              return -1; // a (null) comes before b
+            } else if (!b.checked_at) {
+              return 1;  // b (null) comes before a
+            } else {
+              const dateA = new Date(a.checked_at);
+              const dateB = new Date(b.checked_at);
+              if (dateA < dateB) return -1;
+              if (dateA > dateB) return 1;
+            }
+
+            if (a.current_expiry && !b.current_expiry) {
+              return -1; // a has expiry → comes first
+            }
+            if (!a.current_expiry && b.current_expiry) {
+              return 1;  // b has expiry → comes first
+            }
+            if (!a.current_expiry && !b.current_expiry) {
+              return 0;  // both null → equal
+            }
+
+            const expiryA = new Date(a.current_expiry);
+            const expiryB = new Date(b.current_expiry);
+            return expiryA - expiryB; // shorter syntax for ascending
+          });
 
     })
 
@@ -177,11 +205,6 @@ import { includes } from 'lodash'
       { title: '', key: 'tags', align: 'end' },
       { title: '', key: 'action', sortable: false },
     ])
-    const sortCheckNecessary = ref([
-      { key: 'checked_at', order: 'desc' },
-      { key: 'current_expiry', order: 'asc' },
-    ])
-
 
   // #endregion
 
@@ -579,7 +602,7 @@ import { includes } from 'lodash'
 
             <v-data-table
               :items="itemsCheckNecessary"
-              :headers="tableCheckNecessary" :sort-by="sortCheckNecessary"
+              :headers="tableCheckNecessary"
               :items-per-page="20">
               <template v-slot:item.tags="{ item }">
                 <LcInventoryCheckTags :tags="item.tags"></LcInventoryCheckTags>
