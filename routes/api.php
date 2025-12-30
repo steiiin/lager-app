@@ -7,6 +7,7 @@ use App\Http\Controllers\ApiStoreController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/store', [ApiStoreController::class, 'index']);
+Route::get('/store-inventory', [ApiStoreController::class, 'inventory']);
 
 Route::get('/barcodes', [ ApiBarcodeController::class, 'index' ]);
 

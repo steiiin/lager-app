@@ -28,4 +28,18 @@ class ApiStoreController extends Controller
 
     }
 
+    public function inventory()
+    {
+
+        $items = Item::withPending()->get();
+        $usages = Usage::select(['id', 'name'])->get();
+
+        return response()->json([
+            'test' => 'hallo',
+            'usages' => $usages,
+            'items' => $items,
+        ]);
+
+    }
+
 }

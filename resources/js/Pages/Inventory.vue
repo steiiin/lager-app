@@ -30,10 +30,12 @@
   import LcStockAmount from '@/Components/LcStockAmount.vue'
   import LcButtonGroup from '@/Components/LcButtonGroup.vue'
   import LcItemSizeDialog from '@/Dialogs/LcItemSizeDialog.vue'
+  import LcInventoryCheckTags from '@/Components/LcInventoryCheckTags.vue'
   import LcTrend from '@/Components/LcTrend.vue'
 
   // 3rd party components
   import axios from 'axios'
+import { includes } from 'lodash'
 
 // #endregion
 // #region Props
@@ -118,42 +120,68 @@
 
   // #region Dashboard
 
-    // FilterProps
-    const itemsNearExpiry = computed(() => {
-      const thresholdDate = (new Date()); thresholdDate.setDate(thresholdDate.getDate() + 21); thresholdDate.setHours(0, 0, 0, 0);
-      return inventoryStore.items.filter(item => {
-        if(!item.current_expiry) { return false }
-        const expiryDate = new Date(item.current_expiry)
-        return !isNaN(expiryDate) && expiryDate <= thresholdDate
-      })
-    })
+    // Methods
+    const findCheckTags = (item) => {
 
-    const itemsMoreOnVehicle = computed(() => {
-      return inventoryStore.items.filter(item => {
-        if (!item.current_expiry) { return false }
-        return (item.onvehicle_stock >= item.pending_quantity)
-      })
-    })
+      // check      (if check is necessary)   'Noch Nie'|'12.12.2025'
+      // expiry     (if expiry is near)       'Kein MHD'|'12-2025'
+      // onvehicle  (if onvehicle>max_stock)
 
-    // Getter
-    const getExpiryText = (dstr) => {
-      return new Date(dstr).toLocaleDateString(undefined, { year: 'numeric', month: 'short' }).replace(' ', '-').replace('.', '');
+      const normalTimespan = (new Date()); normalTimespan.setDate(normalTimespan.getDate() - 60); normalTimespan.setHours(0, 0, 0, 0);
+      const strictTimespan = (new Date()); strictTimespan.setDate(strictTimespan.getDate() - 25); strictTimespan.setHours(0, 0, 0, 0);
+
+      const tags = []
+
+      if (!item.checked_at) { tags.push({ type: 'check', label: 'Noch Nie' }) }
+      else {
+
+        const checked_at = new Date(item.checked_at)
+        const belowNormal = !isNaN(checked_at) && checked_at <= normalTimespan
+        const belowStrict = !isNaN(checked_at) && checked_at <= strictTimespan
+
+        if (belowNormal) { tags.push({ type: 'check', label: getLastCheckedLabel(item.checked_at) }) }
+        if (belowStrict && (item.max_stock <= item.onvehicle_stock)) {
+          tags.push({ type: 'check', label: getLastCheckedLabel(item.checked_at) })
+          tags.push({ type: 'onvehicle' })
+        }
+
+      }
+
+      if (!item.current_expiry) {  }
+      else {
+
+        const thresholdExpiry = (new Date()); thresholdExpiry.setDate(thresholdExpiry.getDate() + 21); thresholdExpiry.setHours(0, 0, 0, 0);
+        const current_expiry = new Date(item.current_expiry)
+        if (current_expiry <= thresholdExpiry) {
+          tags.push({ type: 'expiry', label: getExpiryLabel(item.current_expiry) })
+        }
+
+      }
+
+      return tags
+
     }
 
+    // FilterProps
+    const itemsCheckNecessary = computed(() => {
+
+      return inventoryStore.items
+        .map(item => { return { ...item, tags: findCheckTags(item)} })
+        .filter(item => item.tags.length>0)
+
+    })
+
     // Table
-    const tableExpiry = ref([
+    const tableCheckNecessary = ref([
       { title: 'Name', key: 'name' },
-      { title: 'Verfall', key: 'current_expiry' },
+      { title: '', key: 'tags', align: 'end' },
       { title: '', key: 'action', sortable: false },
     ])
-    const sortExpiry = ref([
-      { key: 'current_expiry', order: 'asc' }
+    const sortCheckNecessary = ref([
+      { key: 'checked_at', order: 'desc' },
+      { key: 'current_expiry', order: 'asc' },
     ])
 
-    const tableMoreOnVehicle = ref([
-      { title: 'Name', key: 'name' },
-      { title: '', key: 'action', sortable: false },
-    ])
 
   // #endregion
 
@@ -162,8 +190,35 @@
     const selectedItem = ref(null)
     const isItemSelected = computed(() => !!selectedItem.value)
 
-    const clearSelectedItem = async () => {
+    const clearSelectedItem = async (itemChanged = false) => {
+
+      if (itemChanged) {
+        const nextItem = nextItemToCheck()
+        if (!!nextItem) { editItem(nextItem); return }
+      } else {
+        checkAllList.value = []
+      }
+
       selectedItem.value = null
+
+    }
+
+    // #############################################
+
+    const checkAllList = ref([])
+
+    const checkAllNecessaryItems = () => {
+      checkAllList.value = itemsCheckNecessary.value.map(item => item.id)
+      clearSelectedItem(true)
+    }
+
+    const nextItemToCheck = () => {
+      if (checkAllList.value.length>0) {
+        const nextId = checkAllList.value.shift()
+        const nextItem = inventoryStore.items.find(item => item.id === nextId)
+        if (!!nextItem) { return nextItem}
+      }
+      return null
     }
 
   // #endregion
@@ -171,8 +226,8 @@
 
     const editorTitle = computed(() => {
       if (isNewItem.value) { return 'Neuer Artikel' }
-      if (inCheckMode.value) { return `Bestand prüfen: ${itemForm.name}` }
-      return `Artikel bearbeiten: ${itemForm.name}`
+      if (inCheckMode.value) { return `Prüfen: ${itemForm.name}` }
+      return `Bearbeiten: ${itemForm.name}`
     })
 
     const saveBtnLabel = computed(() => {
@@ -204,23 +259,28 @@
 
     })
 
-    const itemStats = ref({ nostats: true })
-    const itemStatsLoading = ref(false)
-
     const itemFormOptions = {
       preserveScroll: true,
       onSuccess: () => {
+
+        clearSelectedItem(true)
+
         router.reload()
-        clearSelectedItem()
         inventoryStore.fetchStore(true)
+
       },
     }
+
+    // Stats
+    const itemStats = ref({ nostats: true })
+    const itemStatsLoading = ref(false)
 
     // OpenMethods
     const createNew = () => {
 
       inventoryMode.value = 'edit'
       itemForm.reset()
+      checkAllList.value = []
 
       itemForm.id = null
       itemForm.name = 'Neuer Artikel'
@@ -329,13 +389,24 @@
       const isValidItem = computed(() => isValidName.value && isValidDemand.value )
 
       // Check
-      const lastCheckedLabel = computed(() => {
-        if (!itemForm.checked_at) { return 'Nie geprüft' }
-        const day = itemForm.checked_at.getDate()
-        const month = itemForm.checked_at.getMonth()+1
-        const year = itemForm.checked_at.getFullYear()
+      const currentLastCheckedLabel = computed(() => getLastCheckedLabel(itemForm.checked_at))
+
+      const getLastCheckedLabel = (dateString) => {
+        if (!dateString) { return 'Nie geprüft' }
+        const date = new Date(dateString)
+        const day = date.getDate()
+        const month = date.getMonth()+1
+        const year = date.getFullYear()
         return `${day}.${month}.${year}`
-      })
+      }
+
+      const getExpiryLabel = (dateString) => {
+        if (!dateString) { return 'Kein MHD' }
+        const date = new Date(dateString)
+        const month = (date.getMonth()+1).toString().padStart(2, '0')
+        const year = date.getFullYear()
+        return `${month}-${year}`
+      }
 
       const isSizeDialogVisible = ref(false)
       const isStockDialogVisible = ref(false)
@@ -425,14 +496,6 @@
 
       const hasTrend = computed(() => !!itemStats?.value.trend)
 
-      const convertDate = (date) => {
-        const obj = new Date(date)
-        if (obj.isNaN) { return '' }
-        const day = obj.getDate().toString().padStart(2, '0')
-        const month = (obj.getMonth()+1).toString().padStart('0', 2)
-        return `${day}.${month}.${obj.getFullYear()}`
-      }
-
     // #endregion
 
   // #endregion
@@ -492,34 +555,35 @@
         </LcItemInput>
 
         <!-- DashBoard -->
-        <v-card title="Verfall prüfen" class="mt-2" variant="outlined">
+        <v-card class="mt-2" variant="outlined" v-show="inCheckMode">
+          <v-list-item class="px-6" height="88">
+            <template v-slot:prepend>
+              <v-icon icon="mdi-clipboard-clock"></v-icon>
+            </template>
+
+            <template v-slot:title> <b>Regelmäßige Prüfung</b> </template>
+
+            <template v-slot:append>
+              <v-btn v-if="inCheckMode"
+                class="text-none"
+                color="primary"
+                text="PRÜFE ALLE"
+                variant="text"
+                slim @click="checkAllNecessaryItems"
+              ></v-btn>
+            </template>
+          </v-list-item>
+
+          <v-divider></v-divider>
           <v-card-text>
 
-            <v-data-table :items="itemsNearExpiry"
-              :headers="tableExpiry" :sort-by="sortExpiry"
-              hide-default-footer :items-per-page="100">
-              <template v-slot:item.demand="{ item }">
-                {{ item.demand.name }}
+            <v-data-table
+              :items="itemsCheckNecessary"
+              :headers="tableCheckNecessary" :sort-by="sortCheckNecessary"
+              :items-per-page="20">
+              <template v-slot:item.tags="{ item }">
+                <LcInventoryCheckTags :tags="item.tags"></LcInventoryCheckTags>
               </template>
-              <template v-slot:item.current_expiry="{ item }">
-                {{ getExpiryText(item.current_expiry) }}
-              </template>
-              <template v-slot:item.action="{ item }">
-                <v-btn small variant="outlined" @click="editItem(item)">
-                  <v-icon icon="mdi-cog"></v-icon>
-                </v-btn>
-              </template>
-            </v-data-table>
-
-          </v-card-text>
-        </v-card>
-
-        <v-card title="Fahrzeugbestand prüfen" class="mt-2" variant="outlined">
-          <v-card-text>
-
-            <v-data-table :items="itemsMoreOnVehicle"
-              :headers="tableMoreOnVehicle"
-              hide-default-footer :items-per-page="100">
               <template v-slot:item.action="{ item }">
                 <v-btn small variant="outlined" @click="editItem(item)">
                   <v-icon icon="mdi-cog"></v-icon>
@@ -538,9 +602,9 @@
         <v-toolbar flat>
           <v-app-bar-nav-icon
             icon="mdi-arrow-left" :disabled="itemForm.processing"
-            @click="clearSelectedItem"></v-app-bar-nav-icon>
+            @click="clearSelectedItem()"></v-app-bar-nav-icon>
           <v-toolbar-title>
-            {{ editorTitle }}
+            <b>{{ editorTitle }}</b>
           </v-toolbar-title>
           <v-toolbar-items>
             <v-btn v-if="inCheckMode"
@@ -804,7 +868,7 @@
                     <v-icon icon="mdi-alert-circle" color="error" class="mr-2"></v-icon>Leer Gelaufen</v-col>
                   <v-col cols="2">
                     <v-chip v-for="date in itemStats.ran_empty">
-                      {{ convertDate(date) }}</v-chip>
+                      {{ getLastCheckedLabel(date) }}</v-chip>
                   </v-col>
                 </v-row>
 
@@ -813,7 +877,7 @@
                     <v-icon icon="mdi-alert-circle" color="warning" class="mr-2"></v-icon>Viel Bestellt</v-col>
                   <v-col cols="2">
                     <v-chip v-for="item in itemStats.ordered_much" style="max-width:999px">
-                      <b>{{ convertDate(item.time) }}</b>: {{ `${item.amount} ${baseUnit}` }}</v-chip>
+                      <b>{{ getLastCheckedLabel(item.time) }}</b>: {{ `${item.amount} ${baseUnit}` }}</v-chip>
                   </v-col>
                 </v-row>
 
@@ -822,7 +886,7 @@
                     <v-icon icon="mdi-alert-circle" color="warning" class="mr-2"></v-icon>Viel Korrigiert</v-col>
                   <v-col cols="2">
                     <v-chip v-for="item in itemStats.changed_much" style="max-width:999px">
-                      <b>{{ convertDate(item.time) }}</b>: {{ `${item.amount} ${baseUnit}` }}</v-chip>
+                      <b>{{ getLastCheckedLabel(item.time) }}</b>: {{ `${item.amount} ${baseUnit}` }}</v-chip>
                   </v-col>
                 </v-row>
 
@@ -846,7 +910,7 @@
                 </v-col>
                 <v-col cols="3" style="display:flex" v-if="inCheckMode">
                   <v-chip class="lastcheck-chip" prepend-icon="mdi-progress-clock">
-                    <b>{{lastCheckedLabel}}</b></v-chip>
+                    <b>{{currentLastCheckedLabel}}</b></v-chip>
                 </v-col>
                 <v-col :cols="isNewItem ? 12 : 9">
                   <v-btn color="success" variant="flat" block :disabled="!isValidItem" :loading="itemForm.processing"
