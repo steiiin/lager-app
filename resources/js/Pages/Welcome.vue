@@ -46,9 +46,6 @@
   router.on('finish', () => isRouting.value = false)
 
   // Routes
-  function openWhereIs() {
-    router.get('/whereis')
-  }
   function openBookOut() {
     router.get('/bookout')
   }
@@ -97,14 +94,12 @@
 
   onMounted(() => {
     InputService.registerK1(openBookOut)
-    InputService.registerK2(openWhereIs)
     InputService.registerK3(openBookIn)
     InputService.registerKKiosk(openKioskSettings)
     inventoryStore.fetchStore()
   })
   onUnmounted(() => {
     InputService.unregisterK1(openBookOut)
-    InputService.unregisterK2(openWhereIs)
     InputService.unregisterK3(openBookIn)
     InputService.unregisterKKiosk(openKioskSettings)
   })
@@ -150,12 +145,6 @@
 </template>
 <style lang="scss" scoped>
 .page-welcome {
-  // grid-template-columns: repeat(6, 0.5fr);
-  // grid-template-rows: 1.5fr 0.5fr;
-  // gap: 1rem;
-  // grid-template-areas:
-  //   "BookOut BookOut BookOut WhereIs WhereIs WhereIs"
-  //   "BookOut BookOut BookOut BookIn BookIn Inventory";
 
   width: 100%;
   height: 100%;
@@ -169,10 +158,6 @@
   grid-template-areas:
     "BookOut BookIn"
     "BookOut Inventory";
-
-  &__WhereIs {
-    grid-area: WhereIs;
-  }
 
   &__BookIn {
     grid-area: BookIn;

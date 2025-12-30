@@ -36,13 +36,6 @@ Route::post('/', function (Request $request) {
 });
 
 #endregion
-#region WhereIs
-
-Route::get('/whereis', function () {
-  return Inertia::render('WhereIs');
-})->name('whereis');
-
-#endregion
 #region Booking
 
 Route::resource('/bookout', BookOutController::class);
