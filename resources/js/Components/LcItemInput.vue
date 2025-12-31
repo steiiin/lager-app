@@ -151,9 +151,9 @@
   // #endregion
   // #region ItemMode: SCAN
 
-    const findItem = (props) => {
+    const findItem = (params) => {
 
-      const code = props.text
+      const code = params.text
 
       // change to scanmode if code in textmode received
       if (!inScanMode.value) {
@@ -314,19 +314,20 @@
           // scanned something while in text-mode
           searchText.value = ''
         }
+        changeModeToScan()
       }
 
     // #endregion
     // #region Keyboard-Input
 
-      const receiveKeys = async (props) => {
+      const receiveKeys = async (params) => {
 
-        const keys = props.text
+        if(props.hidden || props.disabled) { return }
+        const keys = params.text
 
         // change to textmode if in scanmode
         if (inScanMode.value)
         {
-          if(props.hidden) { return }
           changeModeToText()
         }
 
@@ -341,6 +342,7 @@
       }
       const receiveBackspace = async () => {
 
+        if(props.hidden || props.disabled) { return }
         if (inScanMode.value) { return }
         if (document.getElementById('id-picker-searchbox') !== document.activeElement) {
           await nextTick()
@@ -351,6 +353,7 @@
 
       const handleEscape = () => {
 
+        if(props.hidden || props.disabled) { return false }
         if (inTextMode.value) {
           changeModeToScan()
           return false
@@ -361,6 +364,7 @@
 
       const handleEnter = () => {
 
+        if(props.hidden || props.disabled) { return false }
         if (inTextMode.value && hasAnyItems.value) {
           if (hasExactlyOneResult.value) { selectFirstResult() }
           return false
@@ -413,7 +417,7 @@
 
     <div class="lc-picker__scanner" v-if="!isPwa">
       <LcScanIndicator
-        :active="hasAnyItems && !disabled">
+        :active="hasAnyItems && !disabled && !hidden">
       </LcScanIndicator>
     </div>
 

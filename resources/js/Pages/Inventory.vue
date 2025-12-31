@@ -16,11 +16,12 @@
 
   // Local composables
   import { useBaseSize } from '@/Composables/useBaseSize'
-  import { useOptimalSize } from '@/Composables/useOptimalSize'
   import { useInventoryStore } from '@/Services/StoreService'
   import InputService from '@/Services/InputService'
+
   import { useIsPwa } from '@/Composables/useIsPwa'
   const { isPwa } = useIsPwa()
+
   import { useSpeech } from '@/Composables/useSpeech'
   const { speakNumber, isSpeaking, stop } = useSpeech()
 
@@ -35,7 +36,6 @@
 
   // 3rd party components
   import axios from 'axios'
-import { includes } from 'lodash'
 
 // #endregion
 // #region Props
@@ -579,7 +579,7 @@ import { includes } from 'lodash'
         ]"></LcButtonGroup>
 
         <LcItemInput
-          :result-specs="{ w: 850, i: 19.0 }" :allow-new="inEditMode"
+          :result-specs="{ w: 850, i: 19.0 }" :allow-new="inEditMode" :disabled="isItemSelected"
           @create-new="createNew" @select-item="editItem">
         </LcItemInput>
 

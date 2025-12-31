@@ -54,9 +54,9 @@
     emit('selectUsage', usage)
   }
 
-  const findUsage = (props) => {
+  const findUsage = (params) => {
 
-    const code = props.text
+    const code = params.text
 
     // emit ctrl-codes
     if (code === 'LC-2000001000') {
