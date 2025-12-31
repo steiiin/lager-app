@@ -222,12 +222,12 @@
 
       const setAmountInCart = (item, amount, add = false) => {
 
-        const maxBookinQuantity = item.max_bookin_quantity == 0 ? amount : item.max_bookin_quantity
+        const max = item.max_bookin_quantity == 0 ? Infinity : item.max_bookin_quantity
         const entry = bookoutForm.entries.find(e => e.item_id === item.id)
         if (!entry) {
 
           // create entry
-          amount = Math.min(amount, maxBookinQuantity)
+          amount = Math.min(amount, max)
           bookoutForm.entries.push({
             item_id: item.id,
             item_amount: amount
@@ -236,9 +236,9 @@
 
         } else {
 
-          if ((entry.item_amount + amount) > maxBookinQuantity)
+          if ((entry.item_amount + amount) > max)
           {
-            entry.item_amount = maxBookinQuantity
+            entry.item_amount = max
           }
           else
           {
