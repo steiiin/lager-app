@@ -31,10 +31,6 @@
   const inventoryStore = useInventoryStore()
 
   const props = defineProps({
-    isUnlocked: {
-      type: Boolean,
-      required: true,
-    },
     isTouchMode: {
       type: Boolean,
       required: true,
@@ -50,9 +46,6 @@
   router.on('finish', () => isRouting.value = false)
 
   // Routes
-  function openWhereIs() {
-    router.get('/whereis')
-  }
   function openBookOut() {
     router.get('/bookout')
   }
@@ -61,6 +54,10 @@
   }
   function openBookIn() {
     router.get('/bookin')
+  }
+
+  const handleIdle = () => {
+    router.reload()
   }
 
 // #endregion
@@ -101,16 +98,16 @@
 
   onMounted(() => {
     InputService.registerK1(openBookOut)
-    InputService.registerK2(openWhereIs)
     InputService.registerK3(openBookIn)
     InputService.registerKKiosk(openKioskSettings)
+    InputService.registerIdle(handleIdle)
     inventoryStore.fetchStore()
   })
   onUnmounted(() => {
     InputService.unregisterK1(openBookOut)
-    InputService.unregisterK2(openWhereIs)
     InputService.unregisterK3(openBookIn)
     InputService.unregisterKKiosk(openKioskSettings)
+    InputService.unregisterIdle(handleIdle)
   })
 
 // #endregion
@@ -128,13 +125,8 @@
       @click="openBookOut">Verbrauch<kbd v-if="!isTouchMode">1</kbd>
     </LcButton>
 
-    <LcButton class="page-welcome__WhereIs"
-      type="primary" icon="mdi-home-search-outline"
-      @click="openWhereIs">Wo ist ... ?<kbd v-if="!isTouchMode">2</kbd>
-    </LcButton>
-
     <LcButton class="page-welcome__BookIn"
-      icon="mdi-basket-outline"
+      type="primary" icon="mdi-basket-outline"
       @click="openBookIn">Lieferung<kbd v-if="!isTouchMode">3</kbd>
     </LcButton>
 
@@ -145,8 +137,9 @@
 
   </div>
   <div class="page-welcome__invisible-usagescanner">
-    <LcUsageInput :is-unlocked="isUnlocked"
-      @select-usage="openBookOutWithUsage" @other-code="warnAboutUsage">
+    <LcUsageInput
+      @select-usage="openBookOutWithUsage"
+      @other-code="warnAboutUsage">
     </LcUsageInput>
   </div>
 
@@ -165,16 +158,12 @@
   padding: 10vh 10vw;
   background: var(--main-light);
   color: var(--main-dark);
-  grid-template-columns: repeat(6, 0.5fr);
+  grid-template-columns: 0.5fr 0.5fr;
   grid-template-rows: 1.5fr 0.5fr;
   gap: 1rem;
   grid-template-areas:
-    "BookOut BookOut BookOut WhereIs WhereIs WhereIs"
-    "BookOut BookOut BookOut BookIn BookIn Inventory";
-
-  &__WhereIs {
-    grid-area: WhereIs;
-  }
+    "BookOut BookIn"
+    "BookOut Inventory";
 
   &__BookIn {
     grid-area: BookIn;

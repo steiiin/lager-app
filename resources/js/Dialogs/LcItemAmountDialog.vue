@@ -23,9 +23,6 @@
   // Vue composables
   import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 
-  // Vuetify components
-  import { VNumberInput } from 'vuetify/labs/VNumberInput'
-
   // Local composables
   import { useBaseSize } from '@/Composables/useBaseSize'
   import InputService from '@/Services/InputService'

@@ -13,6 +13,9 @@
   import { computed, ref, nextTick } from 'vue'
   import { router } from '@inertiajs/vue3'
 
+  // 3rd party components
+  import axios from 'axios'
+
 // #endregion
 
 // #region Dialog-Logic
@@ -42,30 +45,17 @@
 
   const password = ref('')
 
-  const doUnlock = () => {
+  const doUnlock = async () => {
     if (!isValidPassword) { return }
 
     isUnlockFailed.value = false
     isUnlocking.value = true
 
     router.post('/', { action: 'UNLOCK', password: password.value }, {
-
-      onSuccess: (page) => {
-        if (page.props.isUnlocked) {
-
-          openInventory()
-          cancel()
-
-        } else {
-          isUnlockFailed.value = true
-          isUnlocking.value = false
-        }
-      },
       onError: () => {
         isUnlockFailed.value = true
         isUnlocking.value = false
       },
-
     })
 
   }

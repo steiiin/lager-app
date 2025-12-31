@@ -48,7 +48,6 @@
     const editForm = useForm({
       id: null,
       name: '',
-      sp_name: '',
     })
     const editFormOptions = {
       preserveScroll: true,
@@ -71,14 +70,13 @@
         : `${editForm.name} bearbeiten`
     })
 
-    const isValidEdit = computed(() => editForm.name.trim().length>0 && editForm.sp_name.trim().length>0)
+    const isValidEdit = computed(() => editForm.name.trim().length>0)
 
     // OpenMethods
     const openNewDemandDialog = async () => {
       editForm.reset()
       editForm.id = null
       editForm.name = ''
-      editForm.sp_name = ''
       editDialogVisible.value = true
       await nextTick()
       document.getElementById('id-editdemand-name')?.focus()
@@ -87,7 +85,6 @@
       editForm.reset()
       editForm.id = item.id
       editForm.name = item.name
-      editForm.sp_name = item.sp_name
       editDialogVisible.value = true
     }
 
@@ -116,8 +113,7 @@
   // #region DemandTable
 
     const tableheaders = ref([
-      { title: 'Name', key: 'name', minWidth: '50%' },
-      { title: 'Sharepoint-Key', key: 'sp_name', minWidth: '30%' },
+      { title: 'Name', key: 'name', minWidth: '90%' },
       { title: 'Bearbeiten', key: 'action', sortable: false },
     ])
 
@@ -181,13 +177,6 @@
         <v-text-field v-model="editForm.name"
           id="id-editdemand-name"
           label="Name" hide-details>
-        </v-text-field>
-
-        <v-divider></v-divider>
-
-        <v-text-field v-model="editForm.sp_name"
-          id="id-editdemand-sharepoint"
-          label="Name der Sharepoint-Anforderung" hide-details >
         </v-text-field>
 
         <template v-if="editForm.errors">

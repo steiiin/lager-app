@@ -11,6 +11,7 @@ namespace App\Http\Controllers;
 use App\Models\Item;
 use App\Models\Usage;
 
+use Illuminate\Support\Facades\DB;
 class ApiStoreController extends Controller
 {
 
@@ -18,9 +19,23 @@ class ApiStoreController extends Controller
     {
 
         $items = Item::withPending()->get();
-        $usages = Usage::select(['id', 'name', 'is_locked'])->get();
+        $usages = Usage::select(['id', 'name'])->get();
 
         return response()->json([
+            'usages' => $usages,
+            'items' => $items,
+        ]);
+
+    }
+
+    public function inventory()
+    {
+
+        $items = Item::withPending()->get();
+        $usages = Usage::select(['id', 'name'])->get();
+
+        return response()->json([
+            'test' => 'hallo',
             'usages' => $usages,
             'items' => $items,
         ]);

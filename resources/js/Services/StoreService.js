@@ -47,14 +47,14 @@ export const useInventoryStore = defineStore('inventory', {
   },
   actions: {
 
-    async fetchStore(force = false) {
-      if ((!force && this.isLoaded) || this.loading) {
+    async fetchStore(forInventory = false) {
+      if ((!forInventory && this.isLoaded) || this.loading) {
         return;
       }
       this.loading = true;
       try
       {
-        const response = await axios.get('/api/store');
+        const response = await axios.get('/api/store' + (forInventory ? '-inventory' : ''));
         this.items = response.data.items
         this.usages = response.data.usages
         this.isLoaded = true

@@ -35,7 +35,6 @@ class ConfigUsagesController extends Controller
                     return $query->whereRaw('LOWER(name) = ?', [strtolower(request('name'))]);
                 }),
             ],
-            'is_locked' => 'required|boolean',
         ], [
             'name.unique' => 'Diese Verwendung gibt es schon.',
         ]);
@@ -55,7 +54,6 @@ class ConfigUsagesController extends Controller
                     return $query->whereRaw('LOWER(name) = ?', [strtolower(request('name'))]);
                 }),
             ],
-            'is_locked' => 'required|boolean',
         ], [
             'name.unique' => 'Diese Verwendung gibt es schon.',
         ]);

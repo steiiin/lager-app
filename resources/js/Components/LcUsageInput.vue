@@ -5,9 +5,6 @@
  *
  * An picker componant for scanning/selecting usages.
  *
- * Props:
- *  - isUnlocked (Boolean): If admin-usages are shown.
- *
  * Emits:
  *  - selectUsage: Is emitted when the user selects/scans an usage.
  *  - ctrlExpired: Emitted when the user scanned the expired-code.
@@ -33,13 +30,6 @@
 
   const inventoryStore = useInventoryStore()
 
-  const props = defineProps({
-    isUnlocked: {
-      type: Boolean,
-      default: false,
-    },
-  })
-
   // #region TemplateProps
 
     const hasAnyUsages = computed(() => inventoryStore.usages.length > 0)
@@ -64,7 +54,9 @@
     emit('selectUsage', usage)
   }
 
-  const findUsage = (code) => {
+  const findUsage = (props) => {
+
+    const code = props.text
 
     // emit ctrl-codes
     if (code === 'LC-2000001000') {
@@ -121,8 +113,7 @@
     <div class="lc-picker__result" v-if="hasAnyUsages">
 
       <template v-for="usage in inventoryStore.usages">
-        <LcButton v-if="!usage.is_locked || isUnlocked"
-          class="lc-picker__result-usage"
+        <LcButton  class="lc-picker__result-usage"
           @click="selectUsage(usage)">{{ usage.name }}
         </LcButton>
       </template>
