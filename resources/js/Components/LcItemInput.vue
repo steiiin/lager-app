@@ -28,7 +28,6 @@
 
   // 3rd-party composables
   import { debounce } from 'lodash'
-  import { StreamBarcodeReader } from '@teckel/vue-barcode-reader'
 
   // Local composables
   import InputService from '@/Services/InputService'
@@ -77,7 +76,7 @@
     const hasAnyItems = computed(() => inventoryStore.items.length > 0)
 
     const pickerDescriptionTitle = computed(() =>
-      props.disabled ? '' : (hasAnyItems.value ? 'Scanne oder suche dein Material ...' : 'Kein Material angelegt')
+      props.disabled ? '' : (hasAnyItems.value ? (isPwa.value ? 'Suche dein Material ...' : 'Scanne oder suche dein Material ...') : 'Kein Material angelegt')
     )
 
     const pickerSearchBoxClasses = computed(() => {
@@ -176,13 +175,6 @@
       if (!found) { return }
       selectItemByScan(found.item, found.amount)
 
-    }
-
-    const onCamScannerDetected = (e) => {
-      findItem({ text: e })
-    }
-    const onCamScannerLoaded = (e) => {
-      console.log('CamScanner active')
     }
 
   // #endregion
@@ -417,14 +409,9 @@
 </script>
 <template>
 
-  <section class="lc-picker" v-show="!hidden" :class="{ isPwa }" v-if="inScanMode">
+  <section class="lc-picker" v-show="!hidden" v-if="inScanMode">
 
-    <StreamBarcodeReader v-if="isPwa"
-      torch no-front-cameras class="lc-picker__camscanner"
-      @decode="onCamScannerDetected"
-      @loaded="onCamScannerLoaded">
-    </StreamBarcodeReader>
-    <div class="lc-picker__scanner" v-else>
+    <div class="lc-picker__scanner" v-if="!isPwa">
       <LcScanIndicator
         :active="hasAnyItems && !disabled">
       </LcScanIndicator>
