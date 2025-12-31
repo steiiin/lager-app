@@ -152,7 +152,9 @@
   // #endregion
   // #region ItemMode: SCAN
 
-    const findItem = (code) => {
+    const findItem = (props) => {
+
+      const code = props.text
 
       // change to scanmode if code in textmode received
       if (!inScanMode.value) {
@@ -177,7 +179,7 @@
     }
 
     const onCamScannerDetected = (e) => {
-      console.log(e)
+      findItem({ text: e })
     }
     const onCamScannerLoaded = (e) => {
       console.log('CamScanner active')
@@ -325,7 +327,9 @@
     // #endregion
     // #region Keyboard-Input
 
-      const receiveKeys = async (keys) => {
+      const receiveKeys = async (props) => {
+
+        const keys = props.text
 
         // change to textmode if in scanmode
         if (inScanMode.value)

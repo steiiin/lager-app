@@ -186,46 +186,65 @@
             item: item
           })
           if (manualAmount !== null) {
-            setAmountInCart(item, manualAmount)
+
+            if (setAmountInCart(item, manualAmount) < manualAmount) { notifyMaxBook(item) }
+            else { notifyScan(item) }
+
           }
 
         } else {
 
           // per scan
-          setAmountInCart(item, amount, true)
-          notifyScan(item)
+          if (setAmountInCart(item, amount, true) < amount) { notifyMaxBook(item) }
+          else { notifyScan(item) }
 
         }
 
       }
       const reduceItem = async (row) => {
 
-      const entry = bookoutForm.entries.find(e => e.item_id === row.item.id)
-      if (entry.item_amount > 1) {
-        entry.item_amount = entry.item_amount - 1
-      } else {
-        const entryIndex = bookoutForm.entries.indexOf(entry);
-        if (entryIndex !== -1) {
-          bookoutForm.entries.splice(entryIndex, 1);
+        const entry = bookoutForm.entries.find(e => e.item_id === row.item.id)
+        if (entry.item_amount > 1) {
+          entry.item_amount = entry.item_amount - 1
+        } else {
+          const entryIndex = bookoutForm.entries.indexOf(entry);
+          if (entryIndex !== -1) {
+            bookoutForm.entries.splice(entryIndex, 1);
+          }
         }
-      }
 
       }
 
       const setAmountInCart = (item, amount, add = false) => {
 
+        const maxBookinQuantity = item.max_bookin_quantity == 0 ? amount : item.max_bookin_quantity
         const entry = bookoutForm.entries.find(e => e.item_id === item.id)
         if (!entry) {
 
           // create entry
-          bookoutForm.entries.push({ item_id: item.id, item_amount: amount })
+          amount = Math.min(amount, maxBookinQuantity)
+          bookoutForm.entries.push({
+            item_id: item.id,
+            item_amount: amount
+          })
+          return amount
 
         } else {
 
-          // set entry
-          entry.item_amount = add
-            ? (entry.item_amount + amount)
-            : amount;
+          if ((entry.item_amount + amount) > maxBookinQuantity)
+          {
+            entry.item_amount = maxBookinQuantity
+          }
+          else
+          {
+
+            entry.item_amount = add
+              ? (entry.item_amount + amount)
+              : amount;
+
+          }
+
+          return entry.item_amount
 
         }
 
@@ -236,7 +255,11 @@
         const feedback = ref(null)
 
         const notifyScan = (item) => {
-          feedback.value.scanSuccess(item.name)
+          feedback.value.scanSuccess(item)
+        }
+
+        const notifyMaxBook = (item) => {
+          feedback.value.error(item.name, `Du hast die Maximalmenge für diesen Artikel erreicht. Bitte nicht noch mehr ausbuchen.`)
         }
 
       // #endregion

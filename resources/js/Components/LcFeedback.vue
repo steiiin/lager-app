@@ -94,7 +94,11 @@ const scanSuccess = (item) => {
   success(item.name, 'wurde hinzugefügt.')
 }
 
-defineExpose({ info, error, success, usageError, scanSuccess })
+const bookSuccess = () => {
+  success('Entnahme verbucht', 'Danke, für deinen Einkauf.')
+}
+
+defineExpose({ info, error, success, usageError, scanSuccess, bookSuccess })
 
 </script>
 <template>

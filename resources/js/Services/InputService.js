@@ -26,7 +26,7 @@ const InputService = {
       this.trackBuffer += event.key
     } else if (event.key === 'Enter') {
       if (this.trackBuffer.startsWith('LC-')) {
-        this.runCallbacks('scan', this.trackBuffer)
+        this.runCallbacks('scan', { text: this.trackBuffer })
       } else {
         this.runCallbacks('Enter')
       }
@@ -48,19 +48,19 @@ const InputService = {
     this.trackTimer = setTimeout(() => {
 
       if (this.trackBuffer.startsWith('LC-')) {
-        this.runCallbacks('scan', this.trackBuffer)
+        this.runCallbacks('scan', { text: this.trackBuffer })
       }
       else if (this.trackBuffer.length === 1)
       {
         if (state.handlers.hasOwnProperty(this.trackBuffer)) {
           this.runCallbacks(this.trackBuffer)
         } else {
-          this.runCallbacks('keys', this.trackBuffer)
+          this.runCallbacks('keys', { text: this.trackBuffer })
         }
       }
       else if (this.trackBuffer.length > 0)
       {
-        this.runCallbacks('keys', this.trackBuffer)
+        this.runCallbacks('keys', { text: this.trackBuffer })
       }
       this.trackBuffer = ''
     }, 50)
@@ -78,14 +78,21 @@ const InputService = {
     if (state.handlers[key].length === 0) { delete state.handlers[key] }
   },
   runCallbacks(key, props = undefined) {
+
+    props = { canceled: false, ...props }
     let runSome = false
+
     if (state.handlers[key]) {
       state.handlers[key].forEach((handler) => {
+        if (props.canceled) { return true }
+
         handler(props)
         runSome = true
+
       })
     }
     return runSome
+
   },
 
   // #region Callbacks

@@ -56,8 +56,9 @@
 
   // #region KeyboardShortcuts
 
-    const handleEnter = () => {
+    const handleEnter = async (e) => {
       if (!isVisible.value) { return }
+      e.canceled = true
       accept()
     }
     const handleUp = () => {
