@@ -56,6 +56,10 @@
     router.get('/bookin')
   }
 
+  const handleIdle = () => {
+    router.reload()
+  }
+
 // #endregion
 
 // #region Lock/Unlock-Logic
@@ -96,12 +100,14 @@
     InputService.registerK1(openBookOut)
     InputService.registerK3(openBookIn)
     InputService.registerKKiosk(openKioskSettings)
+    InputService.registerIdle(handleIdle)
     inventoryStore.fetchStore()
   })
   onUnmounted(() => {
     InputService.unregisterK1(openBookOut)
     InputService.unregisterK3(openBookIn)
     InputService.unregisterKKiosk(openKioskSettings)
+    InputService.unregisterIdle(handleIdle)
   })
 
 // #endregion

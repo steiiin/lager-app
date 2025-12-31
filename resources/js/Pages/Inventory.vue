@@ -70,6 +70,10 @@ import { includes } from 'lodash'
 
   // #region KeyboardShortcuts
 
+    const handleIdle = () => {
+      openWelcome()
+    }
+
     const handleEsc = () => {
       if (isItemSelected.value) {
         clearSelectedItem()
@@ -532,6 +536,7 @@ import { includes } from 'lodash'
     InputService.registerRight(handleRight)
     InputService.registerEsc(handleEsc)
     InputService.registerEnter(handleEnter)
+    InputService.registerIdle(handleIdle)
     inventoryStore.fetchStore(true)
     document.body.classList.remove('cursor-off')
   })
@@ -540,6 +545,7 @@ import { includes } from 'lodash'
     InputService.unregisterRight(handleRight)
     InputService.unregisterEsc(handleEsc)
     InputService.unregisterEnter(handleEnter)
+    InputService.unregisterIdle(handleIdle)
   })
 
 // #endregion

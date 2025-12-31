@@ -72,6 +72,11 @@
 
   // #region Keyboard-Shortcuts
 
+    const handleIdle = () => {
+      if (hasUsage.value || !hasItemsInCart.value) { handleEscape() }
+      else { handleEnter() }
+    }
+
     const handleEscape = () => {
       const canExit = itemPicker?.value?.handleEscape() ?? true
       if (canExit && !manuallyDialog.value.isVisible) {
@@ -304,6 +309,7 @@
     // register input
     InputService.registerEsc(handleEscape)
     InputService.registerEnter(handleEnter)
+    InputService.registerIdle(handleIdle)
 
     // load store
     inventoryStore.fetchStore()
@@ -312,6 +318,7 @@
   onUnmounted(() => {
     InputService.unregisterEsc(handleEscape)
     InputService.unregisterEnter(handleEnter)
+    InputService.unregisterIdle(handleIdle)
   })
 
 // #endregion

@@ -21,7 +21,12 @@ const InputService = {
   trackBuffer: '',
   trackTimer: null,
 
+  idleTimer: null,
+
   trackInput (event) {
+
+    this.trackIdle()
+
     if (event.key.length === 1) {
       this.trackBuffer += event.key
     } else if (event.key === 'Enter') {
@@ -64,6 +69,10 @@ const InputService = {
       }
       this.trackBuffer = ''
     }, 50)
+  },
+  trackIdle () {
+    if (this.idleTimer) { clearTimeout(this.idleTimer) }
+    this.idleTimer = setInterval(() => this.runCallbacks('Idle'), 1800000)
   },
 
   registerCallback(key, callback) {
@@ -157,6 +166,15 @@ const InputService = {
       },
       unregisterBackspace(callback) {
         this.unregisterCallback('Backspace', callback)
+      },
+    // #endregion
+    // #region Idle
+      registerIdle(callback) {
+        this.registerCallback('Idle', callback)
+        this.trackIdle()
+      },
+      unregisterIdle(callback) {
+        this.unregisterCallback('Idle', callback)
       },
     // #endregion
     // #region Enter
