@@ -15,17 +15,3 @@ Route::get('/barcodes', [ ApiBarcodeController::class, 'index' ]);
 
 Route::get('/statistic', [ApiStatisticController::class, 'index']);
 Route::get('/logs', [ApiStatisticController::class, 'logs']);
-
-
-
-// test
-
-Route::get('/anforderung/pdf', [ApiOrderController::class, 'pdf'])
-    ->name('anforderung.pdf');
-
-
-
-
-Route::get('/order-check', [ApiOrderController::class, 'check']);
-Route::get('/order-prepare', [ApiOrderController::class, 'prepare']);
-Route::post('/order-execute', [ApiOrderController::class, 'execute']);
