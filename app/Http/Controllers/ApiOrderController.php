@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\Mail;
 class ApiOrderController extends Controller
 {
 
-  public function pdf()
+  public function create()
   {
 
     // get items
@@ -55,6 +55,8 @@ class ApiOrderController extends Controller
 
           $needForMaxStock = ($item->max_stock - $item->pending_quantity);
           $orderAmount = max(floor($needForMaxStock / $item->ordersize->amount), 1);
+          if ($item->max_order_quantity > 0) { $orderAmount = min($orderAmount, $item->max_order_quantity); }
+
           $baseAmount = $orderAmount * $item->ordersize->amount;
 
           $baseText = $orderAmount != $baseAmount
@@ -86,10 +88,6 @@ class ApiOrderController extends Controller
     // book order
 
   }
-
-  // ####################################################################################
-
-
 
   // ####################################################################################
 

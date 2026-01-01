@@ -9,11 +9,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/store', [ApiStoreController::class, 'index']);
 Route::get('/store-inventory', [ApiStoreController::class, 'inventory']);
 
-Route::get('/barcodes', [ ApiBarcodeController::class, 'index' ]);
+Route::get('/order', [ApiOrderController::class, 'create']);
 
-Route::get('/order-check', [ApiOrderController::class, 'check']);
-Route::get('/order-prepare', [ApiOrderController::class, 'prepare']);
-Route::post('/order-execute', [ApiOrderController::class, 'execute']);
+Route::get('/barcodes', [ ApiBarcodeController::class, 'index' ]);
 
 Route::get('/statistic', [ApiStatisticController::class, 'index']);
 Route::get('/logs', [ApiStatisticController::class, 'logs']);
@@ -24,3 +22,10 @@ Route::get('/logs', [ApiStatisticController::class, 'logs']);
 
 Route::get('/anforderung/pdf', [ApiOrderController::class, 'pdf'])
     ->name('anforderung.pdf');
+
+
+
+
+Route::get('/order-check', [ApiOrderController::class, 'check']);
+Route::get('/order-prepare', [ApiOrderController::class, 'prepare']);
+Route::post('/order-execute', [ApiOrderController::class, 'execute']);
