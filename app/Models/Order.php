@@ -10,13 +10,10 @@ class Order extends Model
     protected $table = 'orders';
     protected $fillable = [
         'item_id',
-        'prepare_time',
+        'order_date',
         'amount_desired',
-        'amount_des_usage',
-        'amount_des_changed',
         'amount_delivered',
-        'is_order_open',
-        'log'
+        'is_order_open'
     ];
     public $timestamps = false;
 

@@ -10,6 +10,7 @@ class Booking extends Model
     protected $table = 'bookings';
     protected $fillable = [
         'usage_id',
+        'order_id',
         'item_id',
         'item_amount'
     ];
@@ -22,6 +23,11 @@ class Booking extends Model
     public function usage()
     {
         return $this->belongsTo(Usage::class, 'usage_id');
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class, 'order_id');
     }
 
 }

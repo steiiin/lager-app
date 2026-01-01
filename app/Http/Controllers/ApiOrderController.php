@@ -14,78 +14,124 @@ namespace App\Http\Controllers;
 
 use App\Mail\OrderMail;
 use App\Models\Booking;
-use App\Models\Demand;
 use App\Models\Item;
 use App\Models\Order;
-use App\Models\Usage;
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\CarbonImmutable;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class ApiOrderController extends Controller
 {
 
-  public function create()
+  public function create(): JsonResponse
   {
 
-    // get items
-    $items = $this->getItemsNeedingRestock();
-    $demands = $items->groupBy(fn ($item) => $item->demand?->name ?? 'Sonstige');
+    $runId = (string) \Illuminate\Support\Str::uuid();
+    $now = CarbonImmutable::now();
 
-    // metadata
-    $orderDate = Carbon::now();
-    $fileDate = $orderDate->isoFormat('Y-MM-DD');
-    $demandDate = $orderDate->isoFormat('DD.MM.YY');
-    $mailDateFrom = $orderDate->isoFormat('D. MMM Y');
-    $mailDateDueto = $orderDate->clone()->addDays(7)->isoFormat('D. MMM Y');
+    try
+    {
 
-    // create PDFs
-    $attachments = $demands->map(function ($demandItems, $demandName) use ($fileDate, $demandDate) {
+      // compute items
+      $items = $this->getItemsNeedingRestock();
+      if ($items->isEmpty())
+      {
+        return response()->json([
+          'ok'      => true,
+          'run_id'  => $runId,
+          'message' => 'no items need restock.',
+          'counts'  => [ 'orders_opened' => 0, 'bookings_affected' => 0 ]
+        ], 204);
+      }
 
-      $filename = strtolower($demandName)."_$fileDate.pdf";
+      // date metadata
+      $fileDate     = $now->isoFormat('Y-MM-DD');
+      $readableDate = $now->isoFormat('DD.MM.YY');
+      $mailDateFrom = $now->isoFormat('D. MMM Y');
+      $mailDateDue  = $now->addDays(7)->isoFormat('D. MMM Y');
 
-      $pdfBinary = Pdf::loadView('pdf.demand', [
-        "filename" => $filename,
-        "demand_title" => $demandName,
-        "demand_date" => $demandDate,
-        "items" => $demandItems->map(function ($item) {
+      // group items by demand
+      $demands = $items->groupBy(fn ($item) => $item->demand?->name ?? 'Sonstige');
 
-          $needForMaxStock = ($item->max_stock - $item->pending_quantity);
-          $orderAmount = max(floor($needForMaxStock / $item->ordersize->amount), 1);
-          if ($item->max_order_quantity > 0) { $orderAmount = min($orderAmount, $item->max_order_quantity); }
+      // create demand PDFs
+      $attachments = $this->buildDemandPdfAttachmentsStrict($demands, $fileDate, $readableDate);
 
-          $baseAmount = $orderAmount * $item->ordersize->amount;
+      // mail + db update
+      $result = DB::transaction(function () use ($items, $now, $attachments, $readableDate, $mailDateFrom, $mailDateDue, $runId) {
 
-          $baseText = $orderAmount != $baseAmount
-            ? " = {$baseAmount} {$item->basesize->unit}"
-            : "";
+        // send mail, fail hard if mail cannot be sent
+        $this->sendOrderMailOrFail($attachments, $readableDate, $mailDateFrom, $mailDateDue);
 
-          return [
-            "name" => $item->name,
-            "amount" => "{$orderAmount} {$item->ordersize->unit}{$baseText}"
-          ];
+        // db update meta
+        $ordersOpened    = 0;
+        $bookingsAffected = 0;
 
-        })
-      ])
-      ->setPaper('a4')
-      ->output();
+        // db update per each item
+        foreach ($items as $item)
+        {
 
-      return [
-        'filename' => $filename,
-        'data'     => $pdfBinary,
-        'mime'     => 'application/pdf',
-      ];
-    })->values()->all();
+          $amountDesired = (int) ($item->getAttribute('amount_in_basesize') ?? 0);
+          if ($amountDesired <= 0) { continue; }
 
-    // send email
-    Mail::to(config('mail.order_mailer_to_address'))
-      ->cc(config('mail.order_mailer_cc_addresses'))
-      ->send(new OrderMail($attachments, $demandDate, $mailDateFrom, $mailDateDueto));
+          // create order
+          $order = Order::create([
+            'item_id'          => $item->id,
+            'order_date'       => $now,
+            'amount_desired'   => $amountDesired,
+            'amount_delivered' => 0,
+            'is_order_open'    => true,
+          ]);
+          $ordersOpened++;
 
-    // book order
+          // update existing bookings
+          $updated = Booking::query()
+            ->whereNull('order_id')
+            ->where('item_id', $item->id)
+            ->where('created_at', '<=', $now)
+            ->update(['order_id' => $order->id]);
+          $bookingsAffected += (int) $updated;
+
+        }
+
+        return [
+          'orders_opened'     => $ordersOpened,
+          'bookings_affected' => $bookingsAffected
+        ];
+
+      }, 3);
+
+      return response()->json([
+        'ok'      => true,
+        'run_id'  => $runId,
+        'message' => 'Demand mail sent and orders booked.',
+        'counts'  => [
+          'orders_opened'     => $result['orders_opened'],
+          'bookings_affected' => $result['bookings_affected'],
+        ],
+      ], 200);
+
+    }
+    catch (\Throwable $e)
+    {
+
+      Log::error('Order.Create endpoint failed.', [
+        'run_id'    => $runId,
+        'exception' => $e
+      ]);
+
+      return response()->json([
+        'ok'         => false,
+        'run_id'     => $runId,
+        'error_code' => $this->classifyError($e),
+        'message'    => $e->getMessage()
+      ], 500);
+
+    }
 
   }
 
@@ -93,160 +139,170 @@ class ApiOrderController extends Controller
 
   private function getItemsNeedingRestock(): Collection
   {
-    $items = Item::withPending()->where('current_quantity', '<=', 'min_stock')->get();
-    return $items->filter(fn ($item) =>
-      $item->pending_quantity <= $item->min_stock &&
-      $item->pending_quantity < $item->max_stock
-    );
+
+    $items = Item::query()
+      ->withPending()
+      ->with(['ordersize', 'basesize', 'demand'])
+      ->whereColumn('current_quantity', '<=', 'min_stock')
+      ->get();
+
+    return $items
+      ->filter(fn ($item) =>
+        (float) $item->pending_quantity <= (float) $item->min_stock &&
+        (float) $item->pending_quantity <  (float) $item->max_stock
+      )
+      ->map(function ($item) {
+
+        $neededForMaxStock = max((float) $item->max_stock - (float) $item->pending_quantity, 0.0);
+
+        $orderSizeAmount = (float) ($item->ordersize?->amount ?? 0);
+        if ($orderSizeAmount <= 0) {
+          throw new \RuntimeException("Item {$item->id} has no valid ordersize amount.");
+        }
+
+        $orderUnits = $neededForMaxStock > 0
+          ? max((int) floor($neededForMaxStock / $orderSizeAmount), 1)
+          : 0;
+
+        $maxOrderQty = (int) ($item->max_order_quantity ?? 0);
+        if ($maxOrderQty > 0) {
+          $orderUnits = min($orderUnits, $maxOrderQty);
+        }
+
+        $baseAmount = (int) round($orderUnits * $orderSizeAmount);
+
+        $item->setAttribute('amount_neededForMaxStock', $neededForMaxStock);
+        $item->setAttribute('amount_in_ordersize', $orderUnits);
+        $item->setAttribute('amount_in_basesize', $baseAmount);
+
+        return $item;
+
+      })
+      ->filter(fn ($item) => (int) $item->getAttribute('amount_in_basesize') > 0)
+      ->values();
+
   }
 
   // ####################################################################################
 
-  public function check()
-  {
-    $items = $this->getItemsNeedingRestock();
-    return response()->json([
-      "hasSome" => $items->count() > 0
-    ]);
-  }
-
-  // ####################################################################################
-
-  public function prepare()
+  private function buildDemandPdfAttachmentsStrict(Collection $demands, string $fileDate, string $readableDate): array
   {
 
-    $items = $this->getItemsNeedingRestock();
+    $attachments = [];
+    foreach ($demands as $demandName => $demandItems)
+    {
 
-    // cancel creation, if nothing to order
-    if ($items->count() === 0) {
-      return response()->noContent();
+      $filename = Str::slug(strtolower($demandName))."_{$fileDate}.pdf";
+
+      // generate PDF
+      $pdfBinary = Pdf::loadView('pdf.demand', [
+        'filename'     => $filename,
+        'demand_title' => $demandName,
+        'demand_date'  => $readableDate,
+        'items'        => $this->mapItemsForPdf($demandItems),
+      ])
+      ->setPaper('a4')
+      ->output();
+
+      // throw if DomPDF failed
+      if (!is_string($pdfBinary) || $pdfBinary === '') {
+        throw new \RuntimeException("PDF output empty for demand: {$demandName}");
+      }
+
+      // return email friednly
+      $attachments[] = [
+        'filename' => $filename,
+        'data'     => $pdfBinary,
+        'mime'     => 'application/pdf',
+      ];
+
     }
 
-    $demandData = $this->prepareDemandData();
-    $orderData = $this->prepareOrderData($items);
-    $prepareTime = Carbon::now()->timestamp;
+    if (empty($attachments)) {
+      throw new \RuntimeException('No PDF attachments were generated.');
+    }
 
-    return response()->json([
-      "prepareTime" => $prepareTime,
-      "demandData" => $demandData,
-      "orderData" => $orderData,
-    ]);
+    return $attachments;
 
   }
 
-  private function prepareDemandData(): Collection
+  private function mapItemsForPdf(Collection $items): array
   {
-    return Demand::all()->mapWithKeys(fn ($demand) => [
-      $demand->id => [
-        "id" => $demand->id,
-        "name" => $demand->name,
-        "sp_name" => $demand->sp_name,
-      ]
-    ]);
-  }
+    return $items->map(function ($item) {
 
-  private function prepareOrderData(Collection $items): Collection
-  {
-    return $items->map(function ($item)
-    {
+      $orderUnit = (int) ($item->getAttribute('amount_in_ordersize') ?? 0);
+      $baseUnit  = (int) ($item->getAttribute('amount_in_basesize') ?? 0);
 
-      $order = (object)[];
+      $orderUnitLabel = $item->ordersize?->unit ?? '';
+      $baseUnitLabel  = $item->basesize?->unit ?? '';
 
-      $order->item_id = $item->id;
-      $order->item_name = $item->name;
-      $order->demand_id = $item->demand->id;
+      $baseText = ($baseUnit > 0 && $baseUnit !== $orderUnit && $baseUnitLabel !== '')
+        ? " = {$baseUnit} {$baseUnitLabel}"
+        : '';
 
-      $order->min = $item->min_stock;
-      $order->max = $item->max_stock;
+      $amountText = trim("{$orderUnit} {$orderUnitLabel}") . $baseText;
 
-      $needForMaxStock = ($item->max_stock - $item->pending_quantity);
+      return [
+        'name'   => (string) $item->name,
+        'amount' => trim($amountText),
+      ];
 
-      $order->orderunit = $item->ordersize->unit;
-      $order->orderamount = floor($needForMaxStock / $item->ordersize->amount);
-      if ($order->orderamount == 0) { $order->orderamount = 1; }
-
-      $order->baseunit = $item->basesize->unit;
-      $order->amount_desired = $order->orderamount * $item->ordersize->amount;
-
-      return $order;
-
-    })->values();
+    })->all();
   }
 
   // ####################################################################################
 
-  public function execute(Request $request)
+  private function sendOrderMailOrFail(array $attachments, string $readableDate, string $mailDateFrom, string $mailDateDue): void
   {
 
-    $minTimeRange = Carbon::now()->subWeek()->timestamp;
-    $maxTimeRange = Carbon::now()->addDay()->timestamp;
+    $to = config('mail.order_mailer_to_address');
+    $cc = config('mail.order_mailer_cc_addresses', []);
 
-    $request->validate([
-      'prepareTime' => "required|integer|min:$minTimeRange|max:$maxTimeRange",
-      'orderData' => 'required|array',
-      'orderData.*.item_id' => 'required|integer|exists:items,id',
-      'orderData.*.amount_desired' => 'required|integer|min:1'
-    ]);
+    if (empty($to)) {
+      throw new \RuntimeException('Mail config missing: mail.order_mailer_to_address');
+    }
 
-    $orderData = collect($request['orderData']);
-    $prepareTime = $request['prepareTime'];
-
-    DB::transaction(function () use ($orderData, $prepareTime)
+    try
     {
 
-      // load all bookings before prepare time
-      $bookings = Booking::with(['usage'])
-        ->where('updated_at', '<=', Carbon::createFromTimestamp($prepareTime))
-        ->whereIn('item_id', $orderData->pluck('item_id'))
-        ->get();
+      // add recipients
+      $mailer = Mail::to($to);
+      if (!empty($cc)) { $mailer->cc($cc); }
 
-      // create orders
-      $orderData->each(function ($orderDatum) use ($bookings, $prepareTime)
-      {
+      // send mail
+      $mailer->send(new OrderMail(
+        $attachments,
+        $readableDate,
+        $mailDateFrom,
+        $mailDateDue)
+      );
 
-        // create log
-        $desUsage = $orderDatum['amount_desired'];
-        $desChanged = 0;
-        $itemLog = $bookings->where('item_id', $orderDatum['item_id'])->map(function ($booking) use (&$desUsage, &$desChanged) {
+      // check for errors
+      if (method_exists(Mail::getFacadeRoot(), 'failures')) {
+        $failures = Mail::failures();
+        if (!empty($failures)) {
+          throw new \RuntimeException('Mail sending reported failures: ' . implode(', ', $failures));
+        }
+      }
 
-          // increase stats values
-          if ($booking->usage_id < 0) {
-            $desUsage -= $booking->item_amount;
-            $desChanged += $booking->item_amount;
-          }
+    }
+    catch (\Throwable $e)
+    {
+      throw new \RuntimeException('Demand mail could not be sent: ' . $e->getMessage(), previous: $e);
+    }
 
-          // return log entry
-          return [
-            'time' => $booking->updated_at,
-            'amount' => $booking->item_amount,
-            'usage' => Usage::getUsageName($booking),
-          ];
+  }
 
-        })->values();
+  // ####################################################################################
 
-        // create order
-        Order::create([
-          'item_id' => $orderDatum['item_id'],
-          'prepare_time' => $prepareTime,
-          'amount_desired' => $orderDatum['amount_desired'],
-          'amount_des_usage' => $desUsage,
-          'amount_des_changed' => $desChanged,
-          'amount_delivered' => 0,
-          'is_order_open' => true,
-          'log' => $itemLog,
-        ]);
-
-      });
-
-      // delete bookings
-      $bookings->each(function ($booking) {
-        $booking->delete();
-      });
-
-    });
-
-    return response()->noContent();
-
+  private function classifyError(\Throwable $e): string
+  {
+    // Keep this stable for cron parsing.
+    $msg = strtolower($e->getMessage());
+    if (str_contains($msg, 'mail'))   return 'MAIL_FAILED';
+    if (str_contains($msg, 'pdf'))    return 'PDF_FAILED';
+    if (str_contains($msg, 'config')) return 'CONFIG_ERROR';
+    return 'UNEXPECTED_ERROR';
   }
 
 }
