@@ -12,6 +12,3 @@ Route::get('/store-inventory', [ApiStoreController::class, 'inventory']);
 Route::get('/order', [ApiOrderController::class, 'create']);
 
 Route::get('/barcodes', [ ApiBarcodeController::class, 'index' ]);
-
-Route::get('/statistic', [ApiStatisticController::class, 'index']);
-Route::get('/logs', [ApiStatisticController::class, 'logs']);

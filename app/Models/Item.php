@@ -11,6 +11,7 @@ class Item extends Model
     protected $table = 'items';
     protected $fillable = ['name', 'location', 'search_altnames', 'search_tags', 'demand_id', 'min_stock', 'max_stock', 'onvehicle_stock', 'current_expiry', 'current_quantity', 'checked_at', 'max_order_quantity', 'max_bookin_quantity'];
     protected $casts = [ 'location' => 'array' ];
+    protected $with = [ 'demand', 'sizes', 'basesize' ];
     protected $appends = [ 'barcodes', 'pending_quantity' ];
 
     // ##################################################################################
@@ -44,14 +45,12 @@ class Item extends Model
         return $this->hasMany(Order::class, 'item_id')->where('is_order_open', true);
     }
 
-    public function allOrders()
+    public function bookings()
     {
-        return $this->hasMany(Order::class, 'item_id');
+        return $this->hasMany(Booking::class, 'item_id');
     }
 
     // ##################################################################################
-
-    protected $with = [ 'demand', 'sizes', 'basesize' ];
 
     public function scopeWithPending($query)
     {
@@ -59,12 +58,9 @@ class Item extends Model
             ->withSum('openOrders', 'amount_desired');
     }
 
-    public function scopeWithStats($query)
+    public function scopeWithStatistic($query)
     {
-        return $query->with(['allOrders'])
-            ->withSum('allOrders', 'amount_desired')
-            ->withSum('allOrders', 'amount_des_usage')
-            ->withSum('allOrders', 'amount_des_changed');
+
     }
 
     // ##################################################################################

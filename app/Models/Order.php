@@ -34,14 +34,4 @@ class Order extends Model
         return $query->where('is_order_open', true);
     }
 
-    public function scopeClosed($query)
-    {
-        return $query->where('is_order_open', false);
-    }
-
-    public function scopeWithLogs($query)
-    {
-        return $query->whereNotNull('logs');
-    }
-
 }
