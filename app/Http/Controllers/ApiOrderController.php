@@ -12,6 +12,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\OrderMail;
 use App\Models\Booking;
 use App\Models\Demand;
 use App\Models\Item;
@@ -21,9 +22,76 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Mail;
 
 class ApiOrderController extends Controller
 {
+
+  public function pdf()
+  {
+
+    // get items
+    $items = $this->getItemsNeedingRestock();
+    $demands = $items->groupBy(fn ($item) => $item->demand?->name ?? 'Sonstige');
+
+    // metadata
+    $orderDate = Carbon::now();
+    $fileDate = $orderDate->isoFormat('Y-MM-DD');
+    $demandDate = $orderDate->isoFormat('DD.MM.YY');
+    $mailDateFrom = $orderDate->isoFormat('D. MMM Y');
+    $mailDateDueto = $orderDate->clone()->addDays(7)->isoFormat('D. MMM Y');
+
+    // create PDFs
+    $attachments = $demands->map(function ($demandItems, $demandName) use ($fileDate, $demandDate) {
+
+      $filename = strtolower($demandName)."_$fileDate.pdf";
+
+      $pdfBinary = Pdf::loadView('pdf.demand', [
+        "filename" => $filename,
+        "demand_title" => $demandName,
+        "demand_date" => $demandDate,
+        "items" => $demandItems->map(function ($item) {
+
+          $needForMaxStock = ($item->max_stock - $item->pending_quantity);
+          $orderAmount = max(floor($needForMaxStock / $item->ordersize->amount), 1);
+          $baseAmount = $orderAmount * $item->ordersize->amount;
+
+          $baseText = $orderAmount != $baseAmount
+            ? " = {$baseAmount} {$item->basesize->unit}"
+            : "";
+
+          return [
+            "name" => $item->name,
+            "amount" => "{$orderAmount} {$item->ordersize->unit}{$baseText}"
+          ];
+
+        })
+      ])
+      ->setPaper('a4')
+      ->output();
+
+      return [
+        'filename' => $filename,
+        'data'     => $pdfBinary,
+        'mime'     => 'application/pdf',
+      ];
+    })->values()->all();
+
+    // send email
+    Mail::to(config('mail.order_mailer_to_address'))
+      ->cc(config('mail.order_mailer_cc_addresses'))
+      ->send(new OrderMail($attachments, $demandDate, $mailDateFrom, $mailDateDueto));
+
+    // book order
+
+  }
+
+  // ####################################################################################
+
+
+
+  // ####################################################################################
 
   private function getItemsNeedingRestock(): Collection
   {

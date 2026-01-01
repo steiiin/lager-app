@@ -17,3 +17,10 @@ Route::post('/order-execute', [ApiOrderController::class, 'execute']);
 
 Route::get('/statistic', [ApiStatisticController::class, 'index']);
 Route::get('/logs', [ApiStatisticController::class, 'logs']);
+
+
+
+// test
+
+Route::get('/anforderung/pdf', [ApiOrderController::class, 'pdf'])
+    ->name('anforderung.pdf');
