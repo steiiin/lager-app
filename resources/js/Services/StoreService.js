@@ -54,7 +54,7 @@ export const useInventoryStore = defineStore('inventory', {
       this.loading = true;
       try
       {
-        const response = await axios.get('/api/store' + (forInventory ? '-inventory' : ''));
+        const response = await axios.get('/api/inventory-cache?withStats=1');
         this.items = response.data.items
         this.usages = response.data.usages
         this.isLoaded = true

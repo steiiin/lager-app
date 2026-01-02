@@ -13,6 +13,9 @@ use App\Models\Booking;
 use App\Models\Demand;
 use App\Models\Item;
 use App\Models\Itemsize;
+use App\Models\Usage;
+use App\Services\StatisticService;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -122,6 +125,34 @@ class InventoryController extends Controller
 
     }
 
+    public function destroy($id)
+    {
+
+        DB::transaction(function () use ($id)
+        {
+
+            $item = Item::findOrFail($id);
+            $item->delete();
+
+            Itemsize::where('item_id', $item->id)->delete();
+
+            // TODO: only if not on booking
+
+        });
+
+        return redirect()->route('inventory.index');
+
+
+        $item = Item::findOrFail($id);
+        $demand->delete();
+
+        // TODO: only remove, if currently not in Booking-Table
+
+        return redirect()->route('config-demands.index');
+    }
+
+    // ##################################################################################
+
     private function handleSizes(Array $sizes, Item $item)
     {
         if ($sizes)
@@ -180,30 +211,50 @@ class InventoryController extends Controller
         }
     }
 
-    public function destroy($id)
+    // ##################################################################################
+
+    public function cache(Request $request)
     {
 
-        DB::transaction(function () use ($id)
+        $usages = Usage::select(['id', 'name'])->get();
+        if ($request->has('withStats'))
         {
+            $items = Item::withPending()->withStatistic()->get()->each->appendStats();
+        }
+        else
+        {
+            $items = Item::withPending()->get();
+        }
 
-            $item = Item::findOrFail($id);
-            $item->delete();
+        return response()->json([
+            'usages' => $usages,
+            'items' => $items,
+        ]);
 
-            Itemsize::where('item_id', $item->id)->delete();
+    }
 
-            // TODO: only if not on booking
+    public function jobs()
+    {
 
-        });
+        $now = CarbonImmutable::now();
+        $oldThreshold = $now->subMonths(6);
 
-        return redirect()->route('inventory.index');
+        // clean old data
+        DB::table('orders')
+            ->where('is_order_open', false)
+            ->where('order_date', '<', $oldThreshold)
+            ->delete();
 
+        DB::table('bookings')
+            ->where('created_at', '<', $oldThreshold)
+            ->delete();
 
-        $item = Item::findOrFail($id);
-        $demand->delete();
+        DB::statement('VACUUM');
 
-        // TODO: only remove, if currently not in Booking-Table
+        // run aggregator
+        $statisticService = new StatisticService();
+        $statisticService->runWeeklyAggregation();
 
-        return redirect()->route('config-demands.index');
     }
 
 }

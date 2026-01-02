@@ -2,12 +2,11 @@
 
 use App\Http\Controllers\ApiBarcodeController;
 use App\Http\Controllers\ApiOrderController;
-use App\Http\Controllers\ApiStatisticController;
-use App\Http\Controllers\ApiStoreController;
+use App\Http\Controllers\InventoryController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/store', [ApiStoreController::class, 'index']);
-Route::get('/store-inventory', [ApiStoreController::class, 'inventory']);
+Route::get('/inventory-cache', [InventoryController::class, 'cache']);
+Route::get('/inventory-jobs', [InventoryController::class, 'jobs']);
 
 Route::get('/order', [ApiOrderController::class, 'create']);
 
