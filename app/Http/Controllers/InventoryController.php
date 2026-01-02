@@ -136,19 +136,10 @@ class InventoryController extends Controller
 
             Itemsize::where('item_id', $item->id)->delete();
 
-            // TODO: only if not on booking
-
         });
 
         return redirect()->route('inventory.index');
 
-
-        $item = Item::findOrFail($id);
-        $demand->delete();
-
-        // TODO: only remove, if currently not in Booking-Table
-
-        return redirect()->route('config-demands.index');
     }
 
     // ##################################################################################
