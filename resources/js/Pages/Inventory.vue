@@ -62,11 +62,11 @@ import { reactive } from 'vue'
   function openWelcome() {
     router.get('/')
   }
-  function openConfigDemands() {
-    router.get('/config-demands')
+  function openInventoryDemands() {
+    router.get('/inventory-demands')
   }
-  function openConfigUsages() {
-    router.get('/config-usages')
+  function openInventoryUsages() {
+    router.get('/inventory-usages')
   }
 
   // #region KeyboardShortcuts
@@ -572,10 +572,10 @@ import { reactive } from 'vue'
     <LcPagebar :title="isPwa ? 'Inventar-App' : 'Inventar'" @back="openWelcome" :disabled="isPwa || isItemSelected">
       <template #actions>
         <v-btn v-if="!isItemSelected" variant="flat"
-          @click="openConfigDemands">Anforderungen
+          @click="openInventoryDemands">Anforderungen
         </v-btn>
         <v-btn v-if="!isItemSelected" variant="flat"
-          @click="openConfigUsages">Verwendungen
+          @click="openInventoryUsages">Verwendungen
         </v-btn>
       </template>
     </LcPagebar>

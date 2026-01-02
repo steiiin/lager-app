@@ -1,9 +1,9 @@
 <script setup>
 
 /**
- * ConfigUsages - Page component
+ * InventoryUsages - Page component
  *
- * This page enables the user to config the app-wide usages.
+ * This page enables the user to Inventory the app-wide usages.
  *
  */
 
@@ -75,6 +75,7 @@
     // OpenMethods
     const openNewUsageDialog = async () => {
       editForm.reset()
+      editForm.clearErrors()
       editForm.id = null
       editForm.name = ''
       editDialogVisible.value = true
@@ -83,6 +84,7 @@
     }
     const openEditUsageDialog = (item) => {
       editForm.reset()
+      editForm.clearErrors()
       editForm.id = item.id
       editForm.name = item.name
       editDialogVisible.value = true
@@ -92,9 +94,9 @@
     const saveEdit = () => {
       if (!isValidEdit) { return }
       if (editForm.id === null) {
-        editForm.post('/config-usages', editFormOptions)
+        editForm.post('/inventory-usages', editFormOptions)
       } else {
-        editForm.put(`/config-usages/${editForm.id}`, editFormOptions)
+        editForm.put(`/inventory-usages/${editForm.id}`, editFormOptions)
       }
     }
     const cancelEdit = () => {
@@ -103,7 +105,7 @@
     const deleteUsage = () => {
 
       if (confirm('Do you really want to delete this?')) {
-        editForm.delete(`/config-usages/${editForm.id}`, editFormOptions)
+        editForm.delete(`/inventory-usages/${editForm.id}`, editFormOptions)
       }
 
     }
@@ -113,7 +115,7 @@
   // #region UsageTable
 
     const tableheaders = ref([
-      { title: 'Name', key: 'name', minWidth: '90%' },
+      { title: 'Name', key: 'name', minWidth: '100%' },
       { title: 'Bearbeiten', key: 'action', sortable: false },
     ])
 
@@ -127,7 +129,7 @@
 
   <Head title="Verwendungen" />
 
-  <div class="page-configusages">
+  <div class="page-inventoryusages">
 
     <LcPagebar title="Verwendungen" @back="openInventory" />
 
@@ -158,23 +160,26 @@
 
   <!-- EditDialog -->
   <v-dialog v-model="editDialogVisible" max-width="450px">
-    <v-card prepend-icon="mdi-truck" :title="editForm.dialogTitle" :disabled="editForm.processing" class="rounded-0">
+    <v-card prepend-icon="mdi-truck" :title="editDialogTitle" :disabled="editForm.processing" class="rounded-0">
 
       <v-divider></v-divider>
 
       <v-card-text>
         <p class="mb-4">
-          Eine Verwendung muss beim Buchen angegeben werden. <br>
-          Du kannst auch einstellen, ob diese nur für den Verantwortlichen verfügbar sein soll.
+          Eine Verwendung muss beim Buchen angegeben werden.
         </p>
         <v-text-field
           v-model="editForm.name" id="id-editusage-name"
           label="Name" hide-details>
         </v-text-field>
 
-        <v-alert v-if="editForm.errors.name" type="error">
-          {{ editForm.errors.name }}
-        </v-alert>
+        <template v-if="editForm.errors">
+
+          <v-alert v-for="(errorMessage, fieldName) in editForm.errors" type="error" :key="fieldName" class="mt-4">
+            {{ errorMessage }}
+          </v-alert>
+
+        </template>
 
       </v-card-text>
 
