@@ -41,7 +41,7 @@ return new class extends Migration
     Schema::table('orders', function (Blueprint $table) {
       $table->dropUnique(['item_id', 'order_date']);
       $table->dropColumn('order_date');
-      $table->integer('prepare_time');
+      $table->integer('prepare_time')->default(0);
       $table->unique(['item_id', 'prepare_time']);
       $table->integer('amount_des_usage');
       $table->integer('amount_des_changed');

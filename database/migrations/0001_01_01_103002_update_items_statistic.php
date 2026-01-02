@@ -14,11 +14,10 @@ return new class extends Migration
         Schema::create('items_stats', function (Blueprint $table) {
             $table->id();
             $table->foreignId('item_id')->constrained('items')->cascadeOnDelete();
-            $table->date('week_start');
+            $table->date('week_start')->nullable();
 
             $table->integer('consumption_total')->default(0);
             $table->integer('consumption_max')->default(0);
-            $table->decimal('consumption_stddev', 14, 4)->default(0);
 
             $table->integer('adjustment_total')->default(0);
 
