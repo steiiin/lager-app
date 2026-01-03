@@ -51,6 +51,7 @@
 
     const feedbackTimeoutMatched = computed(() => {
       if (feedbackType.value == 'error') { return 4000 }
+      else if (feedbackType.value == 'success') { return 3000 }
       return 1000
     })
 
@@ -60,8 +61,11 @@
     import errorTone from '@/assets/sounds/battery-caution.oga'
     const errorToneSound = useSound(errorTone)
 
-    import successTone from '@/assets/sounds/desktop-login.oga'
+    import successTone from '@/assets/sounds/service-login.ogg'
     const successToneSound = useSound(successTone)
+
+    import infoTone from '@/assets/sounds/completion-success.oga'
+    const infoToneSound = useSound(infoTone)
 
     const playSoundMatched = () => {
       if (feedbackType.value == 'error') {
@@ -69,6 +73,9 @@
       }
       else if (feedbackType.value == 'success') {
         successToneSound.play()
+      }
+      else if (feedbackType.value == 'info') {
+        infoToneSound.play()
       }
     }
 
@@ -90,15 +97,15 @@ const usageError = () => {
   error('Verwendung vergessen!', 'Bevor du mit dem Austragen aus dem Lager beginnen kannst, musst du ein Fahrzeug wählen oder scannen.')
 }
 
-const scanSuccess = (item) => {
-  success(item.name, 'wurde hinzugefügt.')
+const scanInfo = (item) => {
+  info(item.name, 'wurde hinzugefügt.')
 }
 
 const bookSuccess = () => {
   success('Entnahme verbucht', 'Danke, für deinen Einkauf.')
 }
 
-defineExpose({ info, error, success, usageError, scanSuccess, bookSuccess })
+defineExpose({ info, error, success, usageError, scanInfo, bookSuccess })
 
 </script>
 <template>
