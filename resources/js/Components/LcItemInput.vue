@@ -365,6 +365,8 @@
       // TemplateProps
       const hasAnyResults = computed(() => filteredItems.value.length > 0)
       const hasExactlyOneResult = computed(() => filteredItems.value.length === 1)
+      const selectedResultIndex = ref(-1)
+      const selectedResult = computed(() => filteredItems.value[selectedResultIndex.value] ?? null)
       watch(() => hasAnyResults.value, (val) => {
         if (val) {
           disableAppOverflow()
@@ -372,20 +374,45 @@
           enableAppOverflow()
         }
       })
+      watch(filteredItems, (newResults) => {
+        if (newResults.length === 0) {
+          selectedResultIndex.value = -1
+        } else {
+          selectedResultIndex.value = 0
+        }
+      })
 
       // Methods
       const getFirstResult = () => (filteredItems.value[0] ?? null)
-      const selectFirstResult = () => {
-        if (hasExactlyOneResult.value) {
-          // select only found item
-          selectItemBySearch(getFirstResult())
-        }
+      const selectCurrentResult = () => {
+        const itemToSelect = selectedResult.value ?? getFirstResult()
+        if (!itemToSelect) { return }
+
+        selectItemBySearch(itemToSelect)
+
         if (searchText.value.startsWith('LC-')) {
           // scanned something while in text-mode
           searchText.value = ''
         }
         changeModeToScan()
       }
+      const selectFirstResult = () => {
+        if (hasExactlyOneResult.value) {
+          selectedResultIndex.value = 0
+          selectCurrentResult()
+        }
+      }
+      const highlightNextResult = () => {
+        if (!hasAnyResults.value) { return }
+        const nextIndex = selectedResultIndex.value + 1
+        selectedResultIndex.value = nextIndex >= filteredItems.value.length ? 0 : nextIndex
+      }
+      const highlightPreviousResult = () => {
+        if (!hasAnyResults.value) { return }
+        const prevIndex = selectedResultIndex.value - 1
+        selectedResultIndex.value = prevIndex < 0 ? filteredItems.value.length - 1 : prevIndex
+      }
+      const isResultSelected = (index) => selectedResultIndex.value === index
 
     // #endregion
     // #region Keyboard-Input
@@ -436,7 +463,7 @@
 
         if(props.hidden || props.disabled) { return false }
         if (inTextMode.value && hasAnyItems.value) {
-          if (hasExactlyOneResult.value) { selectFirstResult() }
+          if (hasAnyResults.value) { selectCurrentResult() }
           return false
         }
         return true
@@ -521,7 +548,9 @@
     <div :class="pickerSearchBoxClasses">
       <v-text-field id="id-picker-searchbox" v-model="searchText"
         label="Suche nach Material ..." variant="outlined" hide-details :rounded="0"
-        @keyup.enter="selectFirstResult">
+        @keyup.enter.prevent="selectCurrentResult"
+        @keydown.up.prevent="highlightPreviousResult"
+        @keydown.down.prevent="highlightNextResult">
       </v-text-field>
     </div>
 
@@ -534,9 +563,10 @@
       :text="isTyping ? '' : 'Versuche einen anderen Suchbegriff'"
     ></v-empty-state>
 
-    <v-card v-for="item in filteredItems" :key="item.id"
-      class="lc-picker__result--item" link variant="flat"
-      @click="selectItemBySearch(item)">
+    <v-card v-for="(item, index) in filteredItems" :key="item.id"
+      class="lc-picker__result--item" :class="{ 'lc-picker__result--item-active': isResultSelected(index) }" link variant="flat"
+      @click="selectItemBySearch(item)"
+      @mouseenter="selectedResultIndex = index">
       <div class="lc-picker__result--item-head">
         <div class="lc-picker__result--item-head-name">{{ item.name }}</div>
         <v-spacer></v-spacer>
@@ -655,6 +685,10 @@
       padding: .5rem;
       margin-bottom: .5rem;
       border-radius: 0;
+      &-active {
+        outline: 2px solid var(--accent-primary-background);
+        outline-offset: -2px;
+      }
 
       &-head {
 
