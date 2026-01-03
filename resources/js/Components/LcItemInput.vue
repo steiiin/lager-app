@@ -390,11 +390,12 @@
 
         await nextTick()
 
-        resultRefs.value[newIndex]?.scrollIntoView({
+        resultRefs.value[newIndex]?.$el?.scrollIntoView({
           block: 'nearest',
           inline: 'nearest',
           behavior: 'smooth',
         })
+
       })
 
       // Methods
