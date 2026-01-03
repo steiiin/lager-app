@@ -13,6 +13,7 @@ use App\Models\Booking;
 use App\Models\Demand;
 use App\Models\Item;
 use App\Models\Itemsize;
+use App\Models\ItemsStats;
 use App\Models\Order;
 use App\Models\Usage;
 use App\Services\StatisticService;
@@ -120,7 +121,7 @@ class InventoryController extends Controller
       $item = Item::findOrFail($id);
       $bookings = Booking::where('item_id', $id);
       $sizes    = Itemsize::where('item_id', $id);
-      $stats    = Itemsize::where('item_id', $id);
+      $stats    = ItemsStats::where('item_id', $id);
       $orders   = Order::where('item_id', $id);
 
       $sizes->delete();
