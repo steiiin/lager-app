@@ -11,9 +11,9 @@ class Item extends Model
 {
 
   protected $table = 'items';
-  protected $fillable = ['name', 'location', 'search_altnames', 'search_tags', 'demand_id', 'min_stock', 'max_stock', 'onvehicle_stock', 'current_expiry', 'current_quantity', 'checked_at', 'max_order_quantity', 'max_bookin_quantity'];
-  protected $casts = ['location' => 'array'];
-  protected $with = ['demand', 'sizes', 'basesize'];
+  protected $fillable = ['name', 'location', 'name_alt', 'search_size', 'demand_id', 'min_stock', 'max_stock', 'onvehicle_stock', 'current_expiry', 'current_quantity', 'checked_at', 'max_order_quantity', 'max_bookin_quantity'];
+  protected $casts = [ 'location' => 'array' ];
+  protected $with = [ 'demand', 'sizes', 'basesize' ];
   protected $appends = ['barcodes', 'pending_quantity', 'has_stats' ];
 
   // ##################################################################################
@@ -74,7 +74,7 @@ class Item extends Model
       ->subWeeks($recentWeeks)
       ->toDateString();
 
-    $sub = DB::table('items_stats as istts')
+    $sub = DB::table('itemstats as istts')
       ->selectRaw('istts.item_id as item_id')
       ->selectRaw('COUNT(*) as weeks_total')
       ->selectRaw("SUM(CASE WHEN istts.week_start >= ? THEN 1 ELSE 0 END) as weeks_recent", [$cutoff])

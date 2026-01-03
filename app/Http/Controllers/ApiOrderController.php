@@ -46,7 +46,7 @@ class ApiOrderController extends Controller
           'run_id'  => $runId,
           'message' => 'no items need restock.',
           'counts'  => [ 'orders_opened' => 0, 'bookings_affected' => 0 ]
-        ], 204);
+        ], 200);
       }
 
       // date metadata

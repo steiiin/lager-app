@@ -104,7 +104,7 @@
     }
     const deleteUsage = () => {
 
-      if (confirm('Do you really want to delete this?')) {
+      if (confirm('Willst du das wirklich löschen?')) {
         editForm.delete(`/inventory-usages/${editForm.id}`, editFormOptions)
       }
 

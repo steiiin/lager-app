@@ -7,8 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class Itemsize extends Model
 {
 
-    protected $table = 'itemsizes';
-    protected $fillable = ['item_id', 'unit', 'amount', 'is_default'];
-    public $timestamps = false;
+  protected $table = 'itemsizes';
+  protected $fillable = [ 'item_id', 'unit', 'amount', 'is_default' ];
+  public $timestamps = false;
 
 }

@@ -28,11 +28,12 @@
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
   import LcItemInput from '@/Components/LcItemInput.vue'
-  import LcStockAmount from '@/Components/LcStockAmount.vue'
   import LcButtonGroup from '@/Components/LcButtonGroup.vue'
   import LcItemSizeDialog from '@/Dialogs/LcItemSizeDialog.vue'
-  import LcInventoryCheckTags from '@/Components/LcInventoryCheckTags.vue'
-  import LcTrend from '@/Components/LcTrend.vue'
+
+  import LcCheckTags from '@/Components/Inventory/LcCheckTags.vue'
+  import LcStockAmount from '@/Components/Inventory/LcStockAmount.vue'
+  import LcTrend from '@/Components/Inventory/LcTrend.vue'
 
   // 3rd party components
   import axios from 'axios'
@@ -268,8 +269,8 @@ import { reactive } from 'vue'
 
       id: null,
       name: '',
-      search_altnames: '',
-      search_tags: '',
+      name_alt: '',
+      search_size: '',
       demand_id: null,
       location: { room:'', cab:'', exact:'' },
       min_stock: 0,
@@ -308,8 +309,8 @@ import { reactive } from 'vue'
 
       itemForm.id = null
       itemForm.name = 'Neuer Artikel'
-      itemForm.search_altnames = ''
-      itemForm.search_tags = ''
+      itemForm.name_alt = ''
+      itemForm.search_size = ''
       itemForm.demand_id = props.demands[0]?.id
       itemForm.location = {
         room: 'Lagerraum',
@@ -344,8 +345,8 @@ import { reactive } from 'vue'
 
       itemForm.id = item.id
       itemForm.name = item.name
-      itemForm.search_altnames = item.search_altnames
-      itemForm.search_tags = item.search_tags
+      itemForm.name_alt = item.name_alt
+      itemForm.search_size = item.search_size
       itemForm.demand_id = item.demand_id
       itemForm.location = {
         room: item.location.room,
@@ -412,7 +413,7 @@ import { reactive } from 'vue'
     }
     const deleteItem = () => {
 
-      if (confirm('Do you really want to delete this?')) {
+      if (confirm('Willst du das wirklich löschen?')) {
         itemForm.delete(`/inventory/${itemForm.id}`, itemFormOptions)
       }
 
@@ -622,7 +623,7 @@ import { reactive } from 'vue'
               :headers="tableCheckNecessary"
               :items-per-page="20">
               <template v-slot:item.tags="{ item }">
-                <LcInventoryCheckTags :tags="item.tags"></LcInventoryCheckTags>
+                <LcCheckTags :tags="item.tags"></LcCheckTags>
               </template>
               <template v-slot:item.action="{ item }">
                 <v-btn small variant="outlined" @click="editItem(item)">
@@ -674,11 +675,11 @@ import { reactive } from 'vue'
                 type="error">
               </v-alert>
 
-              <v-text-field v-model="itemForm.search_altnames"
+              <v-text-field v-model="itemForm.name_alt"
                 class="mt-2" label="Alternative Namen" hide-details>
               </v-text-field>
-              <v-text-field v-model="itemForm.search_tags"
-                label="Tags" hide-details>
+              <v-text-field v-model="itemForm.search_size"
+                class="mt-2" label="Größenangabe ('m' oder 'm,6.5')" hide-details>
               </v-text-field>
 
               <v-select v-model="itemForm.demand_id" :items="demands"

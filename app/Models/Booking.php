@@ -7,27 +7,22 @@ use Illuminate\Database\Eloquent\Model;
 class Booking extends Model
 {
 
-    protected $table = 'bookings';
-    protected $fillable = [
-        'usage_id',
-        'order_id',
-        'item_id',
-        'item_amount'
-    ];
+  protected $table = 'bookings';
+  protected $fillable = [ 'usage_id', 'order_id', 'item_id', 'item_amount' ];
 
-    public function item()
-    {
-        return $this->belongsTo(Item::class, 'item_id');
-    }
+  public function item()
+  {
+    return $this->belongsTo(Item::class, 'item_id');
+  }
 
-    public function usage()
-    {
-        return $this->belongsTo(Usage::class, 'usage_id');
-    }
+  public function usage()
+  {
+    return $this->belongsTo(Usage::class, 'usage_id');
+  }
 
-    public function order()
-    {
-        return $this->belongsTo(Order::class, 'order_id');
-    }
+  public function order()
+  {
+    return $this->belongsTo(Order::class, 'order_id');
+  }
 
 }

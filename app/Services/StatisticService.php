@@ -44,7 +44,7 @@ class StatisticService
       'aggregated_at'      => $now,
     ])->all();
 
-    DB::table('items_stats')->upsert(
+    DB::table('itemstats')->upsert(
       $payload,
       ['item_id', 'week_start'],
       [

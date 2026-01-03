@@ -25,7 +25,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('demands', function (Blueprint $table) {
-            $table->string('sp_name');
+            $table->string('sp_name')->default('');
         });
         Schema::table('usages', function (Blueprint $table) {
             $table->boolean('is_locked')->default(false);

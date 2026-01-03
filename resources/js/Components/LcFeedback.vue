@@ -110,22 +110,3 @@ defineExpose({ info, error, success, usageError, scanSuccess, bookSuccess })
     ></v-alert>
   </v-dialog>
 </template>
-<style lang="scss" scoped>
-.lc-scanindicator {
-
-  position: relative;
-  width: 72px;
-  height: 72px;
-
-  & > * {
-    position: absolute;
-  }
-
-  & .v-icon {
-    left: 19px;
-    top: 19px;
-  }
-
-
-}
-</style>

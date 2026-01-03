@@ -104,7 +104,7 @@
     }
     const deleteDemand = () => {
 
-      if (confirm('Do you really want to delete this?')) {
+      if (confirm('Willst du das wirklich löschen?')) {
         editForm.delete(`/inventory-demands/${editForm.id}`, editFormOptions)
       }
 
