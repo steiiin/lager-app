@@ -15,7 +15,7 @@
 // #region Imports
 
   // Vue composables
-  import { computed, onMounted, onUnmounted } from 'vue'
+  import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
   // Local composables
   import InputService from '@/Services/InputService'
@@ -50,8 +50,28 @@
 
 // #region Picker-Logic
 
+  const navigationIndex = ref(0)
+  const isKeyboardNavigationActive = ref(false)
+
+  const selectionOptions = computed(() => {
+    if (!hasAnyUsages.value) { return [] }
+
+    return [
+      ...inventoryStore.usages.map(usage => ({
+        type: 'usage',
+        value: usage,
+        key: `usage-${usage.barcode}`,
+      })),
+      { type: 'expired', value: null, key: 'expired' },
+    ]
+  })
+
   const selectUsage = (usage) => {
     emit('selectUsage', usage)
+  }
+
+  const handleExpiredSelection = () => {
+    emit('ctrlExpired')
   }
 
   const findUsage = (params) => {
@@ -75,16 +95,67 @@
 
   }
 
+  const ensureNavigationActive = () => {
+    if (!selectionOptions.value.length) { return }
+    if (!isKeyboardNavigationActive.value) {
+      isKeyboardNavigationActive.value = true
+      navigationIndex.value = 0
+    }
+  }
+
+  const handleLeft = () => {
+    if (!selectionOptions.value.length) { return }
+    ensureNavigationActive()
+    navigationIndex.value = (navigationIndex.value - 1 + selectionOptions.value.length) % selectionOptions.value.length
+  }
+
+  const handleRight = () => {
+    if (!selectionOptions.value.length) { return }
+    ensureNavigationActive()
+    navigationIndex.value = (navigationIndex.value + 1) % selectionOptions.value.length
+  }
+
+  const handleEnter = () => {
+    if (!isKeyboardNavigationActive.value || !selectionOptions.value.length) { return }
+
+    const selection = selectionOptions.value[navigationIndex.value]
+    if (selection.type === 'usage') { selectUsage(selection.value) }
+    else { handleExpiredSelection() }
+  }
+
+  const handleSelection = (option) => {
+    if (option.type === 'usage') { selectUsage(option.value) }
+    else { handleExpiredSelection() }
+  }
+
+  watch(selectionOptions, (newOptions) => {
+    if (!newOptions.length) {
+      isKeyboardNavigationActive.value = false
+      navigationIndex.value = 0
+      return
+    }
+
+    if (navigationIndex.value >= newOptions.length) {
+      navigationIndex.value = 0
+    }
+  })
+
 // #endregion
 
 // #region Lifecycle
 
   onMounted(() => {
     InputService.registerScan(findUsage)
+    InputService.registerLeft(handleLeft)
+    InputService.registerRight(handleRight)
+    InputService.registerEnter(handleEnter)
   })
 
   onUnmounted(() => {
     InputService.unregisterScan(findUsage)
+    InputService.unregisterLeft(handleLeft)
+    InputService.unregisterRight(handleRight)
+    InputService.unregisterEnter(handleEnter)
   })
 
 // #endregion
@@ -112,16 +183,15 @@
     </div>
     <div class="lc-picker__result" v-if="hasAnyUsages">
 
-      <template v-for="usage in inventoryStore.usages">
-        <LcButton  class="lc-picker__result-usage"
-          @click="selectUsage(usage)">{{ usage.name }}
+      <template v-for="(option, index) in selectionOptions" :key="option.key">
+        <LcButton
+          class="lc-picker__result-usage"
+          :class="{ 'lc-picker__result-usage--selected': isKeyboardNavigationActive && navigationIndex === index }"
+          :selected="isKeyboardNavigationActive && navigationIndex === index"
+          @click="handleSelection(option)">
+          {{ option.type === 'usage' ? option.value.name : 'Verfall' }}
         </LcButton>
       </template>
-
-      <LcButton
-        class="lc-picker__result-usage"
-        @click="emit('ctrlExpired')">Verfall
-      </LcButton>
 
     </div>
 
@@ -175,6 +245,11 @@
       height: 4rem;
       min-width: 6rem;
       flex: 1;
+
+      &--selected {
+        outline: 3px solid var(--main-dark);
+        outline-offset: 4px;
+      }
 
     }
 
