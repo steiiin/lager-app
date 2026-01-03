@@ -365,6 +365,8 @@
       // TemplateProps
       const hasAnyResults = computed(() => filteredItems.value.length > 0)
       const hasExactlyOneResult = computed(() => filteredItems.value.length === 1)
+      const resultListRef = ref(null)
+      const resultRefs = ref([])
       const selectedResultIndex = ref(-1)
       const selectedResult = computed(() => filteredItems.value[selectedResultIndex.value] ?? null)
       watch(() => hasAnyResults.value, (val) => {
@@ -375,11 +377,24 @@
         }
       })
       watch(filteredItems, (newResults) => {
+        resultRefs.value = []
         if (newResults.length === 0) {
           selectedResultIndex.value = -1
         } else {
           selectedResultIndex.value = 0
         }
+      })
+      watch(selectedResultIndex, async (newIndex) => {
+        if (!hasAnyResults.value) { return }
+        if (newIndex === -1) { return }
+
+        await nextTick()
+
+        resultRefs.value[newIndex]?.scrollIntoView({
+          block: 'nearest',
+          inline: 'nearest',
+          behavior: 'smooth',
+        })
       })
 
       // Methods
@@ -555,7 +570,7 @@
     </div>
 
   </section>
-  <section class="lc-picker__result" v-if="hasAnyItems && hasTyped" :style="pickerResultCSS">
+  <section class="lc-picker__result" v-if="hasAnyItems && hasTyped" :style="pickerResultCSS" ref="resultListRef">
     <div class="lc-picker__result--fade-top"></div>
 
     <v-empty-state v-show="!hasAnyResults && !isTyping"
@@ -565,6 +580,7 @@
 
     <v-card v-for="(item, index) in filteredItems" :key="item.id"
       class="lc-picker__result--item" :class="{ 'lc-picker__result--item-active': isResultSelected(index) }" link variant="flat"
+      :ref="el => resultRefs[index] = el"
       @click="selectItemBySearch(item)"
       @mouseenter="selectedResultIndex = index">
       <div class="lc-picker__result--item-head">
