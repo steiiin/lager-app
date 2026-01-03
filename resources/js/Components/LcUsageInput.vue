@@ -105,14 +105,14 @@
 
   const handleLeft = () => {
     if (!selectionOptions.value.length) { return }
-    ensureNavigationActive()
     navigationIndex.value = (navigationIndex.value - 1 + selectionOptions.value.length) % selectionOptions.value.length
+    ensureNavigationActive()
   }
 
   const handleRight = () => {
     if (!selectionOptions.value.length) { return }
-    ensureNavigationActive()
     navigationIndex.value = (navigationIndex.value + 1) % selectionOptions.value.length
+    ensureNavigationActive()
   }
 
   const handleEnter = () => {
@@ -247,8 +247,8 @@
       flex: 1;
 
       &--selected {
-        outline: 3px solid var(--main-dark);
-        outline-offset: 4px;
+        outline: 2px solid var(--accent-primary-background);
+        outline-offset: 3px;
       }
 
     }
