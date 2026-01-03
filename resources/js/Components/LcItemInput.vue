@@ -27,13 +27,13 @@
   import { computed, ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
 
   // 3rd-party composables
+  import Fuse from 'fuse.js'
   import { debounce } from 'lodash'
 
   // Local composables
   import InputService from '@/Services/InputService'
   import { useInventoryStore } from '@/Services/StoreService'
   import { useIsPwa } from '@/Composables/useIsPwa'
-  const { isPwa } = useIsPwa()
 
   // Local components
   import LcButton from '@/Components/LcButton.vue'
@@ -42,7 +42,9 @@
 // #endregion
 // #region Props
 
+  const { isPwa } = useIsPwa()
   const inventoryStore = useInventoryStore()
+
   const props = defineProps({
     allowScan: {
       type: Boolean,
@@ -75,9 +77,16 @@
 
     const hasAnyItems = computed(() => inventoryStore.items.length > 0)
 
-    const pickerDescriptionTitle = computed(() =>
-      props.disabled ? '' : (hasAnyItems.value ? (isPwa.value ? 'Suche dein Material ...' : 'Scanne oder suche dein Material ...') : 'Kein Material angelegt')
-    )
+    const pickerDescriptionTitle = computed(() => {
+      if (props.disabled) { return '' }
+      if (hasAnyItems.value)
+      {
+        return isPwa.value
+          ? 'Suche dein Material ...'
+          : 'Scanne oder suche dein Material ...'
+      }
+      return 'Kein Material angelegt'
+    })
 
     const pickerSearchBoxClasses = computed(() => {
       return 'lc-picker__search' +
@@ -87,8 +96,6 @@
     const pickerResultWidth = computed(() => (props.resultSpecs?.w ?? 850) + 'px')
     const pickerResultTop = computed(() => (props.resultSpecs?.i ?? 11) + 'rem')
     const pickerResultCSS = computed(() => `height:calc(100% - 0.5rem - ${pickerResultTop.value}); top: ${pickerResultTop.value}; width: ${pickerResultWidth.value};`)
-
-
 
   // #endregion
 
@@ -198,10 +205,10 @@
     // #region Search-Logic
 
       // Map
-      const bookingsMap = computed(() => {
+      const cartMap = computed(() => {
         const map = new Map()
-        props.cart.forEach(booking => {
-          map.set(booking.item_id, booking)
+        props.cart.forEach(book => {
+          map.set(book.item_id, book)
         })
         return map
       })
@@ -210,84 +217,147 @@
       const hasTyped = computed(() => searchText.value.trim().length > 0)
 
       // Filter-Prop
+
+      const fuseText = computed(() => {
+        const items = inventoryStore.searchableItems ?? []
+        return new Fuse(items, {
+          includeScore: true,
+          shouldSort: true,
+          threshold: 0.35,            // lower = stricter;
+          ignoreLocation: true,
+          minMatchCharLength: 2,
+          keys: [
+            { name: "pp_name", weight: 0.60 },
+            { name: "pp_name_alt", weight: 0.40 },
+          ],
+        })
+      })
+
+      const SIZE_RE = /\b(xxs|xs|s|m|l|xl|xxl|xxxl|xxxxl)\b|\b\d{1,3}(?:[.,]\d{1,2})?\b/gi
+
+      const tokenizeText = (rawText) => {
+        return (rawText ?? "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, " ")
+          .split(" ")
+          .filter(t => t.length >= 2)
+      }
+
+      const splitSearchText = (rawQuery) => {
+        const q = (rawQuery ?? '').toLowerCase()
+        const matches = q.match(SIZE_RE) ?? []
+        const size = matches.map(size => size.toString().trim().toLowerCase().replace(',', '.'))
+        const text = tokenizeText(q.replace(SIZE_RE, ' ').replace(/\s+/g, " ").trim())
+        return { text, size }
+      }
+
       const filteredItems = computed(() => {
 
-        // search text
-        const lcSearchText = debouncedSearchText.value.toLowerCase()
-        if (lcSearchText.trim().length === 0) { return [] }
+        const { text, size } = splitSearchText(debouncedSearchText.value ?? '')
+        if (text.length === 0 && size.length === 0) return []
+
+        const textHits = (() => {
+
+          // If only size typed, we still want results
+          if (!text || text.length === 0) {
+            return inventoryStore.searchableItems.map(item => ({
+              item,
+              score: 0.6,
+              matchedTokens: 0,
+              tokenCount: 0,
+            }))
+          }
+
+          // Aggregate hits per item across tokens:
+          // id -> { item, scoreSum, matchedTokens, bestScore }
+          const acc = new Map()
+
+          for (const token of text) {
+            const hits = fuseText.value.search(token, { limit: 50 }) // >15 because we merge later
+
+            for (const { item, score } of hits) {
+              const prev = acc.get(item.id)
+
+              if (!prev) {
+                acc.set(item.id, {
+                  item,
+                  scoreSum: (score ?? 1),
+                  matchedTokens: 1,
+                  bestScore: (score ?? 1),
+                })
+              } else {
+                prev.scoreSum += (score ?? 1)
+                prev.matchedTokens += 1
+                prev.bestScore = Math.min(prev.bestScore, (score ?? 1))
+              }
+            }
+          }
+
+          const tokenCount = text.length
+
+          // Convert aggregated data to a "combined score" (lower is better)
+          const combined = []
+          const minCoverage = 0.8
+          const requiredMatches = Math.ceil(minCoverage * tokenCount)
+
+          for (const { item, scoreSum, matchedTokens, bestScore } of acc.values()) {
+            if (matchedTokens < requiredMatches) continue
+
+            const avgScore = scoreSum / matchedTokens
+            const score = avgScore + bestScore * 0.15 // optional
+
+            combined.push({ item, score, matchedTokens, tokenCount })
+          }
+
+          // If nothing matched any token, you can return [] (or fall back to plain search)
+          return combined
+        })()
 
         const results = []
-        const bookings = bookingsMap.value
-        const items = inventoryStore.searchableItems
 
-        for (const item of items) {
+        for (const hit of textHits) {
+          const item = hit.item
+          let score = hit.score ?? 1
 
-          let relevance = 0
+          if (hit.tokenCount > 0 && (hit.matchedTokens ?? 0) === 0) continue
 
-          if (item.pp_name === lcSearchText) {
-            relevance += 50
-          }
-          else if (item.pp_name.startsWith(lcSearchText)) {
-            relevance += 30
-          }
-          else if (item.pp_name.includes(lcSearchText)) {
-            relevance += 10
-          }
+          // boost sizes match
+          if (size && size.length > 0) {
 
-          if (item.pp_search_altnames_list?.includes(lcSearchText)) {
-            relevance += 20
-          }
-          else if (item.pp_search_altnames_list?.some(name => name.startsWith(lcSearchText))) {
-            relevance += 15
-          }
+            const set = item.pp_search_size
+            const matchAllSizes = size.every(s => set?.has(s))
+            const matchAnySize = size.some(s => set?.has(s))
+            if (!matchAnySize) continue // filter non-size entries
 
-          if (lcSearchText.length > 1) {
-
-            if (relevance <= 30 && item.pp_name.includes(lcSearchText)) {
-              relevance += 10
-            }
-
-            if (item.pp_search_altnames?.includes(lcSearchText)) {
-              relevance += 5
-            }
-
-            if (item.pp_search_tags_list?.some(tag => tag.startsWith(lcSearchText))) {
-              relevance += 2
-            }
+            // Lower score = better in Fuse scoring.
+            if (matchAllSizes) score *= 0.05
+            else if (matchAnySize) score *= 0.2
+            else score *= 2
 
           }
 
-          if (relevance > 1) {
+          if (score > 1) continue
 
-            const bookingEntry = bookings.get(item.id) || null
-            const isOnBooking = bookingEntry !== null
-            const bookingText = isOnBooking
-              ? bookingEntry.item_amount + ' ' + item.basesize.unit
-              : null;
+          // create cart text
+          const cartEntry = cartMap.value.get(item.id) || null
+          const in_cart = cartEntry !== null
+          const cart_description = in_cart
+            ? `${cartEntry.item_amount} ${item.basesize.unit}`
+            : ""
 
-            results.push({
-              ...item,
-              relevance,
-              hasAltNames: !!item.pp_search_altnames_list,
-              hasTags: !!item.pp_search_tags_list,
-              isOnBooking,
-              bookingText,
-            })
-
-          }
+          results.push({
+            ...item,
+            relevance: Math.round((1 - Math.min(score ?? 1, 1)) * 100),
+            in_cart,
+            cart_description,
+          })
 
         }
 
-        // sort if necessary
-        if (results.length > 1) {
-          results.sort((a, b) => b.relevance - a.relevance)
-        }
-
-        // slice over 15
-        if (lcSearchText.length && results.length > 15) {
-          results.splice(14)
-        }
-
+        results.sort((a, b) => b.relevance - a.relevance)
+        if (results.length > 15) results.length = 15
         return results
 
       })
@@ -468,13 +538,13 @@
       class="lc-picker__result--item" link variant="flat"
       @click="selectItemBySearch(item)">
       <div class="lc-picker__result--item-head">
-        <div class="lc-picker__result--item-head-name">{{ item.name }}</div><!-- {{ item.relevance }} -->
+        <div class="lc-picker__result--item-head-name">{{ item.name }}</div>
         <v-spacer></v-spacer>
         <div class="lc-picker__result--item-head-demand">{{ item.demand?.name }}</div>
       </div>
-      <template v-if="item.hasAltNames">
-        <div class="lc-picker__result--item-tags" v-if="item.hasAltNames">
-          <v-chip size="small" label variant="outlined" v-for="tag in item.pp_altnames_list">{{ tag }}</v-chip>
+      <template v-if="item.has_altnames">
+        <div class="lc-picker__result--item-tags">
+          <v-chip size="small" label variant="outlined" v-for="tag in item.pp_name_alt">{{ tag }}</v-chip>
         </div>
       </template>
       <v-divider class="my-2"></v-divider>
@@ -487,7 +557,7 @@
           <v-chip prepend-icon="mdi-archive-marker-outline" variant="text">{{ item.location.exact }}</v-chip>
         </div>
       </div>
-      <template v-if="item.isOnBooking">
+      <template v-if="item.in_cart">
         <v-divider class="my-2"></v-divider>
         <div class="d-flex flex-row-reverse">
           <v-chip color="black" label prepend-icon="mdi-check-circle" variant="flat">Schon im Warenkorb:&nbsp;<b>{{ item.bookingText }}</b></v-chip>
