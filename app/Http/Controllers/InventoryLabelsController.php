@@ -11,6 +11,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Demand;
 use App\Models\Item;
+use App\Services\BarcodeService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -21,9 +22,11 @@ class InventoryLabelsController extends Controller
 
   public function index()
   {
-    $demands = Demand::all();
+    $barcodeService = new BarcodeService();
     return Inertia::render('InventoryLabels', [
-      'demands' => $demands
+      'ctrl' => $barcodeService->generateCtrlBatch(),
+      'usages' => $barcodeService->generateUsagesBatch(),
+      'items' => $barcodeService->generateItemsBatch(),
     ]);
   }
 

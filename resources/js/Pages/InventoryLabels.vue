@@ -20,10 +20,18 @@
 // #region Props
 
   const props = defineProps({
-    demands: {
+    ctrl: {
       type: Array,
       required: true,
     },
+    usages: {
+      type: Array,
+      required: true,
+    },
+    items: {
+      type: Array,
+      required: true,
+    }
   })
 
 // #endregion
@@ -44,9 +52,9 @@
 // #region Tabs
 
   const tabOptions = [
-    { value: 'control', label: 'Controllabels' },
-    { value: 'usage', label: 'Usageslabels' },
-    { value: 'item', label: 'Itemslabels' },
+    { value: 'control', label: 'Ctrl' },
+    { value: 'usage', label: 'Verwendungen' },
+    { value: 'item', label: 'Artikel' },
   ]
   const selectedTab = ref(tabOptions[0].value)
 
@@ -56,10 +64,23 @@
     item: [],
   })
 
-  const demandRows = computed(() => props.demands.map((demand, index) => ({
-    id: demand.id ?? index,
-    name: demand.name ?? '',
-    code: demand.code ?? demand.id ?? index + 1,
+  const selectedRows = computed(() => {
+    debugger
+    if (selectedTab.value?.value === 'control') { return ctrlRows.value }
+    else if (selectedTab.value?.value === 'usage') { return usagesRows.value }
+    return itemsRows.value
+  })
+
+  const ctrlRows = computed(() => props.ctrl.map((name, code) => ({
+    name, code
+  })))
+
+  const usagesRows = computed(() => props.ctrl.map((name, code) => ({
+    name, code
+  })))
+
+  const itemsRows = computed(() => props.ctrl.map((name, code, demand, amount, unit, is_default) => ({
+    name, code, demand, amount, unit, is_default
   })))
 
 // #endregion
@@ -187,7 +208,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="row in demandRows" :key="row.id">
+                <tr v-for="row in selectedRows" :key="row.id">
                   <td>
                     <v-checkbox
                       v-model="selectedLabels[tab.value]"

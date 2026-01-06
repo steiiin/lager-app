@@ -44,8 +44,8 @@ class BarcodeService
     public static function generateCtrlBatch(): Array
     {
       return [
-        self::generateCtrlFinish() => "finish",
-        self::generateCtrlExpired() => "expired",
+        [ "name" => "finish", "code" => self::generateCtrlFinish() ],
+        [ "name" => "expired", "code" => self::generateCtrlExpired() ],
       ];
     }
 
@@ -65,9 +65,9 @@ class BarcodeService
       $codes = [];
       foreach (Usage::all() as $usage)
       {
-        $codes[self::generateUsage($usage->id)] = [
-          "id" => $usage->id,
+        $codes[] = [
           "name" => $usage->name,
+          "code" => self::generateUsage($usage->id),
         ];
       }
       return $codes;
@@ -88,16 +88,16 @@ class BarcodeService
     {
 
       $items = Item::all();
-      $codes = $items->flatMap(function ($item) {
+      $codes = $items->map(function ($item) {
         return $item->sizes->mapWithKeys(function ($size) use ($item) {
-            return [BarcodeService::generateItem($item->id, $size->id) => [
-                "id" => $item->id,
-                "name" => $item->name,
-                "demand" => $item->demand->name,
-                "amount" => $size->amount,
-                "unit" => $size->unit,
-                "isdefault" => $size->is_default === 1,
-            ]];
+          return [
+            "name" => $item->name,
+            "code" => BarcodeService::generateItem($item->id, $size->id),
+            "demand" => $item->demand->name,
+            "amount" => $size->amount,
+            "unit" => $size->unit,
+            "is_default" => $size->is_default === 1,
+          ];
         });
       });
 
