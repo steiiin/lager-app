@@ -237,7 +237,24 @@ import { reactive } from 'vue'
     const checkAllList = ref([])
 
     const checkAllNecessaryItems = () => {
-      checkAllList.value = itemsCheckNecessary.value.map(item => item.id)
+
+      const collator = new Intl.Collator('de', {
+        sensitivity: 'base',
+        numeric: true,
+      })
+      const norm = v => v ?? ''
+
+      checkAllList.value = itemsCheckNecessary.value.sort((a, b) => {
+        const la = a.location ?? {}
+        const lb = b.location ?? {}
+
+        return (
+          collator.compare(norm(la.room),  norm(lb.room))  ||
+          collator.compare(norm(la.cab),   norm(lb.cab))   ||
+          collator.compare(norm(la.exact), norm(lb.exact))
+        )
+      }).map(item => item.id)
+
       clearSelectedItem(true)
     }
 
