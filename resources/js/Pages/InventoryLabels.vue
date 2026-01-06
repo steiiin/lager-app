@@ -64,24 +64,91 @@
     item: [],
   })
 
-  const selectedRows = computed(() => {
-    debugger
-    if (selectedTab.value?.value === 'control') { return ctrlRows.value }
-    else if (selectedTab.value?.value === 'usage') { return usagesRows.value }
+  const ctrlRows = computed(() => props.ctrl.map((ctrl) => ({
+    id: ctrl.code ?? ctrl.name,
+    name: ctrl.name ?? '',
+    code: ctrl.code ?? '',
+  })))
+
+  const usagesRows = computed(() => props.usages.map((usage) => ({
+    id: usage.code ?? usage.name,
+    name: usage.name ?? '',
+    code: usage.code ?? '',
+  })))
+
+  const itemsRows = computed(() => props.items.map((item) => ({
+    id: item.code ?? item.name,
+    name: item.name ?? '',
+    code: item.code ?? '',
+    demand: item.demand ?? '',
+    amount: item.amount ?? '',
+    unit: item.unit ?? '',
+    is_default: !!item.is_default,
+  })))
+
+  const currentRows = computed(() => {
+    if (selectedTab.value === 'control') { return ctrlRows.value }
+    if (selectedTab.value === 'usage') { return usagesRows.value }
     return itemsRows.value
   })
 
-  const ctrlRows = computed(() => props.ctrl.map((name, code) => ({
-    name, code
-  })))
+  const currentColumns = computed(() => {
+    if (selectedTab.value === 'item') {
+      return [
+        { key: 'name', label: 'Name' },
+        { key: 'code', label: 'Code' },
+        { key: 'demand', label: 'Anforderung' },
+        { key: 'amount', label: 'Menge' },
+        { key: 'unit', label: 'Einheit' },
+        { key: 'is_default', label: 'Standard' },
+      ]
+    }
+    return [
+      { key: 'name', label: 'Name' },
+      { key: 'code', label: 'Code' },
+    ]
+  })
 
-  const usagesRows = computed(() => props.ctrl.map((name, code) => ({
-    name, code
-  })))
+  const filter = reactive({
+    query: '',
+    column: 'all',
+  })
 
-  const itemsRows = computed(() => props.ctrl.map((name, code, demand, amount, unit, is_default) => ({
-    name, code, demand, amount, unit, is_default
-  })))
+  const columnOptions = computed(() => [{ value: 'all', title: 'Alle Spalten' }, ...currentColumns.value.map((column) => ({
+    value: column.key,
+    title: column.label,
+  }))])
+
+  const filteredRows = computed(() => {
+    if (!filter.query.trim()) { return currentRows.value }
+    const query = filter.query.trim().toLowerCase()
+
+    if (filter.column === 'all') {
+      return currentRows.value.filter((row) => currentColumns.value.some((column) => `${row[column.key] ?? ''}`.toLowerCase().includes(query)))
+    }
+
+    return currentRows.value.filter((row) => `${row[filter.column] ?? ''}`.toLowerCase().includes(query))
+  })
+
+  const currentSelection = computed(() => selectedLabels[selectedTab.value] ?? [])
+
+  const isAllSelected = computed(() => filteredRows.value.length > 0 && filteredRows.value.every((row) => currentSelection.value.includes(row.id)))
+
+  const isSelectionIndeterminate = computed(() => currentSelection.value.length > 0 && !isAllSelected.value)
+
+  const toggleSelectAll = (value) => {
+    if (value) {
+      selectedLabels[selectedTab.value] = filteredRows.value.map((row) => row.id)
+    } else {
+      selectedLabels[selectedTab.value] = []
+    }
+  }
+
+  const formatCell = (row, key) => {
+    const value = row[key]
+    if (key === 'is_default') { return value ? 'Ja' : 'Nein' }
+    return value
+  }
 
 // #endregion
 
@@ -199,16 +266,61 @@
           :value="tab.value"
         >
           <v-card flat>
+
+            <div class="d-flex flex-wrap ga-4 pa-4 align-center">
+              <v-text-field
+                v-model="filter.query"
+                label="Filtern"
+                prepend-inner-icon="mdi-magnify"
+                hide-details
+                density="compact"
+                style="max-width: 320px"
+              />
+
+              <v-select
+                v-model="filter.column"
+                :items="columnOptions"
+                label="Spalte"
+                hide-details
+                density="compact"
+                style="max-width: 220px"
+              />
+
+              <v-btn
+                color="primary"
+                variant="text"
+                :prepend-icon="isAllSelected ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline'"
+                @click="toggleSelectAll(!isAllSelected)"
+              >
+                {{ isAllSelected ? 'Alle abwählen' : 'Alle auswählen' }}
+              </v-btn>
+            </div>
+
             <v-table>
               <thead>
                 <tr>
-                  <th class="text-left">Wählen</th>
-                  <th class="text-left">Name</th>
-                  <th class="text-left">Code</th>
+                  <th class="text-left">
+                    <v-checkbox
+                      class="ma-0"
+                      color="primary"
+                      hide-details
+                      density="compact"
+                      :indeterminate="isSelectionIndeterminate"
+                      :model-value="isAllSelected"
+                      @update:model-value="toggleSelectAll"
+                    />
+                  </th>
+                  <th
+                    v-for="column in currentColumns"
+                    :key="column.key"
+                    class="text-left"
+                  >
+                    {{ column.label }}
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="row in selectedRows" :key="row.id">
+                <tr v-for="row in filteredRows" :key="row.id">
                   <td>
                     <v-checkbox
                       v-model="selectedLabels[tab.value]"
@@ -217,8 +329,12 @@
                       density="compact"
                     />
                   </td>
-                  <td>{{ row.name }}</td>
-                  <td>{{ row.code }}</td>
+                  <td
+                    v-for="column in currentColumns"
+                    :key="column.key"
+                  >
+                    {{ formatCell(row, column.key) }}
+                  </td>
                 </tr>
               </tbody>
             </v-table>
