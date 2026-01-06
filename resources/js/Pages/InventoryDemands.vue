@@ -1,9 +1,9 @@
 <script setup>
 
 /**
- * ConfigDemands - Page component
+ * InventoryDemands - Page component
  *
- * This page enables the user to config the app-wide demands.
+ * This page enables the user to Inventory the app-wide demands.
  *
  */
 
@@ -75,6 +75,7 @@
     // OpenMethods
     const openNewDemandDialog = async () => {
       editForm.reset()
+      editForm.clearErrors()
       editForm.id = null
       editForm.name = ''
       editDialogVisible.value = true
@@ -83,6 +84,7 @@
     }
     const openEditDemandDialog = (item) => {
       editForm.reset()
+      editForm.clearErrors()
       editForm.id = item.id
       editForm.name = item.name
       editDialogVisible.value = true
@@ -92,9 +94,9 @@
     const saveEdit = () => {
       if (!isValidEdit) { return }
       if (editForm.id === null) {
-        editForm.post('/config-demands', editFormOptions)
+        editForm.post('/inventory-demands', editFormOptions)
       } else {
-        editForm.put(`/config-demands/${editForm.id}`, editFormOptions)
+        editForm.put(`/inventory-demands/${editForm.id}`, editFormOptions)
       }
     }
     const cancelEdit = () => {
@@ -102,8 +104,8 @@
     }
     const deleteDemand = () => {
 
-      if (confirm('Do you really want to delete this?')) {
-        editForm.delete(`/config-demands/${editForm.id}`, editFormOptions)
+      if (confirm('Willst du das wirklich löschen?')) {
+        editForm.delete(`/inventory-demands/${editForm.id}`, editFormOptions)
       }
 
     }
@@ -113,7 +115,7 @@
   // #region DemandTable
 
     const tableheaders = ref([
-      { title: 'Name', key: 'name', minWidth: '90%' },
+      { title: 'Name', key: 'name', minWidth: '100%' },
       { title: 'Bearbeiten', key: 'action', sortable: false },
     ])
 
@@ -127,7 +129,7 @@
 
   <Head title="Anforderungen" />
 
-  <div class="page-configdemands">
+  <div class="page-inventorydemands">
 
     <LcPagebar title="Anforderungen" @back="openInventory" />
 
@@ -145,12 +147,6 @@
       <v-data-table
         :items="demands" :headers="tableheaders"
         hide-default-footer :items-per-page="100">
-        <template v-slot:item.sharepoint_use="{ item }">
-          <span>{{ item.sharepoint_use ? 'Ja' : 'Nein' }}</span>
-        </template>
-        <template v-slot:item.mail_use="{ item }">
-          <span>{{ item.mail_use ? 'Ja' : 'Nein' }}</span>
-        </template>
         <template v-slot:item.action="{ item }">
           <v-btn small color="primary"
             @click="openEditDemandDialog(item)">
@@ -171,8 +167,7 @@
 
       <v-card-text>
         <p class="mb-4">
-          Ein Artikel wird einer bestimmten Anforderung zugeordnet, damit die Bestellung im richtigen Fachbereich ankommt. <br>
-          Du kannst auch festlegen, ob eine Bestellung im Sharepoint hinterlegt wird, oder per E-Mail gesendet werden soll.
+          Ein Artikel wird einer bestimmten Anforderung zugeordnet, damit die Bestellung im richtigen Fachbereich ankommt.
         </p>
         <v-text-field v-model="editForm.name"
           id="id-editdemand-name"

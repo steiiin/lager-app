@@ -19,7 +19,7 @@ return new class extends Migration
             $table->integer('amount_delivered');
             $table->boolean('is_order_open')->default(true);
             $table->json('log');
-            
+
             $table->unique(['item_id', 'prepare_time']);
         });
     }
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('bookings');
+        Schema::dropIfExists('orders');
     }
 };

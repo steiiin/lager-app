@@ -126,8 +126,9 @@
     const hasOpenOrders = computed(() => props.openOrders.length>0)
 
     const groupedOpenOrders = computed(() => {
+
       const groups = props.openOrders.reduce((groups, order) => {
-        const date = order.prepare_time;
+        const date = order.order_date;
 
         // Initialize date group if it doesn't exist
         if (!groups[date]) {
@@ -183,7 +184,7 @@
     });
 
     const getOrderDate = (dstr) => {
-      return new Date(dstr*1000).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
+      return new Date(dstr).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
     }
 
   // #endregion

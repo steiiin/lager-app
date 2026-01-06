@@ -34,17 +34,21 @@
 
 // #endregion
 
-const currentValue = ref(props.modelValue)
-watch(
-  () => props.modelValue,
-  val => (currentValue.value = val),
-  { immediate: true }
-)
+// #region ButtonGroup-Logic
 
-const switchValue = (value) => {
-  currentValue.value = value
-  emit('update:modelValue', value)
-}
+  const currentValue = ref(props.modelValue)
+  watch(
+    () => props.modelValue,
+    val => (currentValue.value = val),
+    { immediate: true }
+  )
+
+  const switchValue = (value) => {
+    currentValue.value = value
+    emit('update:modelValue', value)
+  }
+
+// #endregion
 
 </script>
 <template>
@@ -58,20 +62,20 @@ const switchValue = (value) => {
 <style lang="scss" scoped>
 .lc-button-group {
 
-    margin-top: .5rem;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: .5rem;
-    justify-content: space-between;
+  margin-top: .5rem;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: .5rem;
+  justify-content: space-between;
 
-    &__btn {
+  &__btn {
 
-      height: 4rem;
-      min-width: 6rem;
-      flex: 1;
-
-    }
+    height: 4rem;
+    min-width: 6rem;
+    flex: 1;
 
   }
+
+}
 </style>

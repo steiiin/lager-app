@@ -7,10 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class Demand extends Model
 {
 
-    protected $table = 'demands';
-    protected $fillable = [
-        'name',
-    ];
-    public $timestamps = false;
+  protected $table = 'demands';
+  protected $fillable = [ 'name' ];
+  public $timestamps = false;
 
 }

@@ -30,10 +30,6 @@ const hasOnVehicle = computed(() => props.tags.some(e => e.type == 'onvehicle'))
 const check = computed(() => props.tags.find(e => e.type == 'check'))
 const expiry = computed(() => props.tags.find(e => e.type == 'expiry'))
 
-      // check      (if check is necessary)   'Noch Nie'|'12.12.2025'
-      // expiry     (if expiry is near)       'Kein MHD'|'12-2025'
-      // onvehicle  (if onvehicle>max_stock)
-
 </script>
 <template>
   <div class="lc-inventory-tags">

@@ -28,14 +28,16 @@
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
   import LcItemInput from '@/Components/LcItemInput.vue'
-  import LcStockAmount from '@/Components/LcStockAmount.vue'
   import LcButtonGroup from '@/Components/LcButtonGroup.vue'
   import LcItemSizeDialog from '@/Dialogs/LcItemSizeDialog.vue'
-  import LcInventoryCheckTags from '@/Components/LcInventoryCheckTags.vue'
-  import LcTrend from '@/Components/LcTrend.vue'
+
+  import LcCheckTags from '@/Components/Inventory/LcCheckTags.vue'
+  import LcStockAmount from '@/Components/Inventory/LcStockAmount.vue'
+  import LcTrend from '@/Components/Inventory/LcTrend.vue'
 
   // 3rd party components
   import axios from 'axios'
+import { reactive } from 'vue'
 
 // #endregion
 // #region Props
@@ -61,11 +63,11 @@
   function openWelcome() {
     router.get('/')
   }
-  function openConfigDemands() {
-    router.get('/config-demands')
+  function openInventoryDemands() {
+    router.get('/inventory-demands')
   }
-  function openConfigUsages() {
-    router.get('/config-usages')
+  function openInventoryUsages() {
+    router.get('/inventory-usages')
   }
 
   // #region KeyboardShortcuts
@@ -267,8 +269,8 @@
 
       id: null,
       name: '',
-      search_altnames: '',
-      search_tags: '',
+      name_alt: '',
+      search_size: '',
       demand_id: null,
       location: { room:'', cab:'', exact:'' },
       min_stock: 0,
@@ -298,10 +300,6 @@
       },
     }
 
-    // Stats
-    const itemStats = ref({ nostats: true })
-    const itemStatsLoading = ref(false)
-
     // OpenMethods
     const createNew = () => {
 
@@ -311,8 +309,8 @@
 
       itemForm.id = null
       itemForm.name = 'Neuer Artikel'
-      itemForm.search_altnames = ''
-      itemForm.search_tags = ''
+      itemForm.name_alt = ''
+      itemForm.search_size = ''
       itemForm.demand_id = props.demands[0]?.id
       itemForm.location = {
         room: 'Lagerraum',
@@ -340,9 +338,6 @@
       editorAccordionOpened.value = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
       selectedItem.value = { new: true }
 
-      itemStats.value = { nostats: true }
-      itemStatsLoading.value = false
-
     }
     const editItem = (item) => {
 
@@ -350,8 +345,8 @@
 
       itemForm.id = item.id
       itemForm.name = item.name
-      itemForm.search_altnames = item.search_altnames
-      itemForm.search_tags = item.search_tags
+      itemForm.name_alt = item.name_alt
+      itemForm.search_size = item.search_size
       itemForm.demand_id = item.demand_id
       itemForm.location = {
         room: item.location.room,
@@ -378,7 +373,26 @@
       editorAccordionOpened.value = inCheckMode.value ? [ 4, 5 ] : []
       selectedItem.value = { edit: true }
 
-      loadStats()
+      itemStats.has_stats = item.has_stats
+      itemStats.weeks_total = item.weeks_total
+      itemStats.weeks_recent = item.weeks_recent
+      itemStats.consumption_total_sum = item.consumption_total_sum
+      itemStats.consumption_recent_sum = item.consumption_recent_sum
+      itemStats.adjustment_total_sum = item.adjustment_total_sum
+      itemStats.adjustment_recent_sum = item.adjustment_recent_sum
+      itemStats.consumption_week_max_total = item.consumption_week_max_total
+      itemStats.consumption_week_max_recent = item.consumption_week_max_recent
+      itemStats.booking_max_total = item.booking_max_total
+      itemStats.consumption_week_stddev_total = item.consumption_week_stddev_total
+
+      itemStats.consumption_per_week_total = item.consumption_per_week_total
+      itemStats.consumption_per_week_recent = item.consumption_per_week_recent
+      itemStats.consumption_trend = item.consumption_trend
+      itemStats.adjustment_per_week_total = item.adjustment_per_week_total
+      itemStats.adjustment_per_week_recent = item.adjustment_per_week_recent
+      itemStats.adjustment_trend = item.adjustment_trend
+      itemStats.is_problem_item = item.is_problem_item
+
       loadSpeechIfNecessary()
 
     }
@@ -399,7 +413,7 @@
     }
     const deleteItem = () => {
 
-      if (confirm('Do you really want to delete this?')) {
+      if (confirm('Willst du das wirklich löschen?')) {
         itemForm.delete(`/inventory/${itemForm.id}`, itemFormOptions)
       }
 
@@ -500,28 +514,26 @@
     // #endregion
     // #region Stats-Group
 
-      const loadStats = async () => {
-
-        if (!itemForm.id) { return }
-        itemStatsLoading.value = true
-
-        try
-        {
-          const response = await axios.get('/api/statistic?item=' + itemForm.id);
-          itemStats.value = response.data
-        }
-        catch (err)
-        {
-          console.error('Failed to fetch item stats:', err);
-        }
-        finally
-        {
-          itemStatsLoading.value = false
-        }
-
-      }
-
-      const hasTrend = computed(() => !!itemStats?.value.trend)
+      const itemStats = reactive({
+        has_stats: false,
+        weeks_total: 0,
+        weeks_recent: 0,
+        consumption_total_sum: 0,
+        consumption_recent_sum: 0,
+        adjustment_total_sum: 0,
+        adjustment_recent_sum: 0,
+        consumption_week_max_total: 0,
+        consumption_week_max_recent: 0,
+        booking_max_total: 0,
+        consumption_week_stddev_total: 0,
+        consumption_per_week_total: 0,
+        consumption_per_week_recent: 0,
+        consumption_trend: 0,
+        adjustment_per_week_total: 0,
+        adjustment_per_week_recent: 0,
+        adjustment_trend: 0,
+        is_problem_item: false,
+      })
 
     // #endregion
 
@@ -561,10 +573,10 @@
     <LcPagebar :title="isPwa ? 'Inventar-App' : 'Inventar'" @back="openWelcome" :disabled="isPwa || isItemSelected">
       <template #actions>
         <v-btn v-if="!isItemSelected" variant="flat"
-          @click="openConfigDemands">Anforderungen
+          @click="openInventoryDemands">Anforderungen
         </v-btn>
         <v-btn v-if="!isItemSelected" variant="flat"
-          @click="openConfigUsages">Verwendungen
+          @click="openInventoryUsages">Verwendungen
         </v-btn>
       </template>
     </LcPagebar>
@@ -611,7 +623,7 @@
               :headers="tableCheckNecessary"
               :items-per-page="20">
               <template v-slot:item.tags="{ item }">
-                <LcInventoryCheckTags :tags="item.tags"></LcInventoryCheckTags>
+                <LcCheckTags :tags="item.tags"></LcCheckTags>
               </template>
               <template v-slot:item.action="{ item }">
                 <v-btn small variant="outlined" @click="editItem(item)">
@@ -663,11 +675,11 @@
                 type="error">
               </v-alert>
 
-              <v-text-field v-model="itemForm.search_altnames"
+              <v-text-field v-model="itemForm.name_alt"
                 class="mt-2" label="Alternative Namen" hide-details>
               </v-text-field>
-              <v-text-field v-model="itemForm.search_tags"
-                label="Tags" hide-details>
+              <v-text-field v-model="itemForm.search_size"
+                class="mt-2" label="Größenangabe ('m' oder 'm,6.5')" hide-details>
               </v-text-field>
 
               <v-select v-model="itemForm.demand_id" :items="demands"
@@ -861,61 +873,29 @@
             </v-expansion-panel-text>
           </v-expansion-panel>
 
-          <v-expansion-panel class="mt-1" title="Statistik" color="black" v-if="!itemStats.nostats" v-show="inCheckMode">
+          <v-expansion-panel class="mt-1" title="Statistik" color="black" v-if="itemStats.has_stats && inCheckMode">
             <v-expansion-panel-text>
               <v-container>
-                <v-row >
-                  <v-col cols="3" class="page-inventory__table--result">Bestellt (Quartal)</v-col>
-                  <v-col cols="2">
-                    {{ itemStats.ordered_once ? 'Ja' : 'Nein' }}
-                  </v-col>
-                </v-row>
                 <v-row>
                   <v-col cols="3" class="page-inventory__table--result">Verbrauch/Woche</v-col>
                   <v-col cols="2">
-                    {{ `${itemStats.ordered_stats.amount_perweek.toFixed(2)} ${baseUnit}` }}
-                    <LcTrend :trend="itemStats.trend.trend_perweek" v-if="hasTrend" />
+                    {{ `${itemStats.consumption_per_week_recent.toFixed(2)} ${baseUnit}` }}
+                    <LcTrend :trend="itemStats.consumption_trend" />
                   </v-col>
                   <v-col cols="3" class="page-inventory__table--result">Abweichung/Woche</v-col>
                   <v-col cols="2">
-                    {{ `${itemStats.ordered_stats.changed_perweek.toFixed(2)} ${baseUnit}` }}
+                    {{ `${itemStats.adjustment_per_week_recent.toFixed(2)} ${baseUnit}` }}
+                    <LcTrend :trend="itemStats.adjustment_trend" />
                   </v-col>
                 </v-row>
                 <v-row class="mt-n5">
                   <v-col cols="3" class="page-inventory__table--result">Maximalverbrauch</v-col>
                   <v-col cols="2">
-                    {{ `${itemStats.ordered_stats.max_amount.toFixed(0)} ${baseUnit}` }}
+                    {{ `${itemStats.consumption_week_max_recent.toFixed(0)} ${baseUnit}` }}
                   </v-col>
                   <v-col cols="3" class="page-inventory__table--result">Standardabweichung</v-col>
                   <v-col cols="2">
-                    {{ `${itemStats.ordered_stats.std_deviation.toFixed(2)} ${baseUnit}` }}
-                  </v-col>
-                </v-row>
-
-                <v-row v-if="itemStats.ran_empty.length>0">
-                  <v-col cols="3" class="page-inventory__table--result">
-                    <v-icon icon="mdi-alert-circle" color="error" class="mr-2"></v-icon>Leer Gelaufen</v-col>
-                  <v-col cols="2">
-                    <v-chip v-for="date in itemStats.ran_empty">
-                      {{ getLastCheckedLabel(date) }}</v-chip>
-                  </v-col>
-                </v-row>
-
-                <v-row v-if="itemStats.ordered_much.length>0">
-                  <v-col cols="3" class="page-inventory__table--result">
-                    <v-icon icon="mdi-alert-circle" color="warning" class="mr-2"></v-icon>Viel Bestellt</v-col>
-                  <v-col cols="2">
-                    <v-chip v-for="item in itemStats.ordered_much" style="max-width:999px">
-                      <b>{{ getLastCheckedLabel(item.time) }}</b>: {{ `${item.amount} ${baseUnit}` }}</v-chip>
-                  </v-col>
-                </v-row>
-
-                <v-row v-if="itemStats.changed_much.length>0">
-                  <v-col cols="3" class="page-inventory__table--result">
-                    <v-icon icon="mdi-alert-circle" color="warning" class="mr-2"></v-icon>Viel Korrigiert</v-col>
-                  <v-col cols="2">
-                    <v-chip v-for="item in itemStats.changed_much" style="max-width:999px">
-                      <b>{{ getLastCheckedLabel(item.time) }}</b>: {{ `${item.amount} ${baseUnit}` }}</v-chip>
+                    {{ `${itemStats.consumption_week_stddev_total.toFixed(2)} ${baseUnit}` }}
                   </v-col>
                 </v-row>
 

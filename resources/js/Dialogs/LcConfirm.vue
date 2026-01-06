@@ -18,7 +18,8 @@
 // #region Imports
 
   // Vue composables
-  import { ref } from 'vue'
+  import InputService from '@/Services/InputService'
+import { onMounted, onUnmounted, ref } from 'vue'
 
 // #endregion
 
@@ -55,9 +56,31 @@
     resolvePromise(false)
   }
 
+  const handleEscape = (e) => {
+    if (!isVisible.value) { return }
+    e.canceled = true
+    cancel()
+  }
+
+  const handleEnter = (e) => {
+    if (!isVisible.value) { return }
+    e.canceled = true
+    accept()
+  }
 
 // #endregion
+// #region Lifecycle
 
+  onMounted(() => {
+    InputService.registerEsc(handleEscape)
+    InputService.registerEnter(handleEnter)
+  })
+  onUnmounted(() => {
+    InputService.unregisterEsc(handleEscape)
+    InputService.unregisterEnter(handleEnter)
+  })
+
+// #endregion
 // #region Expose
 
   defineExpose({ open })

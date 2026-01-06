@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\BookInController;
 use App\Http\Controllers\BookOutController;
-use App\Http\Controllers\ConfigDemandsController;
-use App\Http\Controllers\ConfigUsagesController;
+use App\Http\Controllers\InventoryDemandsController;
+use App\Http\Controllers\InventoryUsagesController;
 use App\Http\Controllers\InventoryController;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
@@ -44,8 +44,8 @@ Route::resource('/bookin', BookInController::class);
 #endregion
 #region Inventory
 
-Route::resource('/config-usages', ConfigUsagesController::class);
-Route::resource('/config-demands', ConfigDemandsController::class);
+Route::resource('/inventory-usages', InventoryUsagesController::class);
+Route::resource('/inventory-demands', InventoryDemandsController::class);
 Route::resource('/inventory', InventoryController::class);
 
 #endregion

@@ -17,47 +17,55 @@ use Inertia\Inertia;
 class BookInController extends Controller
 {
 
-    public function index(Request $request)
-    {
+  public function index(Request $request)
+  {
 
-        $openOrders = Order::open()->get();
-        $openOrders->each(function ($order)
+    $open = Order::open()->get()
+      ->each(fn($order) => $order->amount_delivered = $order->amount_desired);
+
+    return Inertia::render('BookIn', [
+      'openOrders' => $open,
+    ]);
+  }
+
+  public function store(Request $request)
+  {
+
+    $request->validate([
+      'orders' => 'required|array',
+      'order.*.id' => 'required|integer|exists:orders,id',
+      'order.*.amount_delivered' => 'required|integer|min:0',
+    ]);
+
+    DB::transaction(function () use ($request) {
+
+      foreach ($request->orders as $openOrder)
+      {
+
+        try
         {
-            $order->amount_delivered = $order->amount_desired;
-        });
-        return Inertia::render('BookIn', [
-            'openOrders' => $openOrders,
-        ]);
 
-    }
+          $id = $openOrder['id'];
+          $delivered = $openOrder['amount_delivered'];
 
-    public function store(Request $request)
-    {
+          $order = Order::findOrFail($id);
+          $order->update([
+            'amount_delivered' => $delivered,
+            'is_order_open' => false,
+          ]);
+          $order->item->increment('current_quantity', $delivered);
 
-        $request->validate([
-            'orders' => 'required|array',
-            'order.*.id' => 'required|integer|exists:orders,id',
-            'order.*.amount_delivered' => 'required|integer|min:0',
-        ]);
-
-        DB::transaction(function () use ($request)
+        }
+        catch (\Throwable $e)
         {
+          // continue loop
+        }
 
-            $revisedData = $request['orders'];
-            foreach($revisedData as $revisedDatum)
-            {
-                $order = Order::findOrFail($revisedDatum['id']);
-                $order->update([
-                    'amount_delivered' => $revisedDatum['amount_delivered'],
-                    'is_order_open' => false,
-                ]);
-                $order->item->increment('current_quantity', $revisedDatum['amount_delivered']);
-            }
+      }
 
-        });
+    });
 
-        return redirect()->route('welcome');
-
-    }
+    return redirect()->route('welcome');
+  }
 
 }

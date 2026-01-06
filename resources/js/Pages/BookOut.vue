@@ -255,7 +255,7 @@
         const feedback = ref(null)
 
         const notifyScan = (item) => {
-          feedback.value.scanSuccess(item)
+          feedback.value.scanInfo(item)
         }
 
         const notifyMaxBook = (item) => {
@@ -269,6 +269,8 @@
   // #endregion
 
   // #region Finish
+
+    const is_booking = ref(false)
 
     // Form
     const bookoutForm = useForm({
@@ -284,7 +286,12 @@
     // Post
     const finishBookOut = () => {
       if (hasItemsInCart.value && hasUsage.value) {
-        bookoutForm.post('/bookout', bookoutFormOptions)
+
+        is_booking.value = true
+        feedback.value.bookSuccess()
+
+        setTimeout(() => bookoutForm.post('/bookout', bookoutFormOptions), 4000)
+
       }
     }
 
@@ -327,7 +334,7 @@
 
   <div class="page-bookout">
 
-    <LcPagebar title="Verbrauch" :disabled="bookoutForm.processing" @back="openWelcome"></LcPagebar>
+    <LcPagebar title="Verbrauch" :disabled="is_booking" @back="openWelcome"></LcPagebar>
 
     <!-- UsagePicker -->
     <section>
@@ -340,7 +347,7 @@
 
       <div v-else class="page-bookout__usage">
 
-        <LcButton v-if="!bookoutForm.processing && !hasItemsInCart"
+        <LcButton v-if="!is_booking && !hasItemsInCart"
           class="page-bookout__usage-clear" prepend-icon="mdi-close"
           @click="clearUsage">
         </LcButton>
@@ -360,7 +367,7 @@
       <LcItemInput ref="itemPicker"
         :cart="bookoutForm.entries"
         :result-specs="{ w: 850, i: 19 }"
-        :disabled="manuallyDialog?.isVisible || bookoutForm.processing"
+        :disabled="manuallyDialog?.isVisible || is_booking"
         @select-item="selectItem"
         @ctrl-finish="finishBookOut"
         @ctrl-expired="selectInternalExpired">
@@ -372,12 +379,12 @@
     <section class="page-bookout__cart" v-if="hasUsage && hasItemsInCart">
 
       <LcButton
-        class="page-bookout__finish" :loading="bookoutForm.processing"
+        class="page-bookout__finish" :loading="is_booking"
         type="primary" prepend-icon="mdi-invoice-check"
-        @click="finishBookOut">{{ bookoutForm.processing ? 'Entnahme buchen ...' : 'Fertig mit der Entnahme' }}
+        @click="finishBookOut">{{ is_booking ? 'Entnahme buchen ...' : 'Fertig mit der Entnahme' }}
       </LcButton>
 
-      <v-data-table v-if="!bookoutForm.processing"
+      <v-data-table v-if="!is_booking"
         :items="preparedCart" :headers="tableHeader" :sort-by="tableSortBy"
         density="compact" :items-per-page="999"
         hide-default-footer class="page-bookout__cart-table">
@@ -394,7 +401,7 @@
     <!-- Dialogs -->
     <LcBookManuallyDialog ref="manuallyDialog" />
     <LcConfirm ref="confirmDialog" />
-    <LcRouteOverlay v-show="isRouting" />
+    <LcRouteOverlay v-show="is_booking" />
     <LcFeedback ref="feedback" />
 
   </div>

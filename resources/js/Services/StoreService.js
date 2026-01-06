@@ -25,13 +25,10 @@ export const useInventoryStore = defineStore('inventory', {
     searchableItems: (state) => {
       return state.items.map(item => ({
         ...item,
-        pp_name: item.name.toLowerCase(),
-        pp_altnames_list: tagCommata(item.search_altnames),
-        pp_tags_list: tagCommata(item.search_tags),
-        pp_search_altnames: item.search_altnames ? item.search_altnames.toLowerCase() : '',
-        pp_search_altnames_list: tagCommata(item.search_altnames, true),
-        pp_search_tags: item.search_tags ? item.search_tags.toLowerCase() : '',
-        pp_search_tags_list: tagCommata(item.search_tags, true),
+        has_altnames: !!item.name_alt,
+        pp_name: item.name.trim().toLowerCase(),
+        pp_name_alt: tagCommata(item.name_alt),
+        pp_search_size: new Set(tagCommata(item.search_size).map(size => size.toString().trim().toLowerCase())),
       }))
     },
     findItemByBarcode: (state) => {
@@ -54,7 +51,7 @@ export const useInventoryStore = defineStore('inventory', {
       this.loading = true;
       try
       {
-        const response = await axios.get('/api/store' + (forInventory ? '-inventory' : ''));
+        const response = await axios.get('/api/inventory-cache?withStats=1');
         this.items = response.data.items
         this.usages = response.data.usages
         this.isLoaded = true

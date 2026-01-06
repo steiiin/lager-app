@@ -9,6 +9,7 @@
  * Props:
  *  - type (String): Defines the visual style. [ 'primary', 'secondary' ]
  *  - loading (Bool): Indicates if a progress indicator is shown.
+ *  - selected (Bool): Defines wether the button is shown pressed.
  *  - icon (String): Renders a "mdi"-icon over the button's text.
  *  - prependIcon (String): Same as "icon", but it is rendered before the text in the same line.
  *
@@ -27,6 +28,7 @@
       default: 'secondary',
       validator: value => ['primary', 'secondary'].includes(value),
     },
+
     selected: {
       type: Boolean,
       default: false,
@@ -35,6 +37,7 @@
       type: Boolean,
       default: false,
     },
+
     icon: String,
     prependIcon: String,
   })

@@ -10,13 +10,13 @@ class BarcodeService
 
   #region Code-Generation
 
-  private static string $PREFIX = "LC-";
+    private static string $PREFIX = "LC-";
 
-  private static function concatCode(int $branch, int $id, int $size = null): string
-  {
-    $code = ($branch * 1000000000) + ($id * 1000) + ($size);
-    return self::$PREFIX . str_pad($code, 10, "0", STR_PAD_LEFT);
-  }
+    private static function concatCode(int $branch, int $id, int $size = 0): string
+    {
+      $code = ($branch * 1000000000) + ($id * 1000) + ($size);
+      return self::$PREFIX . str_pad($code, 10, "0", STR_PAD_LEFT);
+    }
 
   #endregion
 
