@@ -69,6 +69,9 @@ import { reactive } from 'vue'
   function openInventoryUsages() {
     router.get('/inventory-usages')
   }
+  function openInventoryLabels() {
+    router.get('/inventory-labels')
+  }
 
   // #region KeyboardShortcuts
 
@@ -594,6 +597,9 @@ import { reactive } from 'vue'
         </v-btn>
         <v-btn v-if="!isItemSelected" variant="flat"
           @click="openInventoryUsages">Verwendungen
+        </v-btn>
+        <v-btn v-if="!isItemSelected" variant="flat"
+          @click="openInventoryLabels">Labels
         </v-btn>
       </template>
     </LcPagebar>

@@ -5,6 +5,7 @@ use App\Http\Controllers\BookOutController;
 use App\Http\Controllers\InventoryDemandsController;
 use App\Http\Controllers\InventoryUsagesController;
 use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\InventoryLabelsController;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -46,6 +47,7 @@ Route::resource('/bookin', BookInController::class);
 
 Route::resource('/inventory-usages', InventoryUsagesController::class);
 Route::resource('/inventory-demands', InventoryDemandsController::class);
+Route::resource('/inventory-labels', InventoryLabelsController::class);
 Route::resource('/inventory', InventoryController::class);
 
 #endregion
