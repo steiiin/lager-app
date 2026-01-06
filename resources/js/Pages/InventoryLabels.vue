@@ -10,7 +10,7 @@
 // #region Imports
 
   // Vue composables
-  import { ref, computed, nextTick } from 'vue'
+  import { computed, nextTick, reactive, ref } from 'vue'
   import { Head, router, useForm } from '@inertiajs/vue3'
 
   // Local components
@@ -19,7 +19,7 @@
 // #endregion
 // #region Props
 
-  defineProps({
+  const props = defineProps({
     demands: {
       type: Array,
       required: true,
@@ -38,6 +38,29 @@
   function openInventory() {
     router.get('/inventory')
   }
+
+// #endregion
+
+// #region Tabs
+
+  const tabOptions = [
+    { value: 'control', label: 'Controllabels' },
+    { value: 'usage', label: 'Usageslabels' },
+    { value: 'item', label: 'Itemslabels' },
+  ]
+  const selectedTab = ref(tabOptions[0].value)
+
+  const selectedLabels = reactive({
+    control: [],
+    usage: [],
+    item: [],
+  })
+
+  const demandRows = computed(() => props.demands.map((demand, index) => ({
+    id: demand.id ?? index,
+    name: demand.name ?? '',
+    code: demand.code ?? demand.id ?? index + 1,
+  })))
 
 // #endregion
 
@@ -134,6 +157,53 @@
     <LcPagebar title="Labels" @back="openInventory" />
 
     <section>
+
+      <v-tabs
+        v-model="selectedTab"
+        color="primary"
+      >
+        <v-tab
+          v-for="tab in tabOptions"
+          :key="tab.value"
+          :value="tab.value"
+        >
+          {{ tab.label }}
+        </v-tab>
+      </v-tabs>
+
+      <v-window v-model="selectedTab">
+        <v-window-item
+          v-for="tab in tabOptions"
+          :key="tab.value"
+          :value="tab.value"
+        >
+          <v-card flat>
+            <v-table>
+              <thead>
+                <tr>
+                  <th class="text-left">Wählen</th>
+                  <th class="text-left">Name</th>
+                  <th class="text-left">Code</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in demandRows" :key="row.id">
+                  <td>
+                    <v-checkbox
+                      v-model="selectedLabels[tab.value]"
+                      :value="row.id"
+                      hide-details
+                      density="compact"
+                    />
+                  </td>
+                  <td>{{ row.name }}</td>
+                  <td>{{ row.code }}</td>
+                </tr>
+              </tbody>
+            </v-table>
+          </v-card>
+        </v-window-item>
+      </v-window>
 
     </section>
 
