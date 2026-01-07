@@ -11,6 +11,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\BarcodeService;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ApiBarcodeController extends Controller
 {
@@ -19,8 +20,19 @@ class ApiBarcodeController extends Controller
 
     public function index()
     {
-        $barcodes = $this->barcodeService->generateAll();
-        return response()->json($barcodes);
+
+        $pdfBinary = Pdf::loadView('pdf.labels', [
+            'filename'     => "filename",
+            'demand_title' => "test",
+            'demand_date'  => "test",
+            'items'        => [],
+        ])
+        ->setPaper('a4');
+
+        return $pdfBinary->download('invoice.pdf');
+
+        // $barcodes = $this->barcodeService->generateAll();
+        // return response()->json($barcodes);
     }
 
 }
