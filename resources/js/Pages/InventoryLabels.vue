@@ -93,15 +93,15 @@
   const currentColumns = computed(() => {
     if (selectedTab.value === 'item') {
       return [
-        { key: 'name', label: 'Name' },
-        { key: 'code', label: 'Code' },
-        { key: 'demand', label: 'Anforderung' },
-        { key: 'unit', label: 'Einheit' },
+        { key: 'name', title: 'Name' },
+        { key: 'code', title: 'Code' },
+        { key: 'demand', title: 'Anforderung' },
+        { key: 'unit', title: 'Einheit' },
       ]
     }
     return [
-      { key: 'name', label: 'Name' },
-      { key: 'code', label: 'Code' },
+      { key: 'name', title: 'Name' },
+      { key: 'code', title: 'Code' },
     ]
   })
 
@@ -114,17 +114,20 @@
     return currentRows.value.filter((row) => currentColumns.value.some((column) => `${row[column.key] ?? ''}`.toLowerCase().includes(query)))
   })
 
-  const currentSelection = computed(() => selectedLabels[selectedTab.value] ?? [])
+  const selectionModel = computed({
+    get: () => selectedLabels[selectedTab.value] ?? [],
+    set: (value) => {
+      selectedLabels[selectedTab.value] = value
+    },
+  })
 
-  const isAllSelected = computed(() => filteredRows.value.length > 0 && filteredRows.value.every((row) => currentSelection.value.includes(row.id)))
-
-  const isSelectionIndeterminate = computed(() => currentSelection.value.length > 0 && !isAllSelected.value)
+  const isAllSelected = computed(() => filteredRows.value.length > 0 && filteredRows.value.every((row) => selectionModel.value.includes(row.id)))
 
   const toggleSelectAll = (value) => {
     if (value) {
-      selectedLabels[selectedTab.value] = filteredRows.value.map((row) => row.id)
+      selectionModel.value = filteredRows.value.map((row) => row.id)
     } else {
-      selectedLabels[selectedTab.value] = []
+      selectionModel.value = []
     }
   }
 
@@ -197,38 +200,17 @@
 
             </div>
 
-            <v-table striped="even">
-
-              <thead>
-                <tr>
-                  <th class="text-left">
-
-                    <v-checkbox class="ma-0" color="primary" hide-details density="compact"
-                      :indeterminate="isSelectionIndeterminate" :model-value="isAllSelected"
-                      @update:model-value="toggleSelectAll">
-                    </v-checkbox>
-
-                  </th>
-                  <th v-for="column in currentColumns" :key="column.key" class="text-left font-weight-bold">
-                    {{ column.label }}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="row in filteredRows" :key="row.id">
-                  <td>
-
-                    <v-checkbox v-model="selectedLabels[tab.value]" :value="row.id"
-                      hide-details density="compact">
-                    </v-checkbox>
-
-                  </td>
-                  <td v-for="column in currentColumns" :key="column.key">
-                    {{ row[column.key] }}
-                  </td>
-                </tr>
-              </tbody>
-            </v-table>
+            <v-data-table-virtual
+              v-model:selected="selectionModel"
+              :headers="currentColumns"
+              :items="filteredRows"
+              item-value="id"
+              show-select
+              fixed-header
+              height="560"
+              density="compact"
+              hide-default-footer>
+            </v-data-table-virtual>
           </v-card>
         </v-window-item>
       </v-window>
