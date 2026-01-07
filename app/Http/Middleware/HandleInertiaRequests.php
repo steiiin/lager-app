@@ -16,7 +16,7 @@ class HandleInertiaRequests extends Middleware
 
     public function rootView(Request $request): string
     {
-        if ($request->is('inventory') || $request->is('inventory/*')) {
+        if ($request->is('inventory*') || $request->is('inventory/*')) {
             return 'inventory';
         }
         return $this->rootView; // 'app'

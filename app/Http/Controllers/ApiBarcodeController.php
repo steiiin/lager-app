@@ -20,19 +20,8 @@ class ApiBarcodeController extends Controller
 
     public function index()
     {
-
-        $pdfBinary = Pdf::loadView('pdf.labels', [
-            'filename'     => "filename",
-            'demand_title' => "test",
-            'demand_date'  => "test",
-            'items'        => [],
-        ])
-        ->setPaper('a4');
-
-        return $pdfBinary->download('invoice.pdf');
-
-        // $barcodes = $this->barcodeService->generateAll();
-        // return response()->json($barcodes);
+        $barcodes = $this->barcodeService->generateAll();
+        return response()->json($barcodes);
     }
 
 }

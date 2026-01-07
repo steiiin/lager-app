@@ -11,144 +11,74 @@
 
 	<style type="text/css">
 
+ 		@font-face {
+			font-family: 'Barcode';
+			font-style: normal;
+			font-weight: normal;
+			src: url('{{ public_path("assets/fonts/barcode-font.ttf") }}') format('truetype');
+    }
+
 		@page {
 			size: 210mm 297mm;
 			margin: 20mm;
 		}
 
 		body {
-			font-family: sans-serif;
+			font-family: 'DejaVu Sans';
+			white-space: collapse;
+			font-size: 0;
+			padding: 0; margin: 0;
 		}
 
-		.part-head {
+		body .label {
+			display: inline-block;
+		}
+
+		.label {
+			border-left: 1px dotted black;
+			border-top: 1px dotted black;
+			width: 75mm; height: 25mm;
+			position: relative;
+			top: 0; left: 0;
+		}
+
+		.label .name {
 			position: absolute;
-			font-size: 3mm;
+			top: 3mm; left: 5mm; width: 65mm; height: 6mm;
+			font-size: 4mm;
+			letter-spacing: -1px;
+			overflow: hidden;
 		}
-
-		.part-content {
+		.label .barcode {
 			position: absolute;
-			font-size: 4mm; font-family: serif;
+			top: 9mm; left: 5mm;
+			font-size: 8.5mm;
+			font-family: 'Barcode';
+			transform: scaleY(1.6);
+			transform-origin: 0 0;
 		}
 
-		.qm-path {
-			left: 0mm; top: 0mm;
+
+		.label .item-size {
+			position: absolute;
+			left: 54mm; top: 11.5mm;
+			width: 20mm; text-align: center;
+			font-size: 3.5mm; font-weight: bold;
 		}
 
-		.qm-title {
-			left: 0mm; top: 7mm;
-			font-weight: bold;
+		.label .ctrl-symbol {
+			position: absolute;
+			left: 5mm; top: 9.5mm;
+			height: 10.5mm; width: 10.5mm;
 		}
 
-		.qm-logo {
-			right: 0mm; top: 0mm;
-			width: 40mm; height: 12mm;
+		.label-ctrl .name {
+			width: 50mm;
 		}
 
-		table, tr, td, th, thead, tbody {
-			padding: 0;
-		}
-
-		.anf-info {
-			left: 0mm; right: 0mm; top: 14mm;
-			width: 170mm;
-			border: 1px solid black;
-			border-collapse: collapse;
-		}
-
-    .anf-info td {
-      height: 11mm;
-    }
-
-		.anf-info .title,
-		.anf-info .date {
-			font-size: 4mm; font-weight: bold;
-		}
-
-		.anf-info .title {
-			padding-left: 3mm;
-		}
-
-		.anf-info .date {
-			width: 55mm;
-			border-left: 1px solid black;
-			text-align: center;
-		}
-
-		.anf-data {
-			left: 0mm; right: 0mm; top: 26mm;
-			width: 170mm;
-			border: 1px solid black;
-			border-collapse: collapse;
-		}
-
-		.anf-data thead {
-			height: 7mm;
-			display: table-header-group;
-		}
-
-		.anf-data thead,
-		.anf-data td {
-			border-bottom: 1px solid black;
-		}
-
-		.anf-data tbody tr {
-			text-align: center;
-			page-break-inside: avoid;
-		}
-
-    .anf-data th {
-      height: 7mm;
-    }
-
-    .anf-data td {
-      height: 9mm;
-    }
-
-		.anf-data thead .col-amount,
-		.anf-data thead .col-ok,
-		.anf-data thead .col-change,
-		.anf-data tbody .col-amount,
-		.anf-data tbody .col-ok,
-		.anf-data tbody .col-change {
-			border-left: 1px solid black;
-		}
-
-		.anf-data thead .col-name,
-		.anf-data thead .col-amount {
-			background-color: #ccc;
-		}
-
-		.anf-data thead .col-name,
-		.anf-data tbody .col-name {
-			text-align: left;
-			padding-left: 3mm;
-		}
-
-		.anf-data thead .col-amount,
-		.anf-data tbody .col-amount {
-			width: 38mm;
-		}
-
-		.anf-data thead .col-ok,
-		.anf-data thead .col-change {
-			background-color: #eee;
-		}
-
-		.anf-data thead .col-ok,
-		.anf-data tbody .col-ok {
-			width: 20mm;
-		}
-
-		.anf-data thead .col-change,
-		.anf-data tbody .col-change {
-			width: 28mm;
-		}
-
-		.anf-data tbody .col-ok--box {
-			border: 1px solid black;
-			height: 5mm;
-			width: 5mm;
-			margin: auto;
+		.label-ctrl .name,
+		.label-ctrl .barcode {
+			left: 20mm;
 		}
 
 	</style>
@@ -157,43 +87,24 @@
 </head>
 <body>
 
-	<div class="part-head qm-path">Malteser Hilfsdienst/Rettungsdienst/Region NO/Bezirk Dresden/<br>Rettungsdienst Arbeitsdokument</div>
-	<div class="part-head qm-title">FO RD NO DD 60 VA04 2.7 Bedarfsliste</div>
-	<img class="part-head qm-logo" src="{{ public_path('/assets/mltsr-logo.png') }}">
+	@foreach($labels as $label)
+		<div class="label label-{{ $label['type'] }}">
 
-	<table class="part-head anf-info">
-		<tr>
-			<td class="title" style="font-family: 'barcodefont'">
-				{{ $demand_title }} olla
-			</td>
-			<td class="date">
-				{{ $demand_date }}
-			</td>
-		</tr>
-	</table>
+			<div class="name">{{ $label['name'] }}</div>
+			<div class="barcode">*{{ $label['code'] }}*</div>
 
-	<table class="part-content anf-data">
-		<thead>
-			<tr>
-				<th class="col-name">Was soll bestellt werden?</th>
-				<th class="col-amount">Wieviel?</th>
-				<th class="col-ok">Gepackt?</th>
-				<th class="col-change">Änderungen</th>
-			</tr>
-		</thead>
-		<tbody>
-      @foreach($items as $item)
-        <tr>
-          <td class="col-name">{{ $item['name'] }}</td>
-          <td class="col-amount">{{ $item['amount'] }}</td>
-          <td class="col-ok">
-            <div class="col-ok--box">&nbsp;</div>
-          </td>
-          <td class="col-change">&nbsp;</td>
-        </tr>
-      @endforeach
-		</tbody>
-	</table>
+			@if ($label['type'] == 'item')
+
+				<div class="item-size">{{ $label['size'] }}</div>
+
+			@elseif ($label['type'] == 'ctrl')
+
+				<img class="ctrl-symbol" src="{{ public_path('/assets/pdfs/' . $label['symbol'] . '.svg') }}">
+
+			@endif
+
+		</div>
+	@endforeach
 
 </body>
 </html>

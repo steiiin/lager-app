@@ -15,6 +15,8 @@
 
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
+  import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
+  import axios from 'axios'
 
 // #endregion
 // #region Props
@@ -119,6 +121,7 @@
       if (selectedTab.value === 'ctrl') { return printForm.ctrl ?? [] }
       if (selectedTab.value === 'usage') { return printForm.usage ?? [] }
       if (selectedTab.value === 'item') { return printForm.item ?? [] }
+
       return []
     },
     set: (value) => {
@@ -132,29 +135,62 @@
 
 // #region Print
 
-  const printLabels = () => {
-    debugger
-  }
+  const processing = ref(false)
 
-// #endregion
+  const printLabels = async () => {
 
-// #region Demand-Logic
+    processing.value = true
 
-  // #region EditForm
+    try
+    {
 
-    const editForm = useForm({
-      id: null,
-      name: '',
-    })
-    const editFormOptions = {
-      preserveScroll: true,
-      onSuccess: () => {
-        router.reload({ only: ['demands'] })
-        editDialogVisible.value = false
-      },
+      const response = await axios.post(
+        route('inventory-labels.store'),
+        {
+          ctrl: printForm.ctrl,
+          usage: printForm.usage,
+          item: printForm.item,
+        },
+        {
+          responseType: 'blob',
+        }
+      )
+
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'labels.pdf')
+      document.body.appendChild(link)
+      link.click()
+
+    }
+    finally
+    {
+      processing.value = false
     }
 
-  // #endregion
+  }
+
+  const download = async () => {
+    const response = await axios.post(
+        route('labels.store'),
+        {
+            ctrl: form.ctrl,
+            usage: form.usage,
+            item: form.item,
+        },
+        {
+            responseType: 'blob',
+        }
+    )
+
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', 'invoice.pdf')
+    document.body.appendChild(link)
+    link.click()
+}
 
 // #endregion
 
@@ -170,7 +206,6 @@
 
     <section>
 
-
       <div class="d-flex flex-wrap ga-4 py-4 align-center">
 
         <v-text-field v-model="filter" label="Filtern"
@@ -183,7 +218,6 @@
         </v-btn>
 
       </div>
-
 
       <v-tabs v-model="selectedTab"
         color="black" align-tabs="center" fixed-tabs>
@@ -201,7 +235,7 @@
 
             <v-data-table-virtual
               v-if="selectedTab === tab.value"
-              v-model:selected="selectionModel"
+              v-model="selectionModel"
               :headers="currentColumns"
               :items="filteredRows"
               item-value="id"
@@ -220,5 +254,7 @@
     </section>
 
   </div>
+
+  <LcRouteOverlay v-if="processing"></LcRouteOverlay>
 
 </template>

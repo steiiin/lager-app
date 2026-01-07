@@ -9,12 +9,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Demand;
-use App\Models\Item;
 use App\Services\BarcodeService;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Collection;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Inertia\Inertia;
 
 class InventoryLabelsController extends Controller
@@ -34,45 +32,96 @@ class InventoryLabelsController extends Controller
   {
 
     $request->validate([
-      'name' => [ 'required', 'string', 'max:255',
-        Rule::unique('demands')
-          ->where(fn ($query) => $query->whereRaw('LOWER(name) = ?', [strtolower(request('name'))])) ]],
-    [ 'name.unique' => 'Diese Anforderung gibt es schon.' ]);
+      'ctrl' => 'sometimes|array',
+      'usage' => 'sometimes|array',
+      'item' => 'sometimes|array',
+    ]);
 
-    Demand::create($request->all());
-    return redirect()->route('inventory-demands.index');
+    $labels = $this->mapSelectionForPdf($request->ctrl, $request->usage, $request->item);
+
+    $pdfBinary = Pdf::loadView('pdf.labels', [
+      'filename' => "Labels",
+      'labels'   => $labels,
+    ])
+    ->setPaper('a4');
+    return $pdfBinary->download('invoice.pdf');
+
   }
 
-  public function update(Request $request, $id)
+  // ####################################################################################
+
+  private function mapBatch(?Collection $batch, array $codes, callable $mapFn): Collection
   {
-
-    $request->validate([
-      'name' => [ 'required', 'string', 'max:255',
-        Rule::unique('demands')
-          ->ignore($id)
-          ->where(fn ($query) => $query->whereRaw('LOWER(name) = ?', [strtolower(request('name'))])) ]],
-      [ 'name.unique' => 'Diese Anforderung gibt es schon.' ]
-    );
-
-    $demand = Demand::findOrFail($id);
-    $demand->update($request->all());
-
-    return redirect()->route('inventory-demands.index');
-  }
-
-  public function destroy($id)
-  {
-
-    $isUsed = Item::where('demand_id', $id)->exists();
-    if ($isUsed) {
-      throw ValidationException::withMessages([
-        'demand' => ['Diese Anforderung wird noch für einen Artikel benutzt.'],
-      ]);
+    $map = collect([]);
+    if (count($codes) > 0)
+    {
+      foreach ($codes as $code)
+      {
+        $org = $batch->firstWhere('code', $code);
+        if ($org != null)
+        {
+          $label = $mapFn($org);
+          if ($label != null) {
+            $map->push($label);
+          }
+        }
+      }
     }
-
-    $demand = Demand::findOrFail($id);
-    $demand->delete();
-
-    return redirect()->route('inventory-demands.index');
+    return $map;
   }
+
+  private function mapCtrl(array $ctrl): array|null
+  {
+
+    $name = "";
+    if ($ctrl['name'] == "finish") { $name = "Buchung abschließen"; }
+    else if ($ctrl['name'] == "expired") { $name = "Als Verfall buchen"; }
+    else { return null; }
+
+    return [
+      "type" => "ctrl",
+      "name" => $name,
+      "code" => $ctrl['code'],
+      "symbol" => "check-bold",
+    ];
+
+  }
+
+  private function mapUsage(array $usage): array
+  {
+    return [
+      "type" => "ctrl",
+      "name" => $usage['name'],
+      "code" => $usage['code'],
+      "symbol" => "truck-outline",
+    ];
+  }
+
+  private function mapItem(array $item): array
+  {
+    return [
+      "type" => "item",
+      "name" => $item['name'],
+      "code" => $item['code'],
+      "size" => $item['unit'],
+    ];
+  }
+
+
+  private function mapSelectionForPdf(array $ctrl, array $usage, array $item): Collection
+  {
+
+    $barcodeService = new BarcodeService();
+    $ctrlBatch = $barcodeService->generateCtrlBatch();
+    $usagesBatch = $barcodeService->generateUsagesBatch();
+    $itemsBatch = $barcodeService->generateItemsBatch();
+
+    $ctrlLabels = $this->mapBatch($ctrlBatch, $ctrl, [ $this, 'mapCtrl' ]);
+    $usageLabels = $this->mapBatch($usagesBatch, $usage, [ $this, 'mapUsage' ]);
+    $itemLabels = $this->mapBatch($itemsBatch, $item, [ $this, 'mapItem' ]);
+
+    return $ctrlLabels->merge($usageLabels)->merge($itemLabels);
+
+  }
+
 }

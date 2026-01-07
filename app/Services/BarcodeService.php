@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Item;
 use App\Models\Usage;
+use Illuminate\Support\Collection;
 
 class BarcodeService
 {
@@ -41,12 +42,12 @@ class BarcodeService
 
     // ##########################################
 
-    public static function generateCtrlBatch(): Array
+    public static function generateCtrlBatch(): Collection
     {
-      return [
+      return collect([
         [ "name" => "finish", "code" => self::generateCtrlFinish() ],
         [ "name" => "expired", "code" => self::generateCtrlExpired() ],
-      ];
+      ]);
     }
 
   // #endregion
@@ -60,7 +61,7 @@ class BarcodeService
 
     // ##########################################
 
-    public static function generateUsagesBatch(): Array
+    public static function generateUsagesBatch(): Collection
     {
       $codes = [];
       foreach (Usage::all() as $usage)
@@ -70,7 +71,7 @@ class BarcodeService
           "code" => self::generateUsage($usage->id),
         ];
       }
-      return $codes;
+      return collect($codes);
     }
 
   // #endregion
@@ -84,7 +85,7 @@ class BarcodeService
 
     // ##########################################
 
-    public static function generateItemsBatch(): Array
+    public static function generateItemsBatch(): Collection
     {
 
       $items = Item::with(['sizes', 'demand'])->get();
@@ -102,7 +103,7 @@ class BarcodeService
         });
       });
 
-      return $codes->values()->toArray();
+      return $codes->values();
 
     }
 
