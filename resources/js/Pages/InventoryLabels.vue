@@ -58,12 +58,6 @@
   ]
   const selectedTab = ref(tabOptions[0].value)
 
-  const selectedLabels = reactive({
-    control: [],
-    usage: [],
-    item: [],
-  })
-
   const ctrlRows = computed(() => props.ctrl.map((ctrl) => ({
     id: ctrl.code ?? ctrl.name,
     name: ctrl.name ?? '',
@@ -115,29 +109,32 @@
   })
 
   const selectionModel = computed({
-    get: () => selectedLabels[selectedTab.value] ?? [],
+    get: () => {
+      if (selectedTab.value === 'ctrl') { return printForm.ctrl ?? [] }
+      if (selectedTab.value === 'usage') { return printForm.usage ?? [] }
+      if (selectedTab.value === 'item') { return printForm.item ?? [] }
+      return []
+    },
     set: (value) => {
-      selectedLabels[selectedTab.value] = value
+      if (selectedTab.value === 'ctrl') { printForm.ctrl = value }
+      if (selectedTab.value === 'usage') { printForm.usage = value }
+      if (selectedTab.value === 'item') { printForm.item = value }
     },
   })
 
-  const isAllSelected = computed(() => filteredRows.value.length > 0 && filteredRows.value.every((row) => selectionModel.value.includes(row.id)))
+// #endregion
 
-  const toggleSelectAll = (value) => {
-    if (value) {
-      selectionModel.value = filteredRows.value.map((row) => row.id)
-    } else {
-      selectionModel.value = []
-    }
-  }
+// #region Print
 
-  watch(() => selectedTab.value, () => {
-    selectedLabels.control.length = 0
-    selectedLabels.usage.length = 0
-    selectedLabels.item.length = 0
-    filter.value = ''
+  const printForm = useForm({
+    ctrl: [],
+    usage: [],
+    item: [],
   })
 
+  const printLabels = () => {
+    debugger
+  }
 
 // #endregion
 
@@ -173,6 +170,21 @@
 
     <section>
 
+
+      <div class="d-flex flex-wrap ga-4 py-4 align-center">
+
+        <v-text-field v-model="filter" label="Filtern"
+          prepend-inner-icon="mdi-magnify" hide-details density="compact"
+          style="max-width: 320px">
+        </v-text-field>
+
+        <v-btn color="primary" variant="text" prepend-icon="mdi-printer"
+          @click="printLabels">Drucken
+        </v-btn>
+
+      </div>
+
+
       <v-tabs v-model="selectedTab"
         color="black" align-tabs="center" fixed-tabs>
 
@@ -187,19 +199,6 @@
 
           <v-card flat>
 
-            <div class="d-flex flex-wrap ga-4 pa-4 align-center">
-
-              <v-text-field v-model="filter" label="Filtern"
-                prepend-inner-icon="mdi-magnify" hide-details density="compact"
-                style="max-width: 320px">
-              </v-text-field>
-
-              <v-btn color="primary" variant="text" prepend-icon="mdi-printer"
-                @click="toggleSelectAll(!isAllSelected)">Drucken
-              </v-btn>
-
-            </div>
-
             <v-data-table-virtual
               v-model:selected="selectionModel"
               :headers="currentColumns"
@@ -211,6 +210,7 @@
               density="compact"
               hide-default-footer>
             </v-data-table-virtual>
+
           </v-card>
         </v-window-item>
       </v-window>
