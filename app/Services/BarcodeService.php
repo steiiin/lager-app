@@ -45,8 +45,8 @@ class BarcodeService
     public static function generateCtrlBatch(): Collection
     {
       return collect([
-        [ "name" => "finish", "code" => self::generateCtrlFinish() ],
-        [ "name" => "expired", "code" => self::generateCtrlExpired() ],
+        [ "name" => "finish", "code" => self::generateCtrlFinish(), "symbol" => "check" ],
+        [ "name" => "expired", "code" => self::generateCtrlExpired(), "symbol" => "expiry" ],
       ]);
     }
 
@@ -69,6 +69,7 @@ class BarcodeService
         $codes[] = [
           "name" => $usage->name,
           "code" => self::generateUsage($usage->id),
+          "symbol" => "truck",
         ];
       }
       return collect($codes);

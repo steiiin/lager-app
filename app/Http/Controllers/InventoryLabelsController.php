@@ -50,17 +50,21 @@ class InventoryLabelsController extends Controller
 
   // ####################################################################################
 
-  private function mapBatch(?Collection $batch, array $codes, callable $mapFn): Collection
+  private function mapBatch(?Collection $batch, array $entries, callable $mapFn): Collection
   {
     $map = collect([]);
-    if (count($codes) > 0)
+    if (count($entries) > 0)
     {
-      foreach ($codes as $code)
+      foreach ($entries as $entry)
       {
+        $code = is_array($entry) ? ($entry['code'] ?? null) : $entry;
+        $symbol = is_array($entry) ? ($entry['symbol'] ?? null) : null;
+        if ($code == null) { continue; }
+
         $org = $batch->firstWhere('code', $code);
         if ($org != null)
         {
-          $label = $mapFn($org);
+          $label = $mapFn($org, $symbol);
           if ($label != null) {
             $map->push($label);
           }
@@ -70,7 +74,7 @@ class InventoryLabelsController extends Controller
     return $map;
   }
 
-  private function mapCtrl(array $ctrl): array|null
+  private function mapCtrl(array $ctrl, ?string $symbol = null): array|null
   {
 
     $name = "";
@@ -82,22 +86,22 @@ class InventoryLabelsController extends Controller
       "type" => "ctrl",
       "name" => $name,
       "code" => $ctrl['code'],
-      "symbol" => "check-bold",
+      "symbol" => $this->resolveSymbol($symbol, "check"),
     ];
 
   }
 
-  private function mapUsage(array $usage): array
+  private function mapUsage(array $usage, ?string $symbol = null): array
   {
     return [
       "type" => "ctrl",
       "name" => $usage['name'],
       "code" => $usage['code'],
-      "symbol" => "truck-outline",
+      "symbol" => $this->resolveSymbol($symbol, "truck"),
     ];
   }
 
-  private function mapItem(array $item): array
+  private function mapItem(array $item, ?string $symbol = null): array
   {
     return [
       "type" => "item",
@@ -122,6 +126,22 @@ class InventoryLabelsController extends Controller
 
     return $ctrlLabels->merge($usageLabels)->merge($itemLabels);
 
+  }
+
+  private function resolveSymbol(?string $symbol, string $fallback): string
+  {
+    $map = [
+      "check" => "check-bold",
+      "home" => "home-city-outline",
+      "expiry" => "timer-alert-outline",
+      "truck" => "truck-outline",
+    ];
+
+    if ($symbol == null || $symbol === "") {
+      return $map[$fallback] ?? $fallback;
+    }
+
+    return $map[$symbol] ?? $symbol;
   }
 
 }

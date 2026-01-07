@@ -10,7 +10,7 @@
 // #region Imports
 
   // Vue composables
-  import { computed, ref } from 'vue'
+  import { computed, ref, watch } from 'vue'
   import { Head, router, useForm } from '@inertiajs/vue3'
 
   // Local components
@@ -60,16 +60,49 @@
   ]
   const selectedTab = ref(tabOptions[0].value)
 
+  const symbolOptions = ['check', 'home', 'expiry', 'truck']
+
+  const symbolSelections = ref({})
+
+  const normalizeSymbol = (symbol, fallback) => {
+    const mapped = {
+      'check-bold': 'check',
+      'home-city-outline': 'home',
+      'timer-alert-outline': 'expiry',
+      'truck-outline': 'truck',
+    }
+
+    if (!symbol) { return fallback }
+
+    return mapped[symbol] ?? symbol
+  }
+
+  const hydrateSymbols = (rows, fallback) => {
+    rows.forEach((row) => {
+      const id = row.code ?? row.name
+      if (!id) { return }
+      if (!symbolSelections.value[id]) {
+        symbolSelections.value[id] = normalizeSymbol(row.symbol, fallback)
+      }
+    })
+  }
+
+  const updateSymbol = (rowId, value, fallback) => {
+    symbolSelections.value[rowId] = value || fallback
+  }
+
   const ctrlRows = computed(() => props.ctrl.map((ctrl) => ({
     id: ctrl.code ?? ctrl.name,
     name: ctrl.name ?? '',
     code: ctrl.code ?? '',
+    symbol: symbolSelections.value[ctrl.code ?? ctrl.name] ?? normalizeSymbol(ctrl.symbol, 'check'),
   })))
 
   const usagesRows = computed(() => props.usages.map((usage) => ({
     id: usage.code ?? usage.name,
     name: usage.name ?? '',
     code: usage.code ?? '',
+    symbol: symbolSelections.value[usage.code ?? usage.name] ?? normalizeSymbol(usage.symbol, 'truck'),
   })))
 
   const itemsRows = computed(() => props.items.map((item) => ({
@@ -97,6 +130,7 @@
     }
     return [
       { key: 'name', title: 'Name' },
+      { key: 'symbol', title: 'Icon' },
       { key: 'code', title: 'Code' },
     ]
   })
@@ -115,6 +149,18 @@
     usage: [],
     item: [],
   })
+
+  watch(
+    () => props.ctrl,
+    (rows) => hydrateSymbols(rows, 'check'),
+    { immediate: true }
+  )
+
+  watch(
+    () => props.usages,
+    (rows) => hydrateSymbols(rows, 'truck'),
+    { immediate: true }
+  )
 
   const selectionModel = computed({
     get: () => {
@@ -144,11 +190,16 @@
     try
     {
 
+      const mapSelection = (selection, fallback) => selection.map((code) => ({
+        code,
+        symbol: symbolSelections.value[code] ?? fallback,
+      }))
+
       const response = await axios.post(
         route('inventory-labels.store'),
         {
-          ctrl: printForm.ctrl,
-          usage: printForm.usage,
+          ctrl: mapSelection(printForm.ctrl, 'check'),
+          usage: mapSelection(printForm.usage, 'truck'),
           item: printForm.item,
         },
         {
@@ -170,27 +221,6 @@
     }
 
   }
-
-  const download = async () => {
-    const response = await axios.post(
-        route('labels.store'),
-        {
-            ctrl: form.ctrl,
-            usage: form.usage,
-            item: form.item,
-        },
-        {
-            responseType: 'blob',
-        }
-    )
-
-    const url = window.URL.createObjectURL(new Blob([response.data]))
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', 'invoice.pdf')
-    document.body.appendChild(link)
-    link.click()
-}
 
 // #endregion
 
@@ -245,6 +275,16 @@
               density="compact"
               :items-per-page="1000"
               hide-default-footer>
+
+              <template v-if="selectedTab !== 'item'" #item.symbol="{ item }">
+                <v-combobox
+                  :items="symbolOptions"
+                  density="compact"
+                  hide-details
+                  :model-value="symbolSelections[item.code]"
+                  @update:model-value="(value) => updateSymbol(item.code, value, selectedTab === 'ctrl' ? 'check' : 'truck')">
+                </v-combobox>
+              </template>
             </v-data-table-virtual>
 
           </v-card>
