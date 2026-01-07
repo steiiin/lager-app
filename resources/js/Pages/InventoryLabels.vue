@@ -81,9 +81,7 @@
     name: item.name ?? '',
     code: item.code ?? '',
     demand: item.demand ?? '',
-    amount: item.amount ?? '',
     unit: item.unit ?? '',
-    is_default: !!item.is_default,
   })))
 
   const currentRows = computed(() => {
@@ -98,9 +96,7 @@
         { key: 'name', label: 'Name' },
         { key: 'code', label: 'Code' },
         { key: 'demand', label: 'Anforderung' },
-        { key: 'amount', label: 'Menge' },
         { key: 'unit', label: 'Einheit' },
-        { key: 'is_default', label: 'Standard' },
       ]
     }
     return [
@@ -113,11 +109,6 @@
     query: '',
     column: 'all',
   })
-
-  const columnOptions = computed(() => [{ value: 'all', title: 'Alle Spalten' }, ...currentColumns.value.map((column) => ({
-    value: column.key,
-    title: column.label,
-  }))])
 
   const filteredRows = computed(() => {
     if (!filter.query.trim()) { return currentRows.value }
@@ -168,68 +159,6 @@
       },
     }
 
-    const isNewDemand = computed(() => editForm.id === null)
-
-  // #endregion
-  // #region EditDialog
-
-    // DialogProps
-    const editDialogVisible = ref(false)
-    const editDialogTitle = computed(() => {
-      return !editForm.id
-        ? 'Neue Anforderung erstellen'
-        : `${editForm.name} bearbeiten`
-    })
-
-    const isValidEdit = computed(() => editForm.name.trim().length>0)
-
-    // OpenMethods
-    const openNewDemandDialog = async () => {
-      editForm.reset()
-      editForm.clearErrors()
-      editForm.id = null
-      editForm.name = ''
-      editDialogVisible.value = true
-      await nextTick()
-      document.getElementById('id-editdemand-name')?.focus()
-    }
-    const openEditDemandDialog = (item) => {
-      editForm.reset()
-      editForm.clearErrors()
-      editForm.id = item.id
-      editForm.name = item.name
-      editDialogVisible.value = true
-    }
-
-    // ActionMethods
-    const saveEdit = () => {
-      if (!isValidEdit) { return }
-      if (editForm.id === null) {
-        editForm.post('/inventory-demands', editFormOptions)
-      } else {
-        editForm.put(`/inventory-demands/${editForm.id}`, editFormOptions)
-      }
-    }
-    const cancelEdit = () => {
-      editDialogVisible.value = false
-    }
-    const deleteDemand = () => {
-
-      if (confirm('Willst du das wirklich löschen?')) {
-        editForm.delete(`/inventory-demands/${editForm.id}`, editFormOptions)
-      }
-
-    }
-
-  // #endregion
-
-  // #region DemandTable
-
-    const tableheaders = ref([
-      { title: 'Name', key: 'name', minWidth: '100%' },
-      { title: 'Bearbeiten', key: 'action', sortable: false },
-    ])
-
   // #endregion
 
 // #endregion
@@ -276,16 +205,6 @@
                 density="compact"
                 style="max-width: 320px"
               />
-
-              <v-select
-                v-model="filter.column"
-                :items="columnOptions"
-                label="Spalte"
-                hide-details
-                density="compact"
-                style="max-width: 220px"
-              />
-
               <v-btn
                 color="primary"
                 variant="text"
