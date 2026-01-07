@@ -10,7 +10,7 @@
 // #region Imports
 
   // Vue composables
-  import { computed, nextTick, reactive, ref, watch } from 'vue'
+  import { computed, ref } from 'vue'
   import { Head, router, useForm } from '@inertiajs/vue3'
 
   // Local components
@@ -52,7 +52,7 @@
 // #region Tabs
 
   const tabOptions = [
-    { value: 'control', label: 'Ctrl' },
+    { value: 'ctrl', label: 'Ctrl' },
     { value: 'usage', label: 'Verwendungen' },
     { value: 'item', label: 'Artikel' },
   ]
@@ -79,7 +79,7 @@
   })))
 
   const currentRows = computed(() => {
-    if (selectedTab.value === 'control') { return ctrlRows.value }
+    if (selectedTab.value === 'ctrl') { return ctrlRows.value }
     if (selectedTab.value === 'usage') { return usagesRows.value }
     return itemsRows.value
   })
@@ -199,7 +199,8 @@
 
           <v-card flat>
 
-            <v-data-table-virtual
+            <v-data-table
+              :key="selectedTab"
               v-model:selected="selectionModel"
               :headers="currentColumns"
               :items="filteredRows"
@@ -208,8 +209,9 @@
               fixed-header
               height="560"
               density="compact"
+              :items-per-page="1000"
               hide-default-footer>
-            </v-data-table-virtual>
+            </v-data-table>
 
           </v-card>
         </v-window-item>
