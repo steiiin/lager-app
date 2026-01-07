@@ -108,6 +108,12 @@
     return currentRows.value.filter((row) => currentColumns.value.some((column) => `${row[column.key] ?? ''}`.toLowerCase().includes(query)))
   })
 
+  const printForm = useForm({
+    ctrl: [],
+    usage: [],
+    item: [],
+  })
+
   const selectionModel = computed({
     get: () => {
       if (selectedTab.value === 'ctrl') { return printForm.ctrl ?? [] }
@@ -125,12 +131,6 @@
 // #endregion
 
 // #region Print
-
-  const printForm = useForm({
-    ctrl: [],
-    usage: [],
-    item: [],
-  })
 
   const printLabels = () => {
     debugger
