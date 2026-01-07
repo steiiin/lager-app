@@ -87,21 +87,22 @@ class BarcodeService
     public static function generateItemsBatch(): Array
     {
 
-      $items = Item::all();
-      $codes = $items->map(function ($item) {
-        return $item->sizes->mapWithKeys(function ($size) use ($item) {
+      $items = Item::with(['sizes', 'demand'])->get();
+
+      $codes = $items->flatMap(function ($item) {
+        return $item->sizes->map(function ($size) use ($item) {
           return [
             "name" => $item->name,
             "code" => BarcodeService::generateItem($item->id, $size->id),
-            "demand" => $item->demand->name,
+            "demand" => $item->demand?->name,
             "amount" => $size->amount,
             "unit" => $size->unit,
-            "is_default" => $size->is_default === 1,
+            "is_default" => (bool) $size->is_default,
           ];
         });
       });
 
-      return $codes->toArray();
+      return $codes->values()->toArray();
 
     }
 

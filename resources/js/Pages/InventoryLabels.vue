@@ -10,7 +10,7 @@
 // #region Imports
 
   // Vue composables
-  import { computed, nextTick, reactive, ref } from 'vue'
+  import { computed, nextTick, reactive, ref, watch } from 'vue'
   import { Head, router, useForm } from '@inertiajs/vue3'
 
   // Local components
@@ -105,20 +105,13 @@
     ]
   })
 
-  const filter = reactive({
-    query: '',
-    column: 'all',
-  })
+  const filter = ref('')
 
   const filteredRows = computed(() => {
-    if (!filter.query.trim()) { return currentRows.value }
-    const query = filter.query.trim().toLowerCase()
+    if (!filter.value.trim()) { return currentRows.value }
+    const query = filter.value.trim().toLowerCase()
 
-    if (filter.column === 'all') {
-      return currentRows.value.filter((row) => currentColumns.value.some((column) => `${row[column.key] ?? ''}`.toLowerCase().includes(query)))
-    }
-
-    return currentRows.value.filter((row) => `${row[filter.column] ?? ''}`.toLowerCase().includes(query))
+    return currentRows.value.filter((row) => currentColumns.value.some((column) => `${row[column.key] ?? ''}`.toLowerCase().includes(query)))
   })
 
   const currentSelection = computed(() => selectedLabels[selectedTab.value] ?? [])
@@ -135,11 +128,13 @@
     }
   }
 
-  const formatCell = (row, key) => {
-    const value = row[key]
-    if (key === 'is_default') { return value ? 'Ja' : 'Nein' }
-    return value
-  }
+  watch(() => selectedTab.value, () => {
+    selectedLabels.control.length = 0
+    selectedLabels.usage.length = 0
+    selectedLabels.item.length = 0
+    filter.value = ''
+  })
+
 
 // #endregion
 
@@ -175,65 +170,46 @@
 
     <section>
 
-      <v-tabs
-        v-model="selectedTab"
-        color="primary"
-      >
-        <v-tab
-          v-for="tab in tabOptions"
-          :key="tab.value"
-          :value="tab.value"
-        >
+      <v-tabs v-model="selectedTab"
+        color="black" align-tabs="center" fixed-tabs>
+
+        <v-tab v-for="tab in tabOptions" :key="tab.value" :value="tab.value">
           {{ tab.label }}
         </v-tab>
+
       </v-tabs>
 
       <v-window v-model="selectedTab">
-        <v-window-item
-          v-for="tab in tabOptions"
-          :key="tab.value"
-          :value="tab.value"
-        >
+        <v-window-item v-for="tab in tabOptions" :key="tab.value" :value="tab.value">
+
           <v-card flat>
 
             <div class="d-flex flex-wrap ga-4 pa-4 align-center">
-              <v-text-field
-                v-model="filter.query"
-                label="Filtern"
-                prepend-inner-icon="mdi-magnify"
-                hide-details
-                density="compact"
-                style="max-width: 320px"
-              />
-              <v-btn
-                color="primary"
-                variant="text"
-                :prepend-icon="isAllSelected ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline'"
-                @click="toggleSelectAll(!isAllSelected)"
-              >
-                {{ isAllSelected ? 'Alle abwählen' : 'Alle auswählen' }}
+
+              <v-text-field v-model="filter" label="Filtern"
+                prepend-inner-icon="mdi-magnify" hide-details density="compact"
+                style="max-width: 320px">
+              </v-text-field>
+
+              <v-btn color="primary" variant="text" prepend-icon="mdi-printer"
+                @click="toggleSelectAll(!isAllSelected)">Drucken
               </v-btn>
+
             </div>
 
-            <v-table>
+            <v-table striped="even">
+
               <thead>
                 <tr>
                   <th class="text-left">
-                    <v-checkbox
-                      class="ma-0"
-                      color="primary"
-                      hide-details
-                      density="compact"
-                      :indeterminate="isSelectionIndeterminate"
-                      :model-value="isAllSelected"
-                      @update:model-value="toggleSelectAll"
-                    />
+
+                    <v-checkbox class="ma-0" color="primary" hide-details density="compact"
+                      :indeterminate="isSelectionIndeterminate" :model-value="isAllSelected"
+                      @update:model-value="toggleSelectAll">
+                    </v-checkbox>
+
                   </th>
-                  <th
-                    v-for="column in currentColumns"
-                    :key="column.key"
-                    class="text-left"
-                  >
+                  <th v-for="column in currentColumns" :key="column.key" class="text-left font-weight-bold">
                     {{ column.label }}
                   </th>
                 </tr>
@@ -241,18 +217,14 @@
               <tbody>
                 <tr v-for="row in filteredRows" :key="row.id">
                   <td>
-                    <v-checkbox
-                      v-model="selectedLabels[tab.value]"
-                      :value="row.id"
-                      hide-details
-                      density="compact"
-                    />
+
+                    <v-checkbox v-model="selectedLabels[tab.value]" :value="row.id"
+                      hide-details density="compact">
+                    </v-checkbox>
+
                   </td>
-                  <td
-                    v-for="column in currentColumns"
-                    :key="column.key"
-                  >
-                    {{ formatCell(row, column.key) }}
+                  <td v-for="column in currentColumns" :key="column.key">
+                    {{ row[column.key] }}
                   </td>
                 </tr>
               </tbody>
