@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Item;
 use App\Models\Usage;
+use Illuminate\Support\Collection;
 
 class BarcodeService
 {
@@ -41,12 +42,12 @@ class BarcodeService
 
     // ##########################################
 
-    public static function generateCtrlBatch(): Array
+    public static function generateCtrlBatch(): Collection
     {
-      return [
-        self::generateCtrlFinish() => "finish",
-        self::generateCtrlExpired() => "expired",
-      ];
+      return collect([
+        [ "name" => "finish", "code" => self::generateCtrlFinish(), "symbol" => "check" ],
+        [ "name" => "expired", "code" => self::generateCtrlExpired(), "symbol" => "expiry" ],
+      ]);
     }
 
   // #endregion
@@ -60,17 +61,18 @@ class BarcodeService
 
     // ##########################################
 
-    public static function generateUsagesBatch(): Array
+    public static function generateUsagesBatch(): Collection
     {
       $codes = [];
       foreach (Usage::all() as $usage)
       {
-        $codes[self::generateUsage($usage->id)] = [
-          "id" => $usage->id,
+        $codes[] = [
           "name" => $usage->name,
+          "code" => self::generateUsage($usage->id),
+          "symbol" => "truck",
         ];
       }
-      return $codes;
+      return collect($codes);
     }
 
   // #endregion
@@ -84,24 +86,25 @@ class BarcodeService
 
     // ##########################################
 
-    public static function generateItemsBatch(): Array
+    public static function generateItemsBatch(): Collection
     {
 
-      $items = Item::all();
+      $items = Item::with(['sizes', 'demand'])->get();
+
       $codes = $items->flatMap(function ($item) {
-        return $item->sizes->mapWithKeys(function ($size) use ($item) {
-            return [BarcodeService::generateItem($item->id, $size->id) => [
-                "id" => $item->id,
-                "name" => $item->name,
-                "demand" => $item->demand->name,
-                "amount" => $size->amount,
-                "unit" => $size->unit,
-                "isdefault" => $size->is_default === 1,
-            ]];
+        return $item->sizes->map(function ($size) use ($item) {
+          return [
+            "name" => $item->name,
+            "code" => BarcodeService::generateItem($item->id, $size->id),
+            "demand" => $item->demand?->name,
+            "amount" => $size->amount,
+            "unit" => $size->unit,
+            "is_default" => (bool) $size->is_default,
+          ];
         });
       });
 
-      return $codes->toArray();
+      return $codes->values();
 
     }
 

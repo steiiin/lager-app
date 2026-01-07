@@ -11,6 +11,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\BarcodeService;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ApiBarcodeController extends Controller
 {

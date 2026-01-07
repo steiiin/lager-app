@@ -17,7 +17,7 @@
 		}
 
 		body {
-			font-family: sans-serif;
+			font-family: 'DejaVu Sans';
 		}
 
 		.part-head {
@@ -27,11 +27,12 @@
 
 		.part-content {
 			position: absolute;
-			font-size: 4mm; font-family: serif;
+			font-size: 3.5mm; font-family: 'DejaVu Serif';
 		}
 
 		.qm-path {
 			left: 0mm; top: 0mm;
+			line-height: 1;
 		}
 
 		.qm-title {
@@ -159,7 +160,7 @@
 
 	<div class="part-head qm-path">Malteser Hilfsdienst/Rettungsdienst/Region NO/Bezirk Dresden/<br>Rettungsdienst Arbeitsdokument</div>
 	<div class="part-head qm-title">FO RD NO DD 60 VA04 2.7 Bedarfsliste</div>
-	<img class="part-head qm-logo" src="{{ public_path('/assets/mltsr-logo.png') }}">
+	<img class="part-head qm-logo" src="{{ public_path('/assets/pdfs/mltsr-logo.png') }}">
 
 	<table class="part-head anf-info">
 		<tr>
