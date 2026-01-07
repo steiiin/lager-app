@@ -209,8 +209,9 @@
               fixed-header
               height="560"
               density="compact"
+              :items-per-page="1000"
               hide-default-footer>
-            </v-data-table-virtual>
+            </v-data-table>
 
           </v-card>
         </v-window-item>

@@ -17,7 +17,7 @@
 		}
 
 		body {
-			font-family: sans-serif;
+			font-family: 'DejaVu Sans';
 		}
 
 		.part-head {
@@ -27,11 +27,12 @@
 
 		.part-content {
 			position: absolute;
-			font-size: 4mm; font-family: serif;
+			font-size: 3.5mm; font-family: 'DejaVu Serif';
 		}
 
 		.qm-path {
 			left: 0mm; top: 0mm;
+			line-height: 1;
 		}
 
 		.qm-title {
