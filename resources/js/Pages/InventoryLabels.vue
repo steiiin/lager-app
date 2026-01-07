@@ -211,7 +211,7 @@
               density="compact"
               :items-per-page="1000"
               hide-default-footer>
-            </v-data-table>
+            </v-data-table-virtual>
 
           </v-card>
         </v-window-item>
