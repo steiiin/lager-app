@@ -199,8 +199,8 @@
 
           <v-card flat>
 
-            <v-data-table
-              :key="selectedTab"
+            <v-data-table-virtual
+              v-if="selectedTab === tab.value"
               v-model:selected="selectionModel"
               :headers="currentColumns"
               :items="filteredRows"
