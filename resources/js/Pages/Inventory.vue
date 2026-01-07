@@ -618,7 +618,27 @@ import { reactive } from 'vue'
           @create-new="createNew" @select-item="editItem">
         </LcItemInput>
 
-        <!-- DashBoard -->
+        <!-- Dashboard -->
+        <v-card class="mt-2" variant="outlined" v-show="inCheckMode">
+          <v-list-item class="px-6" height="88">
+            <template v-slot:prepend>
+              <v-icon icon="mdi-gauge-low"></v-icon>
+            </template>
+            <template v-slot:title> <b>Entnahme & Insights</b> </template>
+
+            <template v-slot:append>
+              <v-btn v-if="inCheckMode"
+                class="text-none"
+                color="primary"
+                text="DASHBOARD ÖFFNEN"
+                variant="text"
+                slim @click="checkAllNecessaryItems"
+              ></v-btn>
+            </template>
+          </v-list-item>
+        </v-card>
+
+        <!-- CheckBoad -->
         <v-card class="mt-2" variant="outlined" v-show="inCheckMode">
           <v-list-item class="px-6" height="88">
             <template v-slot:prepend>
