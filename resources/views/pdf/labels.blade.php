@@ -163,8 +163,8 @@
 
 	<table class="part-head anf-info">
 		<tr>
-			<td class="title">
-				{{ $demand_title }}
+			<td class="title" style="font-family: 'barcodefont'">
+				{{ $demand_title }} olla
 			</td>
 			<td class="date">
 				{{ $demand_date }}
