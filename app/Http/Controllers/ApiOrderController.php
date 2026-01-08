@@ -16,6 +16,7 @@ use App\Mail\OrderMail;
 use App\Models\Booking;
 use App\Models\Item;
 use App\Models\Order;
+use App\Services\StatisticService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -33,6 +34,20 @@ class ApiOrderController extends Controller
 
     $runId = (string) \Illuminate\Support\Str::uuid();
     $now = CarbonImmutable::now();
+
+
+    /////////////
+
+    $stats = new StatisticService();
+    $xxx = $stats->findLowScanShiftSignals($now->subMonths(3), $now);
+
+    return response()->json([
+      'ok'      => true,
+      'run_id'  => 'xxx',
+      'message' => 'no items need restock.',
+    ], 200);
+
+    //////////////////
 
     try
     {
