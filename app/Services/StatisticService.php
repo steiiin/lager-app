@@ -78,17 +78,23 @@ class StatisticService
 
         $date = CarbonImmutable::parse($dateString);
         if ($dateData['amount_all'] < $dateData['avg_all']) {
-          $signals['all'][] = array_merge($dateData->toArray(), [ "date" => $date, "shift" => $shift ]);
+          $signals['all'][] = array_merge($dateData->toArray(), [
+            "date" => $date->toDateString(),
+            "shift" => $shift,
+          ]);
         }
         else if($dateData['amount_hyg'] < $dateData['avg_hyg']) {
-          $signals['hyg'][] = array_merge($dateData->toArray(), [ "date" => $date, "shift" => $shift ]);
+          $signals['hyg'][] = array_merge($dateData->toArray(), [
+            "date" => $date->toDateString(),
+            "shift" => $shift,
+          ]);
         }
 
       });
 
     });
 
-      $x=0;
+    return $signals;
 
   }
 
