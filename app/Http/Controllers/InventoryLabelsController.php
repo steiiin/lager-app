@@ -50,7 +50,7 @@ class InventoryLabelsController extends Controller
 
   // ####################################################################################
 
-  private function mapBatch(?Collection $batch, array $entries, callable $mapFn): Collection
+  private function mapBatch(Collection $batch, array $entries, callable $mapFn): Collection
   {
     $map = collect([]);
     if (count($entries) > 0)
