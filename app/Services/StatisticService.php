@@ -65,12 +65,12 @@ class StatisticService
   public function findLowScanShiftSignals()
   {
 
-    $to = CarbonImmutable::now();
-    $from = $to->subYear();
+    $to = CarbonImmutable::now()->subDays(4);
+    $from = $to->subYear()->max(Booking::first()->created_at);
 
     $shiftData = $this->collectShiftData($from, $to);
 
-    $signals = [ "all" => [], "hyg" => [] ];
+    $signals = ["all" => [], "hyg" => []];
     $shiftData->each(function ($dates, $shift) use (&$signals) {
 
       $dates = $this->addRollingAvg($dates);
@@ -82,20 +82,16 @@ class StatisticService
             "date" => $date->toDateString(),
             "shift" => $shift,
           ]);
-        }
-        else if($dateData['amount_hyg'] < $dateData['avg_hyg']) {
+        } else if ($dateData['amount_hyg'] < $dateData['avg_hyg']) {
           $signals['hyg'][] = array_merge($dateData->toArray(), [
             "date" => $date->toDateString(),
             "shift" => $shift,
           ]);
         }
-
       });
-
     });
 
     return $signals;
-
   }
 
   // ##########################################################################
@@ -103,7 +99,7 @@ class StatisticService
   private function collectShiftData(CarbonImmutable $from, CarbonImmutable $to): Collection
   {
 
-    $bookings = Booking::whereIn('usage_id', [ 1, 2 ]) // usage_id RTW1 / RTW2
+    $bookings = Booking::whereIn('usage_id', [1, 2]) // usage_id RTW1 / RTW2
       ->where('created_at', '>=', $from)
       ->where('created_at', '<', $to)
       ->orderBy('created_at')
@@ -119,15 +115,17 @@ class StatisticService
       ->all();
 
     $shiftData = collect([]);
-    foreach ($bookings as $booking)
-    {
+    foreach ($bookings as $booking) {
 
       $shift = $this->matchShift($booking);
-      if (!$shift) { continue; }
+      if (!$shift) {
+        continue;
+      }
 
       $shiftName = $shift['name'];
       if (!$shiftData->has($shiftName)) {
-        $shiftData->put($shiftName, collect([])); }
+        $shiftData->put($shiftName, collect([]));
+      }
 
       $dateKey = $shift['date']->toISOString();
       if (!$shiftData[$shiftName]->has($dateKey)) {
@@ -140,12 +138,10 @@ class StatisticService
 
       $shiftData[$shiftName][$dateKey]['bookings']->push($booking);
       $shiftData[$shiftName][$dateKey]['amount_all'] += $booking['amount'];
-      $shiftData[$shiftName][$dateKey]['amount_hyg'] += ($booking['demand']=='Hygiene' ? $booking['amount'] : 0);
-
+      $shiftData[$shiftName][$dateKey]['amount_hyg'] += ($booking['demand'] == 'Hygiene' ? $booking['amount'] : 0);
     }
 
     return $shiftData;
-
   }
 
   private function matchShift(array $booking): ?array
@@ -153,20 +149,18 @@ class StatisticService
     $usage_id = $booking['usage_id'];
     $datetime = $booking['datetime'];
 
-    if ($usage_id == 1)
-    {
+    if ($usage_id == 1) {
 
       // Co1
-      if($datetime->between(
+      if ($datetime->between(
         $datetime->startOfDay()->addMinutes(330),   // 05:30
         $datetime->startOfDay()->addMinutes(1050),  // 17:30
-        )) {
+      )) {
 
         return [
           "name" => "Co1",
           "date" => $datetime->startOfDay()->addMinutes(360),
         ];
-
       }
 
       // CoN
@@ -180,61 +174,99 @@ class StatisticService
           "name" => "CoN",
           "date" => $date,
         ];
-
       }
-
     }
-    if ($usage_id == 2)
-    {
+    if ($usage_id == 2) {
 
       // Co2
-      if($datetime->between(
+      if ($datetime->between(
         $datetime->startOfDay()->addMinutes(390),   // 06:30
         $datetime->startOfDay()->addMinutes(1170),  // 19:30
-        )) {
+      )) {
 
         return [
           "name" => "Co2",
           "date" => $datetime->startOfDay()->addMinutes(420)
         ];
-
       }
-
     }
     return null;
   }
 
-  private function addRollingAvg(Collection $dates)
+  private function addRollingAvg(Collection $dates, int $n = 7, ?string $tz = null): Collection
   {
-
-    $n = 7;
+    $tz   = $tz ?? config('app.timezone', 'UTC'); // e.g. 'Europe/Berlin'
     $half = intdiv($n, 2);
 
-    $values = $dates->values();
-    $keys   = $dates->keys();
+    if ($dates->isEmpty()) {
+      return $dates;
+    }
 
-    $result = $dates->map(function ($item, $key) use ($values, $keys, $half) {
-      $index = $keys->search($key);
+    // 1) Normalize input to a map keyed by local day: Y-m-d
+    $byDay = $dates->mapWithKeys(function ($item, $key) use ($tz) {
+      $dt  = CarbonImmutable::parse($key)->setTimezone($tz);
+      $day = $dt->toDateString(); // local day boundary
 
-      $start  = max(0, $index - $half);
-      $length = min($values->count() - $start, $half * 2 + 1);
+      $arr = $item instanceof Collection ? $item->toArray() : (array) $item;
 
-      $avg_all = $values
-        ->slice($start, $length)
-        ->avg('amount_all');
-      $avg_hyg = $values
-        ->slice($start, $length)
-        ->avg('amount_hyg');
-
-      return collect(array_merge($item->toArray(), [
-        'avg_all' => $avg_all,
-        'avg_hyg' => $avg_hyg,
-      ]));
-
+      return [$day => collect(array_merge([
+        'date'       => $day,
+        'shift_start' => $dt->startOfDay()->toIso8601String(), // optional
+        'amount_all' => 0.0,
+        'amount_hyg' => 0.0,
+      ], [
+        // keep your existing values if present
+        'amount_all' => (float) ($arr['amount_all'] ?? 0),
+        'amount_hyg' => (float) ($arr['amount_hyg'] ?? 0),
+      ], $arr))];
     });
 
-    return $result;
+    // 2) Build a contiguous daily series from min..max day
+    $minDay = CarbonImmutable::parse($byDay->keys()->min(), $tz)->startOfDay();
+    $maxDay = CarbonImmutable::parse($byDay->keys()->max(), $tz)->startOfDay();
 
+    $series = collect();
+    for ($d = $minDay; $d->lte($maxDay); $d = $d->addDay()) {
+      $k = $d->toDateString();
+
+      $series[$k] = $byDay->get($k, collect([
+        'date'       => $k,
+        'shift_start' => $d->toIso8601String(), // optional
+        'amount_all' => 0.0,
+        'amount_hyg' => 0.0,
+      ]));
+    }
+
+    // 3) Rolling avg over day windows; divide by day count (not entry count)
+    return $series->map(function (Collection $item, string $dayKey) use ($series, $half, $tz) {
+      $center = CarbonImmutable::parse($dayKey, $tz)->startOfDay();
+
+      $start = $center->subDays($half);
+      $end   = $center->addDays($half);
+
+      $sumAll = 0.0;
+      $sumHyg = 0.0;
+      $dayCount = 0;
+
+      for ($d = $start; $d->lte($end); $d = $d->addDay()) {
+        $k = $d->toDateString();
+
+        // Only count days that exist in the series (edges => smaller window)
+        if (!$series->has($k)) {
+          continue;
+        }
+
+        $row = $series[$k];
+        $sumAll += (float) ($row['amount_all'] ?? 0);
+        $sumHyg += (float) ($row['amount_hyg'] ?? 0);
+        $dayCount++;
+      }
+
+      return $item->merge([
+        'avg_all' => $dayCount > 0 ? $sumAll / $dayCount : 0.0,
+        'avg_hyg' => $dayCount > 0 ? $sumHyg / $dayCount : 0.0,
+      ]);
+    });
   }
 
   // ##########################################################################
@@ -522,5 +554,4 @@ class StatisticService
     $dev = array_map(fn($v) => abs($v - $median), $values);
     return $this->median($dev);
   }
-
 }
