@@ -37,21 +37,21 @@
 		.label {
 			border-left: 1px dotted black;
 			border-top: 1px dotted black;
-			width: 75mm; height: 25mm;
+			width: 75.5mm; height: 21mm;
 			position: relative;
 			top: 0; left: 0;
 		}
 
 		.label .name {
 			position: absolute;
-			top: 3mm; left: 5mm; width: 65mm; height: 6mm;
+			top: 1.5mm; left: 5mm; width: 65mm; height: 6mm;
 			font-size: 4mm;
 			letter-spacing: -1px;
 			overflow: hidden;
 		}
 		.label .barcode {
 			position: absolute;
-			top: 9mm; left: 5mm;
+			top: 7mm; left: 5mm;
 			font-size: 8.5mm;
 			font-family: 'Barcode';
 			transform: scaleY(1.6);
@@ -68,7 +68,7 @@
 
 		.label .ctrl-symbol {
 			position: absolute;
-			left: 5mm; top: 9.5mm;
+			left: 5mm; top: 7.5mm;
 			height: 10.5mm; width: 10.5mm;
 		}
 
