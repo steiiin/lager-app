@@ -72,6 +72,9 @@ import { reactive } from 'vue'
   function openInventoryLabels() {
     router.get('/inventory-labels')
   }
+  function openInventoryInsights() {
+    router.get('/inventory-insights')
+  }
 
   // #region KeyboardShortcuts
 
@@ -632,7 +635,7 @@ import { reactive } from 'vue'
                 color="primary"
                 text="DASHBOARD ÖFFNEN"
                 variant="text"
-                slim @click="checkAllNecessaryItems"
+                slim @click="openInventoryInsights"
               ></v-btn>
             </template>
           </v-list-item>
