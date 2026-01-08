@@ -9,6 +9,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\StatisticService;
 use Inertia\Inertia;
 
 class InventoryInsightsController extends Controller
@@ -16,6 +17,10 @@ class InventoryInsightsController extends Controller
 
   public function index()
   {
-    return Inertia::render('InventoryInsights');
+    $statisticService = new StatisticService();
+
+    return Inertia::render('InventoryInsights', [
+      'lowScanSignals' => $statisticService->findLowScanShiftSignals(),
+    ]);
   }
 }
