@@ -36,7 +36,7 @@
 
 		.label {
 			border-left: 1px dotted black;
-			border-top: 1px dotted black;
+			border-bottom: 1px dotted black;
 			width: 75.5mm; height: 21mm;
 			position: relative;
 			top: 0; left: 0;
