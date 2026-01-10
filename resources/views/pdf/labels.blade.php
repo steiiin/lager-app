@@ -61,9 +61,16 @@
 
 		.label .item-size {
 			position: absolute;
-			left: 54mm; top: 11.5mm;
-			width: 20mm; text-align: center;
+			right: 2.5mm; top: 11.5mm;
+			width: 17.5mm; text-align: center;
 			font-size: 3.5mm; font-weight: bold;
+		}
+
+		.label .item-size-warn {
+			position: absolute;
+ 			right: 2.5mm; top: 7.6mm;
+			height: 10.2mm; width: 17.5mm;
+			background-color: lightgray;
 		}
 
 		.label .ctrl-symbol {
@@ -94,6 +101,12 @@
 			<div class="barcode">*{{ $label['code'] }}*</div>
 
 			@if ($label['type'] == 'item')
+
+				@if ($label['size_warn'])
+
+					<div class="item-size-warn">&nbsp;</div>
+
+				@endif
 
 				<div class="item-size">{{ $label['size'] }}</div>
 

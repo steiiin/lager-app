@@ -108,6 +108,7 @@ class InventoryLabelsController extends Controller
       "name" => $item['name'],
       "code" => $item['code'],
       "size" => $item['unit'],
+      "size_warn" => ($item['amount'] > 1),
     ];
   }
 
