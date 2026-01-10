@@ -39,7 +39,7 @@
 			border-top: 1px dotted black;
 			width: 75.5mm; height: 21mm;
 			position: relative;
-			top: 0; left: 0;
+			top: 0; left: 0; margin-left: 1mm;
 		}
 
 		.label .name {
