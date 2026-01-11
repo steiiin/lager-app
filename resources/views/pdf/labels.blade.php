@@ -70,7 +70,11 @@
 			position: absolute;
  			right: 2.5mm; top: 7.6mm;
 			height: 10.2mm; width: 17.5mm;
-			background-color: lightgray;
+			background-color: black;
+		}
+
+		.label .item-size.warn {
+			color: white;
 		}
 
 		.label .ctrl-symbol {
@@ -105,10 +109,15 @@
 				@if ($label['size_warn'])
 
 					<div class="item-size-warn">&nbsp;</div>
+					<div class="item-size warn">{{ $label['size'] }}</div>
+
+				@else
+
+					<div class="item-size">{{ $label['size'] }}</div>
 
 				@endif
 
-				<div class="item-size">{{ $label['size'] }}</div>
+
 
 			@elseif ($label['type'] == 'ctrl')
 
