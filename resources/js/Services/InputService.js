@@ -19,13 +19,41 @@ const InputService = {
 
   binding: null,
   trackBuffer: '',
-  trackTimer: null,
+  lastKeyTime: null,
+  scanThresholdMs: 50,
 
   idleTimer: null,
+
+  flushBuffer() {
+    if (this.trackBuffer.startsWith('LC-')) {
+      this.runCallbacks('scan', { text: this.trackBuffer })
+    }
+    else if (this.trackBuffer.length === 1)
+    {
+      if (state.handlers.hasOwnProperty(this.trackBuffer)) {
+        this.runCallbacks(this.trackBuffer)
+      } else {
+        this.runCallbacks('keys', { text: this.trackBuffer })
+      }
+    }
+    else if (this.trackBuffer.length > 0)
+    {
+      this.runCallbacks('keys', { text: this.trackBuffer })
+    }
+    this.trackBuffer = ''
+  },
 
   trackInput (event) {
 
     this.trackIdle()
+
+    if (this.lastKeyTime !== null
+      && event.timeStamp - this.lastKeyTime > this.scanThresholdMs
+      && this.trackBuffer.length > 0
+    ) {
+      this.flushBuffer()
+    }
+    this.lastKeyTime = event.timeStamp
 
     if (event.key.length === 1) {
       this.trackBuffer += event.key
@@ -36,39 +64,16 @@ const InputService = {
         this.runCallbacks('Enter')
       }
       this.trackBuffer = ''
-      clearTimeout(this.trackTimer)
+      this.lastKeyTime = null
       return
     } else {
       if (state.handlers.hasOwnProperty(event.key)) {
         this.runCallbacks(event.key)
         this.trackBuffer = ''
-        clearTimeout(this.trackTimer)
+        this.lastKeyTime = null
         return
       }
     }
-
-    if (this.trackTimer) {
-      clearTimeout(this.trackTimer)
-    }
-    this.trackTimer = setTimeout(() => {
-
-      if (this.trackBuffer.startsWith('LC-')) {
-        this.runCallbacks('scan', { text: this.trackBuffer })
-      }
-      else if (this.trackBuffer.length === 1)
-      {
-        if (state.handlers.hasOwnProperty(this.trackBuffer)) {
-          this.runCallbacks(this.trackBuffer)
-        } else {
-          this.runCallbacks('keys', { text: this.trackBuffer })
-        }
-      }
-      else if (this.trackBuffer.length > 0)
-      {
-        this.runCallbacks('keys', { text: this.trackBuffer })
-      }
-      this.trackBuffer = ''
-    }, 50)
   },
   trackIdle () {
     if (this.idleTimer) { clearTimeout(this.idleTimer) }
