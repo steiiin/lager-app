@@ -86,14 +86,6 @@
         font-size: 2rem;
       }
 
-      &:hover {
-        background-color: var(--main-light);
-        border: .5rem solid var(--main-dark);
-        & .lc-pagebar__content--backbutton-icon {
-          color: var(--main-dark);
-        }
-      }
-
     }
 
     &--title {
@@ -116,5 +108,16 @@
 
   }
 
+}
+body:not(.cursor-off) .lc-pagebar {
+  &__content {
+    &--backbutton:hover {
+      background-color: var(--main-light);
+      border: .5rem solid var(--main-dark);
+      & .lc-pagebar__content--backbutton-icon {
+        color: var(--main-dark);
+      }
+    }
+  }
 }
 </style>

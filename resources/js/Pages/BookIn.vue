@@ -207,7 +207,7 @@
 <template>
 
   <Head title="Lieferung" />
-  <IdleCursor />
+  <IdleCursor disabled />
 
   <div class="page-bookin">
 

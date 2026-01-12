@@ -15,13 +15,24 @@
   import { onMounted, onUnmounted } from 'vue'
   import { debounce } from 'lodash'
 
+  const props = defineProps({
+    disabled: {
+      type: Boolean,
+      default: false,
+    }
+  })
+
 // #endregion
 // #region Lifecycle
 
   onMounted(() => {
+
     window.addEventListener('mousemove', handleMouseMove)
     window.addEventListener('keydown', handleKeyDown)
     resetHideCursorTimer()
+
+    if(props.disabled) { showCursor() }
+
   })
   onUnmounted(() => {
     window.removeEventListener('mousemove', handleMouseMove)
@@ -53,6 +64,7 @@
 // #region IdleLogic
 
     const resetHideCursorTimer = () => {
+      if (props.disabled) { return }
       clearTimeout(hideCursorTimeout)
       hideCursorTimeout = setTimeout(hideCursor, timeoutDuration)
     }

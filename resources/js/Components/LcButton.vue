@@ -113,7 +113,6 @@
     border-color: var(--main-dark);
     color: var(--main-light);
 
-    &:hover,
     &:focus-visible,
     &.selected {
       color: var(--main-dark);
@@ -137,7 +136,6 @@
     border-color: var(--accent-primary-background);
     color: var(--accent-primary-foreground);
 
-    &:hover,
     &:focus-visible,
     &.selected {
       color: var(--accent-primary-background);
@@ -170,4 +168,37 @@
   }
 
 }
+
+body:not(.cursor-off) .lc-button {
+
+  &--primary {
+
+    &:hover {
+      color: var(--main-dark);
+      background: var(--main-light);
+      & :deep(kbd) {
+        outline: 2px solid var(--main-dark);
+        color: var(--main-dark);
+        box-shadow: 4px 4px var(--main-dark);
+      }
+    }
+
+  }
+
+  &--secondary {
+
+    &:hover {
+      color: var(--accent-primary-background);
+      background: var(--accent-primary-foreground);
+      & :deep(kbd) {
+        outline: 2px solid var(--accent-primary-background);
+        color: var(--accent-primary-background);
+        box-shadow: 4px 4px var(--accent-primary-background);
+      }
+    }
+
+  }
+
+}
+
 </style>

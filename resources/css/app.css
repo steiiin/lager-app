@@ -53,12 +53,11 @@
 
 /* hides the cursor and disable hover styles, if set in document body */
 .cursor-off {
-
-  cursor: none;
-  & * {
-    pointer-events: none;
-  }
-
+  cursor: none !important;
+}
+.cursor-off * {
+  cursor: none !important;
+  pointer-events: none;
 }
 
 /* depicts a keyboard-shortcut */
