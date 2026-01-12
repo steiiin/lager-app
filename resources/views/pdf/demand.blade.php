@@ -26,7 +26,7 @@
 		}
 
 		.part-content {
-			position: absolute;
+			position: relative;
 			font-size: 3.5mm; font-family: 'DejaVu Serif';
 		}
 
@@ -76,7 +76,7 @@
 		}
 
 		.anf-data {
-			left: 0mm; right: 0mm; top: 26mm;
+			margin: 26mm auto 0;
 			width: 170mm;
 			border: 1px solid black;
 			border-collapse: collapse;
@@ -84,6 +84,7 @@
 
 		.anf-data thead {
 			height: 7mm;
+			border: 1px solid black;
 			display: table-header-group;
 		}
 
