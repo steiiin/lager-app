@@ -72,6 +72,9 @@ import { reactive } from 'vue'
   function openInventoryLabels() {
     router.get('/inventory-labels')
   }
+  function openInventoryNotices() {
+    router.get('/inventory-notices')
+  }
   function openInventoryInsights() {
     router.get('/inventory-insights')
   }
@@ -603,6 +606,9 @@ import { reactive } from 'vue'
         </v-btn>
         <v-btn v-if="!isItemSelected" variant="flat"
           @click="openInventoryLabels">Labels
+        </v-btn>
+        <v-btn v-if="!isItemSelected" variant="flat"
+          @click="openInventoryNotices">InventoryNotices
         </v-btn>
       </template>
     </LcPagebar>

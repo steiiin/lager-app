@@ -7,6 +7,7 @@ use App\Http\Controllers\InventoryInsightsController;
 use App\Http\Controllers\InventoryUsagesController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InventoryLabelsController;
+use App\Http\Controllers\InventoryNoticesController;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -49,6 +50,9 @@ Route::resource('/bookin', BookInController::class);
 Route::resource('/inventory-usages', InventoryUsagesController::class);
 Route::resource('/inventory-demands', InventoryDemandsController::class);
 Route::resource('/inventory-labels', InventoryLabelsController::class);
+Route::get('/inventory-notices', [InventoryNoticesController::class, 'index']);
+Route::post('/inventory-notices/hygiene', [InventoryNoticesController::class, 'hygiene']);
+Route::post('/inventory-notices/onvehicle', [InventoryNoticesController::class, 'onvehicle']);
 Route::resource('/inventory-insights', InventoryInsightsController::class)->only(['index']);
 Route::resource('/inventory', InventoryController::class);
 
