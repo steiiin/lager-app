@@ -83,7 +83,7 @@
       {
         return isPwa.value
           ? 'Suche dein Material ...'
-          : 'Scanne oder suche dein Material ...'
+          : 'Scanne oder suche Material ...'
       }
       return 'Kein Material angelegt'
     })
