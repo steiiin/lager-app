@@ -159,6 +159,17 @@ import { reactive } from 'vue'
 
       }
 
+      if (item.ordered_in_last_order && item.last_order_date) {
+        const lastOrderDate = new Date(item.last_order_date)
+        const lastCheckDate = item.checked_at ? new Date(item.checked_at) : null
+        const hasValidCheckDate = lastCheckDate && !isNaN(lastCheckDate)
+        const orderAfterCheck = !hasValidCheckDate || (!isNaN(lastOrderDate) && lastOrderDate > lastCheckDate)
+
+        if (orderAfterCheck) {
+          tags.push({ type: 'check', label: `Bestellt: ${getLastCheckedLabel(item.last_order_date)}` })
+        }
+      }
+
       if (!item.current_expiry) {  }
       else {
 

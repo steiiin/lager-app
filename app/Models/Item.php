@@ -61,8 +61,20 @@ class Item extends Model
 
   public function scopeWithPending($query)
   {
+    $lastOrderDate = DB::table('orders')->max('order_date');
+
+    $lastOrderSub = DB::table('orders')
+      ->selectRaw('orders.item_id as item_id')
+      ->selectRaw('MAX(orders.order_date) as last_order_date')
+      ->selectRaw('MAX(CASE WHEN orders.order_date = ? THEN 1 ELSE 0 END) as ordered_in_last_order', [$lastOrderDate])
+      ->groupBy('orders.item_id');
+
     return $query->with(['openOrders'])
-      ->withSum('openOrders', 'amount_desired');
+      ->withSum('openOrders', 'amount_desired')
+      ->leftJoinSub($lastOrderSub, 'last_order', 'last_order.item_id', '=', 'items.id')
+      ->addSelect('items.*')
+      ->selectRaw('last_order.last_order_date as last_order_date')
+      ->selectRaw('COALESCE(last_order.ordered_in_last_order, 0) as ordered_in_last_order');
   }
 
   public function scopeWithStatistic($query)
@@ -97,7 +109,7 @@ class Item extends Model
       ->groupBy('istts.item_id');
 
     return $query
-      ->select('items.*')
+      ->addSelect('items.*')
       ->leftJoinSub($sub, 'stats', 'stats.item_id', '=', 'items.id')
       ->selectRaw('COALESCE(stats.weeks_total, 0) as weeks_total')
       ->selectRaw('COALESCE(stats.weeks_recent, 0) as weeks_recent')
