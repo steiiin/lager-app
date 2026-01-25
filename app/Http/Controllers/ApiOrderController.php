@@ -229,7 +229,10 @@ class ApiOrderController extends Controller
 
   private function mapItemsForPdf(Collection $items): array
   {
-    return $items->map(function ($item) {
+    return $items
+      ->sortBy(fn ($item) => Str::lower((string) $item->name))
+      ->values()
+      ->map(function ($item) {
 
       $orderUnit = (int) ($item->getAttribute('amount_in_ordersize') ?? 0);
       $baseUnit  = (int) ($item->getAttribute('amount_in_basesize') ?? 0);
