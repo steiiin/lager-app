@@ -437,19 +437,24 @@
 
         if(props.hidden || props.disabled) { return }
         const keys = params.text
+        const wasInScanMode = inScanMode.value
 
         // change to textmode if in scanmode
-        if (inScanMode.value)
+        if (wasInScanMode)
         {
-          changeModeToText()
+          await changeModeToText()
         }
 
         // focus searchbox if it is not active element
-        if (document.getElementById('id-picker-searchbox') !== document.activeElement) {
+        const searchBox = document.getElementById('id-picker-searchbox')
+        if (wasInScanMode || searchBox !== document.activeElement) {
+          // Focus before appending so the first buffered key isn't lost on mode switch.
+          if (searchBox !== document.activeElement) {
+            await nextTick()
+            searchBox?.focus()
+          }
           searchText.value += keys
-          currentMode.value = 'TEXT'
           await nextTick()
-          document.getElementById('id-picker-searchbox')?.focus()
         }
 
       }
