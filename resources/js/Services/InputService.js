@@ -21,10 +21,15 @@ const InputService = {
   trackBuffer: '',
   lastKeyTime: null,
   scanThresholdMs: 50,
+  flushTimer: null,
 
   idleTimer: null,
 
   flushBuffer() {
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer)
+      this.flushTimer = null
+    }
     if (this.trackBuffer.startsWith('LC-')) {
       this.runCallbacks('scan', { text: this.trackBuffer })
     }
@@ -42,6 +47,25 @@ const InputService = {
     }
     this.trackBuffer = ''
   },
+  scheduleFlush() {
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer)
+    }
+    this.flushTimer = setTimeout(() => {
+      if (this.trackBuffer.length > 0) {
+        this.flushBuffer()
+      }
+      this.lastKeyTime = null
+    }, this.scanThresholdMs)
+  },
+  resetTracking() {
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer)
+      this.flushTimer = null
+    }
+    this.trackBuffer = ''
+    this.lastKeyTime = null
+  },
 
   trackInput (event) {
 
@@ -53,17 +77,19 @@ const InputService = {
 
     if (event.key.length === 1) {
       if (shouldFlush) {
-        this.trackBuffer += event.key
         this.flushBuffer()
-        this.lastKeyTime = event.timeStamp
-        return
       }
       this.trackBuffer += event.key
       this.lastKeyTime = event.timeStamp
+      this.scheduleFlush()
       return
     } else if (event.key === 'Enter') {
       if (shouldFlush) {
         this.flushBuffer()
+      }
+      if (this.flushTimer) {
+        clearTimeout(this.flushTimer)
+        this.flushTimer = null
       }
       this.lastKeyTime = event.timeStamp
       if (this.trackBuffer.startsWith('LC-')) {
@@ -77,6 +103,10 @@ const InputService = {
     } else {
       if (shouldFlush) {
         this.flushBuffer()
+      }
+      if (this.flushTimer) {
+        clearTimeout(this.flushTimer)
+        this.flushTimer = null
       }
       this.lastKeyTime = event.timeStamp
       if (state.handlers.hasOwnProperty(event.key)) {
