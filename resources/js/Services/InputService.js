@@ -47,17 +47,25 @@ const InputService = {
 
     this.trackIdle()
 
-    if (this.lastKeyTime !== null
+    const shouldFlush = this.lastKeyTime !== null
       && event.timeStamp - this.lastKeyTime > this.scanThresholdMs
       && this.trackBuffer.length > 0
-    ) {
-      this.flushBuffer()
-    }
-    this.lastKeyTime = event.timeStamp
 
     if (event.key.length === 1) {
+      if (shouldFlush) {
+        this.trackBuffer += event.key
+        this.flushBuffer()
+        this.lastKeyTime = event.timeStamp
+        return
+      }
       this.trackBuffer += event.key
+      this.lastKeyTime = event.timeStamp
+      return
     } else if (event.key === 'Enter') {
+      if (shouldFlush) {
+        this.flushBuffer()
+      }
+      this.lastKeyTime = event.timeStamp
       if (this.trackBuffer.startsWith('LC-')) {
         this.runCallbacks('scan', { text: this.trackBuffer })
       } else {
@@ -67,6 +75,10 @@ const InputService = {
       this.lastKeyTime = null
       return
     } else {
+      if (shouldFlush) {
+        this.flushBuffer()
+      }
+      this.lastKeyTime = event.timeStamp
       if (state.handlers.hasOwnProperty(event.key)) {
         this.runCallbacks(event.key)
         this.trackBuffer = ''
