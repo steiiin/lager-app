@@ -138,11 +138,13 @@
     const changeModeToScan = () => {
       searchText.value = ''
       if (!props.allowScan) { return }
+      InputService.resetTracking()
       currentMode.value = 'SCAN'
       enableAppOverflow()
     }
     const changeModeToText = async (text = '') => {
       searchText.value = text
+      InputService.resetTracking()
       currentMode.value = 'TEXT'
       await nextTick()
       document.getElementById('id-picker-searchbox')?.focus()
