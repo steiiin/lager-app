@@ -14,6 +14,7 @@ use App\Models\Booking;
 use App\Models\Item;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -43,15 +44,13 @@ class BookOutController extends Controller
       'entries.*.item_amount' => 'required|integer|min:1',
     ]);
 
-    DB::transaction(function () use ($request) {
+    try {
+      DB::transaction(function () use ($request) {
 
-      $usageId = $request['usage_id'];
-      $entries = $request['entries'];
+        $usageId = $request['usage_id'];
+        $entries = $request['entries'];
 
-      foreach ($entries as $entry) {
-
-        try
-        {
+        foreach ($entries as $entry) {
 
           $item = Item::findOrFail($entry['item_id']);
           $item->decrement('current_quantity', $entry['item_amount']);
@@ -63,13 +62,16 @@ class BookOutController extends Controller
           ]);
 
         }
-        catch (\Throwable $e)
-        {
-          // continue loop
-        }
+      });
+    } catch (\Throwable $e) {
+      Log::error('Book out transaction failed.', [
+        'usage_id' => $request['usage_id'] ?? null,
+        'entries' => $request['entries'] ?? null,
+        'exception' => $e,
+      ]);
 
-      }
-    });
+      throw $e;
+    }
 
     return redirect()->route('welcome');
   }
