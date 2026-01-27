@@ -37,14 +37,12 @@ class BookInController extends Controller
       'order.*.amount_delivered' => 'required|integer|min:0',
     ]);
 
-    DB::transaction(function () use ($request) {
+    try
+    {
+      DB::transaction(function () use ($request) {
 
-      foreach ($request->orders as $openOrder)
-      {
-
-        try
+        foreach ($request->orders as $openOrder)
         {
-
           $id = $openOrder['id'];
           $delivered = $openOrder['amount_delivered'];
 
@@ -54,16 +52,18 @@ class BookInController extends Controller
             'is_order_open' => false,
           ]);
           $order->item->increment('current_quantity', $delivered);
-
-        }
-        catch (\Throwable $e)
-        {
-          // continue loop
         }
 
-      }
+      });
+    }
+    catch (\Throwable $e)
+    {
+      report($e);
 
-    });
+      return back()->withErrors([
+        'orders' => 'Failed to book in deliveries. Please try again.',
+      ]);
+    }
 
     return redirect()->route('welcome');
   }
