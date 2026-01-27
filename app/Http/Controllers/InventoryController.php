@@ -178,8 +178,9 @@ class InventoryController extends Controller
 
   private function handleStockChange(Request $request, Item $item)
   {
-    $change = $item->current_quantity - $request->current_quantity;
-    if ($change !== 0) {
+    $originalQuantity = $item->getOriginal('current_quantity');
+    $change = $request->current_quantity - $originalQuantity;
+    if ($change != 0) {
       Booking::create([
         'usage_id' => $request->stockchangeReason,
         'item_id' => $item->id,
