@@ -270,16 +270,22 @@ import { reactive } from 'vue'
       })
       const norm = v => v ?? ''
 
-      checkAllList.value = itemsCheckNecessary.value.sort((a, b) => {
-        const la = a.location ?? {}
-        const lb = b.location ?? {}
+      const itemsToCheck = itemsCheckNecessary.value.length > 0
+        ? [ ...itemsCheckNecessary.value ].sort((a, b) => {
+            const la = a.location ?? {}
+            const lb = b.location ?? {}
 
-        return (
-          collator.compare(norm(la.room),  norm(lb.room))  ||
-          collator.compare(norm(la.cab),   norm(lb.cab))   ||
-          collator.compare(norm(la.exact), norm(lb.exact))
-        )
-      }).map(item => item.id)
+            return (
+              collator.compare(norm(la.room),  norm(lb.room))  ||
+              collator.compare(norm(la.cab),   norm(lb.cab))   ||
+              collator.compare(norm(la.exact), norm(lb.exact))
+            )
+          })
+        : [ ...inventoryStore.items ]
+          .filter(item => item.current_quantity < item.max_stock)
+          .sort((a, b) => a.current_quantity - b.current_quantity)
+
+      checkAllList.value = itemsToCheck.map(item => item.id)
 
       clearSelectedItem(true)
     }
