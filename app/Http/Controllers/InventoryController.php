@@ -104,10 +104,11 @@ class InventoryController extends Controller
     DB::transaction(function () use ($request, $id) {
 
       $item = Item::findOrFail($id);
+
+      $this->handleStockChange($request, $item);
       $item->update($request->except('sizes'));
       $this->handleSizes($request->input('sizes'), $item);
       $this->handleCheck($item);
-      $this->handleStockChange($request, $item);
 
     });
 
@@ -178,8 +179,7 @@ class InventoryController extends Controller
 
   private function handleStockChange(Request $request, Item $item)
   {
-    $originalQuantity = $item->getOriginal('current_quantity');
-    $change = $request->current_quantity - $originalQuantity;
+    $change = $request->current_quantity - $item->current_quantity;
     if ($change != 0) {
       Booking::create([
         'usage_id' => $request->stockchangeReason,
