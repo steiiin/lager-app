@@ -25,7 +25,7 @@ class StatisticService
       ->selectRaw('date(?) as week_start', [$from->toDateString()])
       ->selectRaw("SUM(CASE WHEN usage_id >= 0 AND item_amount > 0 THEN item_amount ELSE 0 END) as consumption_total")
       ->selectRaw("MAX(CASE WHEN usage_id >= 0 AND item_amount > 0 THEN item_amount ELSE 0 END) as consumption_max")
-      ->selectRaw("SUM(CASE WHEN usage_id < 0 THEN item_amount ELSE 0 END) as adjustment_total")
+      ->selectRaw("SUM(CASE WHEN usage_id < 0 AND usage_id != -4 THEN item_amount ELSE 0 END) as adjustment_total")
       ->selectRaw("MAX(ABS(item_amount)) as booking_max")
       ->selectRaw("COUNT(*) as booking_count")
       ->where('created_at', '>=', $from)

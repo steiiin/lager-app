@@ -9,6 +9,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Booking;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -33,8 +34,8 @@ class BookInController extends Controller
 
     $request->validate([
       'orders' => 'required|array',
-      'order.*.id' => 'required|integer|exists:orders,id',
-      'order.*.amount_delivered' => 'required|integer|min:0',
+      'orders.*.id' => 'required|integer|exists:orders,id',
+      'orders.*.amount_delivered' => 'required|integer|min:0',
     ]);
 
     try
@@ -52,6 +53,15 @@ class BookInController extends Controller
             'is_order_open' => false,
           ]);
           $order->item->increment('current_quantity', $delivered);
+
+          if ($delivered > 0) {
+            $order->item->bookings()->create([
+              'usage_id' => -4,
+              'order_id' => $order->id,
+              'item_amount' => $delivered,
+            ]);
+          }
+
         }
 
       });

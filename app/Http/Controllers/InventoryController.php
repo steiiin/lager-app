@@ -180,7 +180,7 @@ class InventoryController extends Controller
   private function handleStockChange(Request $request, Item $item)
   {
     $change = $request->current_quantity - $item->current_quantity;
-    if ($change != 0) {
+    if ($change !== 0) {
       Booking::create([
         'usage_id' => $request->stockchangeReason,
         'item_id' => $item->id,

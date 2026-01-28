@@ -95,12 +95,21 @@ import { reactive } from 'vue'
       }
     }
 
+     const isEditableTarget = () => {
+      const activeElement = document.activeElement
+      if (!activeElement) { return false }
+      const tag = activeElement.tagName
+      return activeElement.isContentEditable || [ 'INPUT', 'TEXTAREA', 'SELECT' ].includes(tag)
+    }
+
     const handleLeft = () => {
+      if (isEditableTarget()) { return }
       if (isItemSelected.value && !isSizeDialogVisible.value && !isStockDialogVisible.value) {
         itemForm.current_quantity -= 1
       }
     }
     const handleRight = () => {
+      if (isEditableTarget()) { return }
       if (isItemSelected.value && !isSizeDialogVisible.value && !isStockDialogVisible.value) {
         itemForm.current_quantity += 1
       }
