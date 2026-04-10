@@ -179,7 +179,10 @@
       if (!item.current_expiry) {  }
       else {
 
-        const thresholdExpiry = (new Date()); thresholdExpiry.setDate(thresholdExpiry.getDate() + 21); thresholdExpiry.setHours(0, 0, 0, 0);
+        const thresholdExpiry = (new Date());
+        thresholdExpiry.setMonth(thresholdExpiry.getMonth() + 2);
+        thresholdExpiry.setHours(0, 0, 0, 0);
+
         const current_expiry = new Date(item.current_expiry)
         if (current_expiry <= thresholdExpiry) {
           tags.push({ type: 'expiry', label: getExpiryLabel(item.current_expiry) })
