@@ -290,6 +290,62 @@ import { reactive } from 'vue'
       clearSelectedItem(true)
     }
 
+    const checkAllItems = () => {
+
+      const collator = new Intl.Collator('de', {
+        sensitivity: 'base',
+        numeric: true,
+      })
+      const norm = v => v ?? ''
+
+      const roomOrder = [
+        'Lagerraum',
+        'Fahrzeuge',
+        'Desiraum',
+        'Küche',
+      ]
+      const cabOrder = [
+        'Kühlschrank',
+        'Schrank (links)',
+        'Schrank (rechts)',
+        'Regal',
+        'Schubladenschrank',
+        'Hängeschrank (links)',
+        'Hängeschrank (rechts)',
+        'Schrank li. neben der Spüle',
+      ]
+      const roomOrderMap = new Map(roomOrder.map((name, index) => [name, index]))
+      const cabOrderMap = new Map(cabOrder.map((name, index) => [name, index]))
+      const fallbackOrderRank = Number.MAX_SAFE_INTEGER
+
+      const itemsToCheck = [ ...inventoryStore.items ].sort((a, b) => {
+        const la = a.location ?? {}
+        const lb = b.location ?? {}
+
+        const roomRankA = roomOrderMap.get(la.room) ?? fallbackOrderRank
+        const roomRankB = roomOrderMap.get(lb.room) ?? fallbackOrderRank
+        const cabRankA = cabOrderMap.get(la.cab) ?? fallbackOrderRank
+        const cabRankB = cabOrderMap.get(lb.cab) ?? fallbackOrderRank
+
+        return (
+          (roomRankA - roomRankB) ||
+          (roomRankA === fallbackOrderRank && roomRankB === fallbackOrderRank
+            ? collator.compare(norm(la.room), norm(lb.room))
+            : 0) ||
+          (cabRankA - cabRankB) ||
+          (cabRankA === fallbackOrderRank && cabRankB === fallbackOrderRank
+            ? collator.compare(norm(la.cab), norm(lb.cab))
+            : 0) ||
+          collator.compare(norm(la.exact), norm(lb.exact)) ||
+          collator.compare(norm(a.name), norm(b.name))
+        )
+      })
+
+      checkAllList.value = itemsToCheck.map(item => item.id)
+
+      clearSelectedItem(true)
+    }
+
     const nextItemToCheck = () => {
       if (checkAllList.value.length>0) {
         const nextId = checkAllList.value.shift()
@@ -680,9 +736,16 @@ import { reactive } from 'vue'
               <v-btn v-if="inCheckMode"
                 class="text-none"
                 color="primary"
-                text="PRÜFE ALLE"
+                text="PRÜFE LISTE"
                 variant="text"
                 slim @click="checkAllNecessaryItems"
+              ></v-btn>
+              <v-btn v-if="inCheckMode"
+                class="text-none"
+                color="primary"
+                text="INVENTUR"
+                variant="text"
+                slim @click="checkAllItems"
               ></v-btn>
             </template>
           </v-list-item>
