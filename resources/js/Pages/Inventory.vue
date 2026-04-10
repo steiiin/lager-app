@@ -22,9 +22,6 @@
   import { useIsPwa } from '@/Composables/useIsPwa'
   const { isPwa } = useIsPwa()
 
-  import { useSpeech } from '@/Composables/useSpeech'
-  const { speakNumber, isSpeaking, stop } = useSpeech()
-
   // Local components
   import LcPagebar from '@/Components/LcPagebar.vue'
   import LcItemInput from '@/Components/LcItemInput.vue'
@@ -37,7 +34,7 @@
 
   // 3rd party components
   import axios from 'axios'
-import { reactive } from 'vue'
+  import { reactive } from 'vue'
 
 // #endregion
 // #region Props
@@ -318,7 +315,15 @@ import { reactive } from 'vue'
       const cabOrderMap = new Map(cabOrder.map((name, index) => [name, index]))
       const fallbackOrderRank = Number.MAX_SAFE_INTEGER
 
-      const itemsToCheck = [ ...inventoryStore.items ].sort((a, b) => {
+      const todayStart = new Date()
+      todayStart.setHours(0, 0, 0, 0)
+
+      const itemsToCheck = [ ...inventoryStore.items ]
+        .filter((item) => {
+          if (!item.checked_at) { return true }
+          return new Date(item.checked_at) < todayStart
+        })
+        .sort((a, b) => {
         const la = a.location ?? {}
         const lb = b.location ?? {}
 
@@ -498,8 +503,6 @@ import { reactive } from 'vue'
       itemStats.adjustment_trend = item.adjustment_trend
       itemStats.is_problem_item = item.is_problem_item
 
-      loadSpeechIfNecessary()
-
     }
     const changeItem = (item) => {
       clearSelectedItem()
@@ -609,12 +612,6 @@ import { reactive } from 'vue'
       watch(currentNoExpiry, () => {
         updateExpiry()
       })
-
-      const loadSpeechIfNecessary = () => {
-        if (inCheckMode.value && !isNewItem.value) {
-          setTimeout(() => speakNumber(itemForm.current_quantity), 500)
-        }
-      }
 
     // #endregion
     // #region Stats-Group
