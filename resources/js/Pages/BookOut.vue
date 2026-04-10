@@ -73,7 +73,7 @@
   // #region Keyboard-Shortcuts
 
     const handleIdle = () => {
-      if (hasUsage.value || !hasItemsInCart.value) { handleEscape() }
+      if (!hasUsage.value || !hasItemsInCart.value) { handleEscape() }
       else { handleEnter() }
     }
 
@@ -290,7 +290,7 @@
         is_booking.value = true
         feedback.value.bookSuccess()
 
-        setTimeout(() => bookoutForm.post('/bookout', bookoutFormOptions), 4000)
+        setTimeout(() => bookoutForm.post('/bookout', bookoutFormOptions), 3000)
 
       }
     }
