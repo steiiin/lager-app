@@ -139,14 +139,54 @@
   // #region Dashboard
 
     // Methods
+    const locationCollator = new Intl.Collator('de', {
+      sensitivity: 'base',
+      numeric: true,
+    })
+    const normLocationPart = v => v ?? ''
+    const compareByLocation = (a, b) => {
+      const la = a.location ?? {}
+      const lb = b.location ?? {}
+
+      return (
+        locationCollator.compare(normLocationPart(la.room),  normLocationPart(lb.room))  ||
+        locationCollator.compare(normLocationPart(la.cab),   normLocationPart(lb.cab))   ||
+        locationCollator.compare(normLocationPart(la.exact), normLocationPart(lb.exact))
+      )
+    }
+
+    const getConsumptionPerWeek = (item) => {
+      const hasRecentStats = Number(item.weeks_recent ?? 0) > 0
+      const recent = Number(item.consumption_per_week_recent ?? 0)
+      const total = Number(item.consumption_per_week_total ?? 0)
+
+      return hasRecentStats ? recent : total
+    }
+
+    const hasStrictStockPressure = (item) => {
+      const maxStock = Number(item.max_stock ?? 0)
+      const consumptionPerWeek = getConsumptionPerWeek(item)
+      const consumptionWeekMaxRecent = Number(item.consumption_week_max_recent ?? 0)
+      return maxStock <= (
+        2 * consumptionPerWeek > maxStock ||
+        consumptionWeekMaxRecent > maxStock ||
+        item.is_problem_item === true
+      )
+    }
+
+    const getCheckPriority = (item) => {
+      if (item.tags.some(tag => tag.type == 'expiry')) { return 0 }
+      return 1
+    }
+
     const findCheckTags = (item) => {
 
       // check      (if check is necessary)   'Noch Nie'|'12.12.2025'
       // expiry     (if expiry is near)       'Kein MHD'|'12-2025'
-      // onvehicle  (if onvehicle>max_stock)
+      // strict_check  (if hasSTrictStockPressure)
 
       const normalTimespan = (new Date()); normalTimespan.setDate(normalTimespan.getDate() - 60); normalTimespan.setHours(0, 0, 0, 0);
-      const strictTimespan = (new Date()); strictTimespan.setDate(strictTimespan.getDate() - 25); strictTimespan.setHours(0, 0, 0, 0);
+      const strictTimespan = (new Date()); strictTimespan.setDate(strictTimespan.getDate() - 14); strictTimespan.setHours(0, 0, 0, 0);
 
       const tags = []
 
@@ -158,9 +198,11 @@
         const belowStrict = !isNaN(checked_at) && checked_at <= strictTimespan
 
         if (belowNormal) { tags.push({ type: 'check', label: getLastCheckedLabel(item.checked_at) }) }
-        if (belowStrict && (item.max_stock <= item.onvehicle_stock)) {
-          tags.push({ type: 'check', label: getLastCheckedLabel(item.checked_at) })
-          tags.push({ type: 'onvehicle' })
+        if (belowStrict && hasStrictStockPressure(item)) {
+          if (!tags.some(tag => tag.type == 'check')) {
+            tags.push({ type: 'check', label: getLastCheckedLabel(item.checked_at) })
+          }
+          tags.push({ type: 'strict_check' })
         }
 
       }
@@ -201,33 +243,11 @@
         .map(item => { return { ...item, tags: findCheckTags(item)} })
         .filter(item => item.tags.length>0)
         .sort((a, b) => {
-
-            if (!a.checked_at && !b.checked_at) {
-            } else if (!a.checked_at) {
-              return -1; // a (null) comes before b
-            } else if (!b.checked_at) {
-              return 1;  // b (null) comes before a
-            } else {
-              const dateA = new Date(a.checked_at);
-              const dateB = new Date(b.checked_at);
-              if (dateA < dateB) return -1;
-              if (dateA > dateB) return 1;
-            }
-
-            if (a.current_expiry && !b.current_expiry) {
-              return -1; // a has expiry → comes first
-            }
-            if (!a.current_expiry && b.current_expiry) {
-              return 1;  // b has expiry → comes first
-            }
-            if (!a.current_expiry && !b.current_expiry) {
-              return 0;  // both null → equal
-            }
-
-            const expiryA = new Date(a.current_expiry);
-            const expiryB = new Date(b.current_expiry);
-            return expiryA - expiryB; // shorter syntax for ascending
-          });
+          return (
+            getCheckPriority(a) - getCheckPriority(b) ||
+            compareByLocation(a, b)
+          )
+        });
 
     })
 
@@ -264,23 +284,8 @@
 
     const checkAllNecessaryItems = () => {
 
-      const collator = new Intl.Collator('de', {
-        sensitivity: 'base',
-        numeric: true,
-      })
-      const norm = v => v ?? ''
-
       const itemsToCheck = itemsCheckNecessary.value.length > 0
-        ? [ ...itemsCheckNecessary.value ].sort((a, b) => {
-            const la = a.location ?? {}
-            const lb = b.location ?? {}
-
-            return (
-              collator.compare(norm(la.room),  norm(lb.room))  ||
-              collator.compare(norm(la.cab),   norm(lb.cab))   ||
-              collator.compare(norm(la.exact), norm(lb.exact))
-            )
-          })
+        ? [ ...itemsCheckNecessary.value ].sort(compareByLocation)
         : [ ...inventoryStore.items ]
           .filter(item => item.current_quantity < item.max_stock)
           .sort((a, b) => a.current_quantity - b.current_quantity)

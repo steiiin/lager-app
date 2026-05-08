@@ -25,7 +25,7 @@
 
 const hasCheck = computed(() => !!check.value)
 const hasExpiry = computed(() => !!expiry.value)
-const hasOnVehicle = computed(() => props.tags.some(e => e.type == 'onvehicle'))
+const hasStrictCheck = computed(() => props.tags.some(e => e.type == 'strict_check'))
 
 const check = computed(() => props.tags.find(e => e.type == 'check'))
 const expiry = computed(() => props.tags.find(e => e.type == 'expiry'))
@@ -41,9 +41,9 @@ const expiry = computed(() => props.tags.find(e => e.type == 'expiry'))
       prepend-icon="mdi-timer-sand"
       color="error">{{ expiry.label }}
     </v-chip>
-    <v-chip v-if="hasOnVehicle"
-      prepend-icon="mdi-ambulance"
-      color="info">Wenig im Lager</v-chip>
+    <v-chip v-if="hasStrictCheck"
+      prepend-icon="mdi-alert"
+      color="danger">Auffällig</v-chip>
   </div>
 </template>
 <style lang="scss" scoped>
