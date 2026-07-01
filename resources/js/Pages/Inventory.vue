@@ -11,7 +11,7 @@
 // #region Imports
 
   // Vue composables
-  import { ref, computed, nextTick, watch, toRef, onMounted, onUnmounted } from 'vue'
+  import { ref, computed, nextTick, toRef, onMounted, onUnmounted } from 'vue'
   import { Head, router, useForm } from '@inertiajs/vue3'
 
   // Local composables
@@ -27,6 +27,7 @@
   import LcItemInput from '@/Components/LcItemInput.vue'
   import LcButtonGroup from '@/Components/LcButtonGroup.vue'
   import LcItemSizeDialog from '@/Dialogs/LcItemSizeDialog.vue'
+  import LcItemExpiryDialog from '@/Dialogs/LcItemExpiryDialog.vue'
 
   import LcCheckTags from '@/Components/Inventory/LcCheckTags.vue'
   import LcStockAmount from '@/Components/Inventory/LcStockAmount.vue'
@@ -87,7 +88,7 @@
       }
     }
     const handleEnter = () => {
-      if (isItemSelected.value && !isSizeDialogVisible.value && !isStockDialogVisible.value) {
+      if (isItemSelected.value && !isSizeDialogVisible.value && !isStockDialogVisible.value && !isExpiryDialogVisible.value) {
         saveItem()
       }
     }
@@ -101,13 +102,13 @@
 
     const handleLeft = () => {
       if (isEditableTarget()) { return }
-      if (isItemSelected.value && !isSizeDialogVisible.value && !isStockDialogVisible.value) {
+      if (isItemSelected.value && !isSizeDialogVisible.value && !isStockDialogVisible.value && !isExpiryDialogVisible.value) {
         itemForm.current_quantity -= 1
       }
     }
     const handleRight = () => {
       if (isEditableTarget()) { return }
-      if (isItemSelected.value && !isSizeDialogVisible.value && !isStockDialogVisible.value) {
+      if (isItemSelected.value && !isSizeDialogVisible.value && !isStockDialogVisible.value && !isExpiryDialogVisible.value) {
         itemForm.current_quantity += 1
       }
     }
@@ -131,7 +132,7 @@
 
     const toCheckMode = () => {
       inventoryMode.value = 'check'
-      editorAccordionOpened.value = [ 4, 5 ]
+      editorAccordionOpened.value = [ 4, 5, 6 ]
     }
 
   // #endregion
@@ -174,6 +175,32 @@
       )
     }
 
+    const parseDate = (dateString) => {
+      if (!dateString) { return null }
+      const date = new Date(dateString)
+      return isNaN(date) ? null : date
+    }
+
+    const getTodayStart = () => {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      return today
+    }
+
+    const isCheckedToday = (item) => {
+      const checkedAt = parseDate(item.checked_at)
+      if (!checkedAt) { return false }
+
+      return checkedAt >= getTodayStart()
+    }
+
+    const getExpiryCheckThreshold = () => {
+      const threshold = new Date()
+      threshold.setMonth(threshold.getMonth() + 2)
+      threshold.setHours(23, 59, 59, 999)
+      return threshold
+    }
+
     const getCheckPriority = (item) => {
       if (item.tags.some(tag => tag.type == 'expiry')) { return 0 }
       return 1
@@ -193,9 +220,9 @@
       if (!item.checked_at) { tags.push({ type: 'check', label: 'Noch Nie' }) }
       else {
 
-        const checked_at = new Date(item.checked_at)
-        const belowNormal = !isNaN(checked_at) && checked_at <= normalTimespan
-        const belowStrict = !isNaN(checked_at) && checked_at <= strictTimespan
+        const checked_at = parseDate(item.checked_at)
+        const belowNormal = checked_at !== null && checked_at <= normalTimespan
+        const belowStrict = checked_at !== null && checked_at <= strictTimespan
 
         if (belowNormal) { tags.push({ type: 'check', label: getLastCheckedLabel(item.checked_at) }) }
         if (belowStrict && hasStrictStockPressure(item)) {
@@ -218,16 +245,12 @@
         }
       }
 
-      if (!item.current_expiry) {  }
-      else {
-
-        const thresholdExpiry = (new Date());
-        thresholdExpiry.setMonth(thresholdExpiry.getMonth() + 2);
-        thresholdExpiry.setHours(0, 0, 0, 0);
-
-        const current_expiry = new Date(item.current_expiry)
-        if (current_expiry <= thresholdExpiry) {
-          tags.push({ type: 'expiry', label: getExpiryLabel(item.current_expiry) })
+      const inventoryExpiryDate = getInventoryExpiryDate(item)
+      if (inventoryExpiryDate && !isCheckedToday(item)) {
+        const current_expiry = parseDate(inventoryExpiryDate)
+        const thresholdExpiry = getExpiryCheckThreshold()
+        if (current_expiry !== null && current_expiry <= thresholdExpiry) {
+          tags.push({ type: 'expiry', label: getExpiryLabel(inventoryExpiryDate) })
         }
 
       }
@@ -323,13 +346,13 @@
       const cabOrderMap = new Map(cabOrder.map((name, index) => [name, index]))
       const fallbackOrderRank = Number.MAX_SAFE_INTEGER
 
-      const todayStart = new Date()
-      todayStart.setHours(0, 0, 0, 0)
+      const todayStart = getTodayStart()
 
       const itemsToCheck = [ ...inventoryStore.items ]
         .filter((item) => {
           if (!item.checked_at) { return true }
-          return new Date(item.checked_at) < todayStart
+          const checkedAt = parseDate(item.checked_at)
+          return checkedAt === null || checkedAt < todayStart
         })
         .sort((a, b) => {
         const la = a.location ?? {}
@@ -401,6 +424,7 @@
       max_bookin_quantity: 0,
 
       sizes: [],
+      expiry_entries: [],
 
       stockchangeReason: -1,
 
@@ -440,11 +464,6 @@
       itemForm.onvehicle_stock = 1
 
       itemForm.current_expiry = null
-      currentExpiryMonth.value = new Date().getMonth() + 1
-      currentExpiryYear.value = (new Date()).getFullYear()
-      currentNoExpiry.value = true
-      updateExpiry()
-
       itemForm.current_quantity = 0
       itemForm.checked_at = null
       itemForm.max_order_quantity = 0
@@ -452,6 +471,7 @@
 
       itemForm.sizes.splice(0, itemForm.sizes.length)
       itemForm.sizes.push({ id: null, unit: 'Stk.', amount: 1, is_default: true })
+      itemForm.expiry_entries.splice(0, itemForm.expiry_entries.length)
 
       editorAccordionOpened.value = [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
       selectedItem.value = { new: true }
@@ -476,9 +496,6 @@
       itemForm.onvehicle_stock = item.onvehicle_stock
 
       itemForm.current_expiry = !item.current_expiry ? null : new Date(item.current_expiry)
-      currentNoExpiry.value = !item.current_expiry
-      currentExpiryMonth.value = !itemForm.current_expiry ? null : itemForm.current_expiry.getMonth()+1
-      currentExpiryYear.value = itemForm.current_expiry?.getFullYear() ?? null
 
       itemForm.current_quantity = item.current_quantity
       itemForm.checked_at = !item.checked_at ? null : new Date(item.checked_at)
@@ -486,9 +503,10 @@
       itemForm.max_bookin_quantity = item.max_bookin_quantity
 
       itemForm.sizes = item.sizes
+      itemForm.expiry_entries = item.expiry_entries ?? []
       itemForm.stockchangeReason = -1
 
-      editorAccordionOpened.value = inCheckMode.value ? [ 4, 5 ] : []
+      editorAccordionOpened.value = inCheckMode.value ? [ 4, 5, 6 ] : []
       selectedItem.value = { edit: true }
 
       itemStats.has_stats = item.has_stats
@@ -565,8 +583,17 @@
         return `${month}-${year}`
       }
 
+      const getInventoryExpiryDate = (item) => {
+        const stockExpiryEntry = [ ...(item.expiry_entries ?? []) ]
+          .filter(entry => entry.usage_id === null && entry.status === 'reserved' && Number(entry.expiryQuantity ?? 0) > 0 && !!entry.expiryAt)
+          .sort((a, b) => new Date(a.expiryAt) - new Date(b.expiryAt))[0] ?? null
+
+        return stockExpiryEntry?.expiryAt ?? item.current_expiry ?? null
+      }
+
       const isSizeDialogVisible = ref(false)
       const isStockDialogVisible = ref(false)
+      const isExpiryDialogVisible = ref(false)
 
     // #endregion
 
@@ -588,38 +615,88 @@
       ])
 
     // #endregion
-    // #region Quantity/Expiry-Group
+    // #region Quantity-Group
 
-      const currentExpiryMonth = ref(null)
-      const currentExpiryYear = ref(null)
-      const currentNoExpiry = ref(true)
       const selectableStockChangeReasons = ref([
         { name: "Abweichung", value: -1 },
         { name: "Rückbuchung", value: -2 },
         { name: "Verfall", value: -3 },
       ])
 
-      const isValidExpiry = computed(() => currentNoExpiry.value || (itemForm.current_expiry !== null && !isNaN(itemForm.current_expiry)))
+    // #endregion
+    // #region Expiry-Group
 
-      // Expiry-Props
-      const updateExpiry = () => {
-        if (currentNoExpiry.value) {
-          itemForm.current_expiry = null
-        } else if (!currentExpiryMonth.value || !currentExpiryYear.value) {
-          itemForm.current_expiry = null
-        } else {
-          itemForm.current_expiry = new Date(currentExpiryYear.value, currentExpiryMonth.value, 0)
-        }
+      const expiryDialog = ref(null)
+      const createExpiry = (usageId = null) => expiryDialog.value?.create(itemForm.id, usageId)
+      const editExpiry = (item) => expiryDialog.value?.edit(item)
+
+      const expiryHeaders = ref([
+        { title: 'Verwendung', key: 'usage_name', minWidth: '25%' },
+        { title: 'Verfall', key: 'expiryAt', minWidth: '15%' },
+        { title: 'Menge', key: 'expiryQuantityLabel', minWidth: '15%' },
+        { title: 'Status', key: 'status', minWidth: '15%' },
+        { title: 'Notiz', key: 'note', minWidth: '20%' },
+        { title: 'Bearbeiten', key: 'action', sortable: false },
+      ])
+      const expirySortBy = ref([
+        { key: 'expiryAt', order: 'asc' }
+      ])
+
+      const getUsageName = (entry) => {
+        return entry.usage?.name
+          ?? inventoryStore.usages.find(usage => usage.id === entry.usage_id)?.name
+          ?? 'Lagerbestand'
       }
-      watch(currentExpiryMonth, () => {
-        updateExpiry()
+
+      const getExpiryTableItems = computed(() => {
+        return itemForm.expiry_entries.map(entry => ({
+          ...entry,
+          usage_name: getUsageName(entry),
+          expiryQuantityLabel: entry.usage_id === null ? 'Gesamtbestand' : entry.expiryQuantity,
+        }))
       })
-      watch(currentExpiryYear, () => {
-        updateExpiry()
+      const expiryUsageOptions = computed(() => [
+        { id: null, name: 'Lagerbestand' },
+        ...inventoryStore.usages.filter(usage => usage.could_expire),
+      ])
+      const visibleExpiryAddOptions = computed(() => {
+        const hasStockExpiry = itemForm.expiry_entries.some(entry => entry.usage_id === null)
+        return expiryUsageOptions.value.filter(usage => usage.id !== null || !hasStockExpiry)
       })
-      watch(currentNoExpiry, () => {
-        updateExpiry()
-      })
+
+      const refreshCurrentItemFromStore = () => {
+        const freshItem = inventoryStore.items.find(item => item.id === itemForm.id)
+        if (!freshItem) return
+        itemForm.expiry_entries = freshItem.expiry_entries ?? []
+      }
+
+      const saveExpiry = async (entry) => {
+        const payload = {
+          item_id: entry.item_id,
+          usage_id: entry.usage_id,
+          expiryAt: entry.expiryAt,
+          expiryQuantity: entry.expiryQuantity,
+          status: entry.status,
+          note: entry.note,
+        }
+
+        if (entry.id) {
+          await axios.put(`/api/item-expiry/${entry.id}`, payload)
+        } else {
+          await axios.post('/api/item-expiry', payload)
+        }
+
+        await inventoryStore.fetchStore(true)
+        refreshCurrentItemFromStore()
+      }
+
+      const deleteExpiry = async (entry) => {
+        if (!entry.id || !confirm('Willst du das wirklich löschen?')) { return }
+
+        await axios.delete(`/api/item-expiry/${entry.id}`)
+        await inventoryStore.fetchStore(true)
+        refreshCurrentItemFromStore()
+      }
 
     // #endregion
     // #region Stats-Group
@@ -967,48 +1044,59 @@
                     ></v-select>
                   </v-col>
                 </v-row>
-                <v-row class="mt-2">
-                  <v-col cols="4" class="page-inventory__table--result">
-                    Nächster Verfall
-                  </v-col>
-                  <v-col cols="3" class="align-content-center">
-                    <v-number-input
-                      v-model="currentExpiryMonth"
-                      :reverse="false" :disabled="currentNoExpiry"
-                      controlVariant="split"
-                      :hideInput="false"
-                      :inset="false" hide-details
-                      :min="1"
-                      :max="12"
-                    ></v-number-input>
-                  </v-col>
-                  <v-col cols="3" class="align-content-center">
-                    <v-number-input
-                      v-model="currentExpiryYear"
-                      :reverse="false" :disabled="currentNoExpiry"
-                      controlVariant="split"
-                      :hideInput="false"
-                      :inset="false" hide-details
-                      :min="(new Date()).getFullYear() - 1"
-                      :max="(new Date()).getFullYear() + 99"
-                    ></v-number-input>
-                  </v-col>
-                  <v-col cols="2">
-                    <v-checkbox v-model="currentNoExpiry"
-                      label="Ohne MHD" hide-details>
-                    </v-checkbox>
-                  </v-col>
-                </v-row>
-                <v-row class="mt-n5">
-                  <v-col cols="4"></v-col>
-                  <v-col cols="5">
-                    <v-alert v-if="!isValidExpiry"
-                      text="Gib einen Verfall ein."
-                      type="error"></v-alert>
-                  </v-col>
-                </v-row>
               </v-form>
 
+
+            </v-expansion-panel-text>
+          </v-expansion-panel>
+
+          <v-expansion-panel class="mt-1" title="Verfall" color="black">
+            <v-expansion-panel-text>
+
+              <v-alert
+                v-if="isNewItem"
+                text="Speichere den Artikel zuerst, bevor du Verfälle hinzufügst."
+                type="info"
+                variant="tonal"
+              />
+
+              <template v-else>
+                <v-data-table
+                  :items="getExpiryTableItems"
+                  :headers="expiryHeaders"
+                  :sort-by="expirySortBy"
+                  hide-default-footer
+                  :items-per-page="100"
+                  no-data-text="Kein Verfall erfasst"
+                >
+                  <template v-slot:item.expiryAt="{ item }">
+                    {{ getExpiryLabel(item.expiryAt) }}
+                  </template>
+                  <template v-slot:item.note="{ item }">
+                    {{ item.note || '-' }}
+                  </template>
+                  <template v-slot:item.action="{ item }">
+                    <v-btn small variant="outlined" @click="editExpiry(item)">
+                      <v-icon icon="mdi-cog"></v-icon>
+                    </v-btn>
+                  </template>
+                </v-data-table>
+
+                <v-divider></v-divider>
+
+                <div class="page-inventory__expiry-add mt-4">
+                  <v-btn
+                    v-for="usage in visibleExpiryAddOptions"
+                    :key="usage.id ?? 'stock'"
+                    color="primary"
+                    variant="outlined"
+                    prepend-icon="mdi-plus"
+                    @click="createExpiry(usage.id)"
+                  >
+                    {{ usage.name }}
+                  </v-btn>
+                </div>
+              </template>
 
             </v-expansion-panel-text>
           </v-expansion-panel>
@@ -1081,6 +1169,13 @@
         :sizes="itemForm.sizes">
       </LcItemSizeDialog>
 
+      <LcItemExpiryDialog ref="expiryDialog"
+        v-model:visible="isExpiryDialogVisible"
+        :usages="inventoryStore.usages"
+        @save="saveExpiry"
+        @delete="deleteExpiry">
+      </LcItemExpiryDialog>
+
     </section>
 
   </div>
@@ -1099,6 +1194,12 @@
     &-centered {
       justify-content: center;
     }
+  }
+
+  &__expiry-add {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
 }

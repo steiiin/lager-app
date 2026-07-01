@@ -9,8 +9,10 @@ class Usage extends Model
 {
 
   protected $table = 'usages';
-  protected $fillable = [ 'name' ];
-  protected $appends = [ 'barcode' ];
+  protected $fillable = [ 'name', 'could_expire' ];
+  protected $appends = [ 'barcode' ];protected $casts = [
+    'could_expire' => 'boolean',
+  ];
   public $timestamps = false;
 
   // ##################################################################################

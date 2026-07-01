@@ -10,6 +10,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\Itemexpiry;
 use App\Models\Usage;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -33,7 +34,8 @@ class InventoryUsagesController extends Controller
     $request->validate([
       'name' => [ 'required', 'string', 'max:255',
         Rule::unique('usages')
-          ->where(fn ($query) => $query->whereRaw('LOWER(name) = ?', [strtolower(request('name'))])) ]],
+          ->where(fn ($query) => $query->whereRaw('LOWER(name) = ?', [strtolower(request('name'))])) ],
+      'could_expire' => [ 'required', 'boolean' ]],
     [ 'name.unique' => 'Diese Verwendung gibt es schon.' ]);
 
     Usage::create($request->all());
@@ -47,7 +49,8 @@ class InventoryUsagesController extends Controller
       'name' => [ 'required', 'string', 'max:255',
         Rule::unique('usages')
           ->ignore($id)
-          ->where(fn ($query) => $query->whereRaw('LOWER(name) = ?', [strtolower(request('name'))])) ]],
+          ->where(fn ($query) => $query->whereRaw('LOWER(name) = ?', [strtolower(request('name'))])) ],
+      'could_expire' => [ 'required', 'boolean' ]],
       [ 'name.unique' => 'Diese Verwendung gibt es schon.' ]
     );
 
@@ -60,10 +63,11 @@ class InventoryUsagesController extends Controller
   public function destroy($id)
   {
 
-    $isUsed = Booking::where('usage_id', $id)->exists();
+    $isUsed = Booking::where('usage_id', $id)->exists()
+      || Itemexpiry::where('usage_id', $id)->exists();
     if ($isUsed) {
       throw ValidationException::withMessages([
-        'usage' => ['Diese Verwendung wird noch in der Buchungs-Tabelle benutzt.'],
+        'usage' => ['Diese Verwendung wird noch benutzt.'],
       ]);
     }
 

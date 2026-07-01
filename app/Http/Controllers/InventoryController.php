@@ -12,6 +12,7 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use App\Models\Demand;
 use App\Models\Item;
+use App\Models\Itemexpiry;
 use App\Models\Itemsize;
 use App\Models\ItemsStats;
 use App\Models\Order;
@@ -125,7 +126,9 @@ class InventoryController extends Controller
       $sizes    = Itemsize::where('item_id', $id);
       $stats    = ItemsStats::where('item_id', $id);
       $orders   = Order::where('item_id', $id);
+      $expiry   = Itemexpiry::where('item_id', $id);
 
+      $expiry->delete();
       $sizes->delete();
       $stats->delete();
       $bookings->delete();
@@ -194,7 +197,7 @@ class InventoryController extends Controller
   public function cache(Request $request): JsonResponse
   {
 
-    $usages = Usage::select(['id', 'name'])->get();
+    $usages = Usage::select(['id', 'name', 'could_expire' ])->get();
     if ($request->has('withStats')) {
       $items = Item::withPending()->withStatistic()->get()->each->appendStats();
     } else {
