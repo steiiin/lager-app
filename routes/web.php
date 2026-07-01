@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BookInController;
 use App\Http\Controllers\BookOutController;
+use App\Http\Controllers\ExpiryController;
 use App\Http\Controllers\InventoryDemandsController;
 use App\Http\Controllers\InventoryInsightsController;
 use App\Http\Controllers\InventoryUsagesController;
@@ -42,6 +43,7 @@ Route::post('/', function (Request $request) {
 
 Route::resource('/bookout', BookOutController::class);
 Route::resource('/bookin', BookInController::class);
+Route::resource('/expiry', ExpiryController::class)->only(['index']);
 
 #endregion
 #region Inventory

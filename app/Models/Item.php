@@ -13,7 +13,7 @@ class Item extends Model
   protected $table = 'items';
   protected $fillable = ['name', 'location', 'name_alt', 'search_size', 'demand_id', 'min_stock', 'max_stock', 'onvehicle_stock', 'current_expiry', 'current_quantity', 'checked_at', 'max_order_quantity', 'max_bookin_quantity'];
   protected $casts = [ 'location' => 'array' ];
-  protected $with = [ 'demand', 'sizes', 'basesize' ];
+  protected $with = [ 'demand', 'sizes', 'basesize', 'expiryEntries' ];
   protected $appends = ['barcodes', 'pending_quantity', 'has_stats' ];
 
   // ##################################################################################
@@ -33,6 +33,11 @@ class Item extends Model
   public function basesize()
   {
     return $this->hasOne(Itemsize::class, 'item_id')->where('amount', 1);
+  }
+
+  public function expiryEntries()
+  {
+    return $this->hasMany(Itemexpiry::class, 'item_id')->orderBy('expiryAt');
   }
 
   public function ordersize()

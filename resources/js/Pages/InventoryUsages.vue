@@ -48,6 +48,7 @@
     const editForm = useForm({
       id: null,
       name: '',
+      could_expire: false,
     })
     const editFormOptions = {
       preserveScroll: true,
@@ -78,6 +79,7 @@
       editForm.clearErrors()
       editForm.id = null
       editForm.name = ''
+      editForm.could_expire = false
       editDialogVisible.value = true
       await nextTick()
       document.getElementById('id-editusage-name')?.focus()
@@ -87,6 +89,7 @@
       editForm.clearErrors()
       editForm.id = item.id
       editForm.name = item.name
+      editForm.could_expire = item.could_expire
       editDialogVisible.value = true
     }
 
@@ -172,6 +175,11 @@
           v-model="editForm.name" id="id-editusage-name"
           label="Name" hide-details>
         </v-text-field>
+        <v-checkbox
+          v-model="editForm.could_expire"
+          label="Verfall verfolgen"
+          hide-details
+        />
 
         <template v-if="editForm.errors">
 
