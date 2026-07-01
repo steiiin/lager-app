@@ -12,6 +12,8 @@ class ExpiryService
 
   public function generate(): array
   {
+    $today = CarbonImmutable::today();
+    $visibleUntil = $today->addMonthsNoOverflow(2)->endOfDay();
     $items = Item::query()
       ->with(['basesize', 'expiryEntries.usage'])
       ->get();
@@ -26,18 +28,22 @@ class ExpiryService
     foreach ($items as $item) {
       $entries = $item->expiryEntries
         ->filter(fn($entry) => $this->isActiveExpiry($entry));
+      $visibleEntries = $entries
+        ->filter(fn($entry) => $this->isVisibleExpiry($entry, $visibleUntil));
 
       $stockEntry = $entries
         ->whereNull('usage_id')
         ->sortBy('expiryAt')
         ->first();
-      $usageEntries = $entries->whereNotNull('usage_id');
+      $usageEntries = $visibleEntries->whereNotNull('usage_id');
 
       $stock = $this->getStockState($item, $stockEntry);
 
-      if ($stockEntry !== null && $usageEntries->isEmpty() && $stockEntry->expiryAt->lte(CarbonImmutable::today())) {
+      if ($stockEntry !== null && $this->isVisibleExpiry($stockEntry, $visibleUntil) && $stockEntry->expiryAt->lte($today)) {
         foreach ($expiringUsages as $usage) {
-          $this->addStockExpiryGroup($groups, $item, $usage, $stockEntry, $stock);
+          if (!$this->hasActiveUsageExpiry($entries, $usage->id)) {
+            $this->addStockExpiryGroup($groups, $item, $usage, $stockEntry, $stock);
+          }
         }
       }
 
@@ -74,7 +80,7 @@ class ExpiryService
           'inventory_expiry_label' => $this->formatExpiry($stock['expiry']),
           'state' => $state,
           'state_label' => $this->getStateLabel($state),
-          'note' => $entry->note,
+          'note' => $entry->note ?: $stockEntry?->note,
           'status' => $entry->status,
         ];
       }
@@ -157,11 +163,21 @@ class ExpiryService
     ];
   }
 
+  private function hasActiveUsageExpiry(Collection $entries, int $usageId): bool
+  {
+    return $entries->contains(fn($entry) => (int) $entry->usage_id === $usageId);
+  }
+
   private function isActiveExpiry($entry): bool
   {
     return $entry->status === 'reserved'
       && $entry->expiryAt !== null
       && (int) $entry->expiryQuantity > 0;
+  }
+
+  private function isVisibleExpiry($entry, CarbonImmutable $visibleUntil): bool
+  {
+    return $entry->expiryAt->lte($visibleUntil);
   }
 
   private function getStockState(Item $item, $stockEntry): array
@@ -177,8 +193,13 @@ class ExpiryService
 
   private function getEntryState($entry, array $stock, int $totalUsageAmount): string
   {
-    if ($stock['amount'] <= 0 || $stock['expiry'] === null || $stock['expiry']->lte($entry->expiryAt)) {
+    if ($stock['amount'] <= 0 || $stock['expiry'] === null) {
       return 'red';
+    }
+    if ($stock['expiry']->lte($entry->expiryAt)) {
+      return $stock['expiry']->lte(CarbonImmutable::today()->addDays(30))
+        ? 'red'
+        : 'yellow';
     }
     if ($totalUsageAmount < $stock['amount']) {
       return 'green';
@@ -191,7 +212,7 @@ class ExpiryService
     return match ($state) {
       'red' => 'Bestellt',
       'green' => 'Im Lager',
-      default => 'Prüfen',
+      default => 'Zu Wenig',
     };
   }
 

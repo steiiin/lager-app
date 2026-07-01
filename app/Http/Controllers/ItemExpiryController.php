@@ -44,10 +44,49 @@ class ItemExpiryController extends Controller
   {
     $data = $request->validate([
       'nextExpiryAt' => 'required|date',
+      'usage_id' => 'nullable|integer|exists:usages,id',
+      'update_inventory' => 'sometimes|boolean',
     ]);
 
     $expiry = Itemexpiry::with('item.expiryEntries')->findOrFail($id);
     $nextExpiry = CarbonImmutable::parse($data['nextExpiryAt'])->startOfDay();
+
+    if ($expiry->usage_id === null && isset($data['usage_id'])) {
+      $usageExpiry = Itemexpiry::query()
+        ->where('item_id', $expiry->item_id)
+        ->where('usage_id', $data['usage_id'])
+        ->where('status', 'reserved')
+        ->orderBy('expiryAt')
+        ->first();
+
+      if ($usageExpiry === null) {
+        $usageExpiry = new Itemexpiry([
+          'item_id' => $expiry->item_id,
+          'usage_id' => $data['usage_id'],
+          'status' => 'reserved',
+        ]);
+      }
+
+      $expiry->expiryAt = $nextExpiry;
+      $expiry->save();
+
+      $usageExpiry->expiryAt = $nextExpiry;
+      $usageExpiry->expiryQuantity = 1;
+      $usageExpiry->note = null;
+      $usageExpiry->save();
+
+      return response()->json($usageExpiry->fresh());
+    }
+
+    if ($request->boolean('update_inventory')) {
+      $this->updateInventoryExpiry($expiry, $nextExpiry);
+
+      $expiry->expiryAt = $nextExpiry;
+      $expiry->save();
+
+      return response()->json($expiry->fresh());
+    }
+
     $inventoryExpiry = $this->getInventoryExpiry($expiry);
 
     $expiry->expiryAt = $inventoryExpiry !== null && $inventoryExpiry->lt($nextExpiry)
@@ -86,13 +125,7 @@ class ItemExpiryController extends Controller
       return null;
     }
 
-    $stockEntry = $expiry->item?->expiryEntries
-      ->where('status', 'reserved')
-      ->where('usage_id', null)
-      ->where('expiryQuantity', '>', 0)
-      ->whereNotNull('expiryAt')
-      ->sortBy('expiryAt')
-      ->first();
+    $stockEntry = $this->getStockEntry($expiry);
 
     if ($stockEntry?->expiryAt) {
       return CarbonImmutable::parse($stockEntry->expiryAt)->startOfDay();
@@ -103,6 +136,35 @@ class ItemExpiryController extends Controller
     }
 
     return null;
+  }
+
+  private function updateInventoryExpiry(Itemexpiry $expiry, CarbonImmutable $nextExpiry): void
+  {
+    $stockEntry = $expiry->usage_id === null
+      ? $expiry
+      : $this->getStockEntry($expiry);
+
+    if ($stockEntry !== null) {
+      $stockEntry->expiryAt = $nextExpiry;
+      $stockEntry->save();
+      return;
+    }
+
+    if ($expiry->item?->current_expiry) {
+      $expiry->item->current_expiry = $nextExpiry;
+      $expiry->item->save();
+    }
+  }
+
+  private function getStockEntry(Itemexpiry $expiry): ?Itemexpiry
+  {
+    return $expiry->item?->expiryEntries
+      ->where('status', 'reserved')
+      ->where('usage_id', null)
+      ->where('expiryQuantity', '>', 0)
+      ->whereNotNull('expiryAt')
+      ->sortBy('expiryAt')
+      ->first();
   }
 
 }

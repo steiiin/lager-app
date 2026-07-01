@@ -48,10 +48,10 @@
 // #region Table
 
   const tableHeader = ref([
-    { title: 'Material', key: 'item_name', minWidth: '50%' },
-    { title: 'Verfällt', key: 'amountLabel', align: 'end', minWidth: '12%' },
-    { title: 'Status', key: 'state_label', align: 'center', minWidth: '18%' },
-    { title: '', key: 'action', align: 'center', sortable: false, width: '4rem' },
+    { title: 'Material', key: 'item_name', width: '56%' },
+    { title: 'Verfällt', key: 'amountLabel', align: 'end', width: '14%' },
+    { title: 'Status', key: 'state_label', align: 'center', width: '20%' },
+    { title: '', key: 'action', align: 'center', sortable: false, width: '10%' },
   ])
   const tableSortBy = ref([
     { key: 'item_name', order: 'asc' },
@@ -99,7 +99,7 @@
 
   const dismissTitle = computed(() => {
     if (!dismissItem.value) { return 'Verfall erledigen' }
-    return `Verfall (${dismissItem.value.item_name}) erledigen`
+    return `${dismissItem.value.item_name} tauschen`
   })
 
   const toDateString = (date) => {
@@ -109,9 +109,12 @@
     return `${year}-${month}-${day}`
   }
 
-  const openDismissDialog = (item) => {
+  const openDismissDialog = (item, usageId = null) => {
     const now = new Date()
-    dismissItem.value = item
+    dismissItem.value = {
+      ...item,
+      dismiss_usage_id: item.row_type === 'stock' ? usageId : item.usage_id,
+    }
     dismissMonth.value = now.getMonth() + 1
     dismissYear.value = now.getFullYear()
     dismissError.value = ''
@@ -133,10 +136,16 @@
 
     try {
       const nextExpiryAt = toDateString(new Date(dismissYear.value, dismissMonth.value, 0))
+      const payload = { nextExpiryAt }
 
-      await axios.put(`/api/item-expiry/${dismissItem.value.expiry_entry_id}/dismiss`, {
-        nextExpiryAt,
-      })
+      if (dismissItem.value.row_type === 'stock' && dismissItem.value.dismiss_usage_id) {
+        payload.usage_id = dismissItem.value.dismiss_usage_id
+      }
+      if (dismissItem.value.state === 'red') {
+        payload.update_inventory = true
+      }
+
+      await axios.put(`/api/item-expiry/${dismissItem.value.expiry_entry_id}/dismiss`, payload)
 
       isDismissDialogVisible.value = false
       dismissItem.value = null
@@ -221,23 +230,19 @@
                 <td class="text-end">{{ item.amountLabel }}</td>
                 <td
                   :class="['text-center', 'page-expiry__status-cell', `page-expiry__status-cell--${item.state}`]"
-                  :colspan="item.state === 'red' ? 2 : 1"
                 >
                   <span class="page-expiry__state" :class="`page-expiry__state--${item.state}`">
                     {{ getStateLabel(item) }}
                   </span>
                 </td>
-                <td v-if="item.state !== 'red'" class="text-center">
+                <td class="text-center">
                   <v-btn
                     icon="mdi-check"
                     size="small"
                     variant="text"
-                    color="success"
-                    aria-label="Verfall erledigen"
-                    title="Verfall erledigen"
                     :disabled="isDismissing"
-                    @click="openDismissDialog(item)"
-                  />
+                    @click="openDismissDialog(item, usage.usage_id)"
+                  ></v-btn>
                 </td>
               </tr>
               <tr v-if="getItemNote(item)" class="page-expiry__note-row" :class="`page-expiry__note-row--${item.state}`">
@@ -267,6 +272,11 @@
         <v-divider />
 
         <v-card-text>
+
+          <p style="padding-bottom: .5rem;">
+            Bitte gib den nächsten Verfall an:
+          </p>
+
           <v-row>
             <v-col cols="6">
               <v-number-input
@@ -392,8 +402,6 @@
   }
 
   & :deep(.v-data-table__td) {
-    // ensure body cells of the last column don't show the left border,
-    // but preserve red status rows that intentionally span the last two columns.
     &:last-child:not(.page-expiry__status-cell) {
       border-left: none !important;
     }
@@ -401,6 +409,11 @@
 
   &__table {
     border-bottom: 0.5rem solid var(--main-light);
+
+    :deep(table) {
+      table-layout: fixed;
+      width: 100%;
+    }
   }
 
   &__row {

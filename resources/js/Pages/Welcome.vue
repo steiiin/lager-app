@@ -169,7 +169,7 @@
   background: var(--main-light);
   color: var(--main-dark);
   grid-template-columns: 0.5fr 0.5fr;
-  grid-template-rows: 1.0fr 0.5fr 0.5fr;
+  grid-template-rows: 1.0fr 1.0fr 0.5fr;
   gap: 1rem;
   grid-template-areas:
     "BookOut BookIn"

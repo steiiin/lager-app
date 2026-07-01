@@ -89,6 +89,73 @@ class ItemExpiryDismissTest extends TestCase
     $this->assertSame('2026-10-31', $entry->fresh()->expiryAt->toDateString());
   }
 
+  public function test_dismissing_stock_expiry_for_usage_updates_stock_and_usage_expiry(): void
+  {
+    $item = $this->createItem();
+    $usage = Usage::create([
+      'name' => 'Station',
+      'could_expire' => true,
+    ]);
+    $stockEntry = Itemexpiry::create([
+      'item_id' => $item->id,
+      'usage_id' => null,
+      'expiryAt' => '2026-07-31',
+      'expiryQuantity' => 1,
+      'status' => 'reserved',
+      'note' => 'Stock note',
+    ]);
+
+    $response = $this->putJson("/api/item-expiry/{$stockEntry->id}/dismiss", [
+      'nextExpiryAt' => '2026-10-31',
+      'usage_id' => $usage->id,
+    ]);
+
+    $response->assertOk();
+    $this->assertSame('2026-10-31', $stockEntry->fresh()->expiryAt->toDateString());
+    $this->assertDatabaseHas('itemexpiry', [
+      'item_id' => $item->id,
+      'usage_id' => $usage->id,
+      'expiryAt' => '2026-10-31',
+      'expiryQuantity' => 1,
+      'status' => 'reserved',
+      'note' => null,
+    ]);
+  }
+
+  public function test_dismissing_red_usage_expiry_updates_stock_and_usage_expiry(): void
+  {
+    $item = $this->createItem();
+    $usage = Usage::create([
+      'name' => 'Station',
+      'could_expire' => true,
+    ]);
+    $stockEntry = Itemexpiry::create([
+      'item_id' => $item->id,
+      'usage_id' => null,
+      'expiryAt' => '2026-07-31',
+      'expiryQuantity' => 1,
+      'status' => 'reserved',
+      'note' => null,
+    ]);
+    $usageEntry = Itemexpiry::create([
+      'item_id' => $item->id,
+      'usage_id' => $usage->id,
+      'expiryAt' => '2026-08-31',
+      'expiryQuantity' => 1,
+      'status' => 'reserved',
+      'note' => null,
+    ]);
+
+    $response = $this->putJson("/api/item-expiry/{$usageEntry->id}/dismiss", [
+      'nextExpiryAt' => '2026-10-31',
+      'update_inventory' => true,
+    ]);
+
+    $response->assertOk();
+    $this->assertSame('2026-10-31', $stockEntry->fresh()->expiryAt->toDateString());
+    $this->assertSame('2026-10-31', $usageEntry->fresh()->expiryAt->toDateString());
+  }
+
   public function test_dismiss_requires_a_valid_next_expiry(): void
   {
     $item = $this->createItem();
