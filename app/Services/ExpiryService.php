@@ -180,11 +180,9 @@ class ExpiryService
     if ($stock['amount'] <= 0 || $stock['expiry'] === null || $stock['expiry']->lte($entry->expiryAt)) {
       return 'red';
     }
-
     if ($totalUsageAmount < $stock['amount']) {
       return 'green';
     }
-
     return 'yellow';
   }
 

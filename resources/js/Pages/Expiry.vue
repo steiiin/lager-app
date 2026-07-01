@@ -48,16 +48,22 @@
 // #region Table
 
   const tableHeader = ref([
-    { title: 'Material', key: 'item_name', minWidth: '40%' },
+    { title: 'Material', key: 'item_name', minWidth: '50%' },
     { title: 'Verfällt', key: 'amountLabel', align: 'end', minWidth: '12%' },
-    { title: 'Lager-MHD', key: 'inventory_expiry_label', align: 'end', minWidth: '16%' },
-    { title: 'Status', key: 'state_label', align: 'center', minWidth: '12%' },
+    { title: 'Status', key: 'state_label', align: 'center', minWidth: '18%' },
     { title: '', key: 'action', align: 'center', sortable: false, width: '4rem' },
   ])
   const tableSortBy = ref([
     { key: 'item_name', order: 'asc' },
   ])
   const getItemNote = (item) => item.note?.trim() ?? ''
+  const getStateLabel = (item) => {
+    if (item.state === 'green') {
+      return `${item.state_label} (${item.inventory_expiry_label})`
+    }
+
+    return item.state_label
+  }
 
   const groupedExpiryData = computed(() => {
     return props.expiryData.map(usage => ({
@@ -213,13 +219,12 @@
                   </div>
                 </td>
                 <td class="text-end">{{ item.amountLabel }}</td>
-                <td class="text-end">{{ item.inventory_expiry_label }}</td>
                 <td
                   :class="['text-center', 'page-expiry__status-cell', `page-expiry__status-cell--${item.state}`]"
                   :colspan="item.state === 'red' ? 2 : 1"
                 >
                   <span class="page-expiry__state" :class="`page-expiry__state--${item.state}`">
-                    {{ item.state_label }}
+                    {{ getStateLabel(item) }}
                   </span>
                 </td>
                 <td v-if="item.state !== 'red'" class="text-center">
@@ -236,7 +241,7 @@
                 </td>
               </tr>
               <tr v-if="getItemNote(item)" class="page-expiry__note-row" :class="`page-expiry__note-row--${item.state}`">
-                <td colspan="5">
+                <td colspan="4">
                   <div class="page-expiry__note">
                     <v-icon icon="mdi-note-text-outline" size="small"></v-icon>
                     <span>{{ getItemNote(item) }}</span>

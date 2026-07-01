@@ -145,14 +145,45 @@
       numeric: true,
     })
     const normLocationPart = v => v ?? ''
+    const locationFallbackOrderRank = Number.MAX_SAFE_INTEGER
+    const roomOrder = [
+      'Lagerraum',
+      'Fahrzeuge',
+      'Desiraum',
+      'Küche',
+    ]
+    const cabOrder = [
+      'Kühlschrank',
+      'Schrank (links)',
+      'Schrank (rechts)',
+      'Regal',
+      'Schubladenschrank',
+      'Hängeschrank (links)',
+      'Hängeschrank (rechts)',
+      'Schrank li. neben der Spüle',
+    ]
+    const roomOrderMap = new Map(roomOrder.map((name, index) => [name, index]))
+    const cabOrderMap = new Map(cabOrder.map((name, index) => [name, index]))
+
     const compareByLocation = (a, b) => {
       const la = a.location ?? {}
       const lb = b.location ?? {}
+      const roomRankA = roomOrderMap.get(la.room) ?? locationFallbackOrderRank
+      const roomRankB = roomOrderMap.get(lb.room) ?? locationFallbackOrderRank
+      const cabRankA = cabOrderMap.get(la.cab) ?? locationFallbackOrderRank
+      const cabRankB = cabOrderMap.get(lb.cab) ?? locationFallbackOrderRank
 
       return (
-        locationCollator.compare(normLocationPart(la.room),  normLocationPart(lb.room))  ||
-        locationCollator.compare(normLocationPart(la.cab),   normLocationPart(lb.cab))   ||
-        locationCollator.compare(normLocationPart(la.exact), normLocationPart(lb.exact))
+        (roomRankA - roomRankB) ||
+        (roomRankA === locationFallbackOrderRank && roomRankB === locationFallbackOrderRank
+          ? locationCollator.compare(normLocationPart(la.room), normLocationPart(lb.room))
+          : 0) ||
+        (cabRankA - cabRankB) ||
+        (cabRankA === locationFallbackOrderRank && cabRankB === locationFallbackOrderRank
+          ? locationCollator.compare(normLocationPart(la.cab), normLocationPart(lb.cab))
+          : 0) ||
+        locationCollator.compare(normLocationPart(la.exact), normLocationPart(lb.exact)) ||
+        locationCollator.compare(normLocationPart(a.name), normLocationPart(b.name))
       )
     }
 
@@ -202,7 +233,7 @@
     }
 
     const getCheckPriority = (item) => {
-      if (item.tags.some(tag => tag.type == 'expiry')) { return 0 }
+      // if (item.tags.some(tag => tag.type == 'expiry')) { return 0 }
       return 1
     }
 
@@ -320,32 +351,6 @@
 
     const checkAllItems = () => {
 
-      const collator = new Intl.Collator('de', {
-        sensitivity: 'base',
-        numeric: true,
-      })
-      const norm = v => v ?? ''
-
-      const roomOrder = [
-        'Lagerraum',
-        'Fahrzeuge',
-        'Desiraum',
-        'Küche',
-      ]
-      const cabOrder = [
-        'Kühlschrank',
-        'Schrank (links)',
-        'Schrank (rechts)',
-        'Regal',
-        'Schubladenschrank',
-        'Hängeschrank (links)',
-        'Hängeschrank (rechts)',
-        'Schrank li. neben der Spüle',
-      ]
-      const roomOrderMap = new Map(roomOrder.map((name, index) => [name, index]))
-      const cabOrderMap = new Map(cabOrder.map((name, index) => [name, index]))
-      const fallbackOrderRank = Number.MAX_SAFE_INTEGER
-
       const todayStart = getTodayStart()
 
       const itemsToCheck = [ ...inventoryStore.items ]
@@ -354,28 +359,7 @@
           const checkedAt = parseDate(item.checked_at)
           return checkedAt === null || checkedAt < todayStart
         })
-        .sort((a, b) => {
-        const la = a.location ?? {}
-        const lb = b.location ?? {}
-
-        const roomRankA = roomOrderMap.get(la.room) ?? fallbackOrderRank
-        const roomRankB = roomOrderMap.get(lb.room) ?? fallbackOrderRank
-        const cabRankA = cabOrderMap.get(la.cab) ?? fallbackOrderRank
-        const cabRankB = cabOrderMap.get(lb.cab) ?? fallbackOrderRank
-
-        return (
-          (roomRankA - roomRankB) ||
-          (roomRankA === fallbackOrderRank && roomRankB === fallbackOrderRank
-            ? collator.compare(norm(la.room), norm(lb.room))
-            : 0) ||
-          (cabRankA - cabRankB) ||
-          (cabRankA === fallbackOrderRank && cabRankB === fallbackOrderRank
-            ? collator.compare(norm(la.cab), norm(lb.cab))
-            : 0) ||
-          collator.compare(norm(la.exact), norm(lb.exact)) ||
-          collator.compare(norm(a.name), norm(b.name))
-        )
-      })
+        .sort(compareByLocation)
 
       checkAllList.value = itemsToCheck.map(item => item.id)
 
@@ -786,7 +770,7 @@
         </LcItemInput>
 
         <!-- Dashboard -->
-        <v-card class="mt-2" variant="outlined" v-show="inCheckMode">
+        <v-card class="mt-2" variant="outlined" v-show="inCheckMode" v-if="false"><!-- Remove temporarly Insights -->
           <v-list-item class="px-6" height="88">
             <template v-slot:prepend>
               <v-icon icon="mdi-gauge-low"></v-icon>
