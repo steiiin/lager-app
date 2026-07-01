@@ -175,6 +175,32 @@
       )
     }
 
+    const parseDate = (dateString) => {
+      if (!dateString) { return null }
+      const date = new Date(dateString)
+      return isNaN(date) ? null : date
+    }
+
+    const getTodayStart = () => {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      return today
+    }
+
+    const isCheckedToday = (item) => {
+      const checkedAt = parseDate(item.checked_at)
+      if (!checkedAt) { return false }
+
+      return checkedAt >= getTodayStart()
+    }
+
+    const getExpiryCheckThreshold = () => {
+      const threshold = new Date()
+      threshold.setMonth(threshold.getMonth() + 2)
+      threshold.setHours(23, 59, 59, 999)
+      return threshold
+    }
+
     const getCheckPriority = (item) => {
       if (item.tags.some(tag => tag.type == 'expiry')) { return 0 }
       return 1
@@ -194,9 +220,9 @@
       if (!item.checked_at) { tags.push({ type: 'check', label: 'Noch Nie' }) }
       else {
 
-        const checked_at = new Date(item.checked_at)
-        const belowNormal = !isNaN(checked_at) && checked_at <= normalTimespan
-        const belowStrict = !isNaN(checked_at) && checked_at <= strictTimespan
+        const checked_at = parseDate(item.checked_at)
+        const belowNormal = checked_at !== null && checked_at <= normalTimespan
+        const belowStrict = checked_at !== null && checked_at <= strictTimespan
 
         if (belowNormal) { tags.push({ type: 'check', label: getLastCheckedLabel(item.checked_at) }) }
         if (belowStrict && hasStrictStockPressure(item)) {
@@ -219,16 +245,12 @@
         }
       }
 
-      const nextExpiryEntry = getNextExpiryEntry(item)
-      if (nextExpiryEntry) {
-
-        const thresholdExpiry = (new Date());
-        thresholdExpiry.setMonth(thresholdExpiry.getMonth() + 2);
-        thresholdExpiry.setHours(0, 0, 0, 0);
-
-        const current_expiry = new Date(nextExpiryEntry.expiryAt)
-        if (current_expiry <= thresholdExpiry) {
-          tags.push({ type: 'expiry', label: getExpiryLabel(nextExpiryEntry.expiryAt) })
+      const inventoryExpiryDate = getInventoryExpiryDate(item)
+      if (inventoryExpiryDate && !isCheckedToday(item)) {
+        const current_expiry = parseDate(inventoryExpiryDate)
+        const thresholdExpiry = getExpiryCheckThreshold()
+        if (current_expiry !== null && current_expiry <= thresholdExpiry) {
+          tags.push({ type: 'expiry', label: getExpiryLabel(inventoryExpiryDate) })
         }
 
       }
@@ -324,13 +346,13 @@
       const cabOrderMap = new Map(cabOrder.map((name, index) => [name, index]))
       const fallbackOrderRank = Number.MAX_SAFE_INTEGER
 
-      const todayStart = new Date()
-      todayStart.setHours(0, 0, 0, 0)
+      const todayStart = getTodayStart()
 
       const itemsToCheck = [ ...inventoryStore.items ]
         .filter((item) => {
           if (!item.checked_at) { return true }
-          return new Date(item.checked_at) < todayStart
+          const checkedAt = parseDate(item.checked_at)
+          return checkedAt === null || checkedAt < todayStart
         })
         .sort((a, b) => {
         const la = a.location ?? {}
@@ -561,10 +583,12 @@
         return `${month}-${year}`
       }
 
-      const getNextExpiryEntry = (item) => {
-        return [ ...(item.expiry_entries ?? []) ]
-          .filter(entry => entry.status === 'reserved' && Number(entry.expiryQuantity ?? 0) > 0 && !!entry.expiryAt)
+      const getInventoryExpiryDate = (item) => {
+        const stockExpiryEntry = [ ...(item.expiry_entries ?? []) ]
+          .filter(entry => entry.usage_id === null && entry.status === 'reserved' && Number(entry.expiryQuantity ?? 0) > 0 && !!entry.expiryAt)
           .sort((a, b) => new Date(a.expiryAt) - new Date(b.expiryAt))[0] ?? null
+
+        return stockExpiryEntry?.expiryAt ?? item.current_expiry ?? null
       }
 
       const isSizeDialogVisible = ref(false)

@@ -43,7 +43,7 @@ const expiry = computed(() => props.tags.find(e => e.type == 'expiry'))
     </v-chip>
     <v-chip v-if="hasStrictCheck"
       prepend-icon="mdi-alert"
-      color="danger">Auffällig</v-chip>
+      color="black">Auffällig</v-chip>
   </div>
 </template>
 <style lang="scss" scoped>
