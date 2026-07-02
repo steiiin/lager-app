@@ -73,10 +73,6 @@
 
   // #region KeyboardShortcuts
 
-    const handleIdle = () => {
-      openWelcome()
-    }
-
     const handleEsc = () => {
       if (isItemSelected.value) {
         clearSelectedItem()
@@ -728,7 +724,6 @@
     InputService.registerRight(handleRight)
     InputService.registerEsc(handleEsc)
     InputService.registerEnter(handleEnter)
-    InputService.registerIdle(handleIdle)
     inventoryStore.fetchStore(true)
     document.body.classList.remove('cursor-off')
   })
@@ -737,7 +732,6 @@
     InputService.unregisterRight(handleRight)
     InputService.unregisterEsc(handleEsc)
     InputService.unregisterEnter(handleEnter)
-    InputService.unregisterIdle(handleIdle)
   })
 
 // #endregion
