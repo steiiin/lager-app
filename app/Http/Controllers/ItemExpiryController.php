@@ -6,6 +6,7 @@ use App\Models\Itemexpiry;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ItemExpiryController extends Controller
@@ -24,7 +25,7 @@ class ItemExpiryController extends Controller
   public function update(Request $request, $id): JsonResponse
   {
     $expiry = Itemexpiry::findOrFail($id);
-    $data = $this->validateExpiry($request);
+    $data = $this->validateExpiry($request, $expiry);
     $data['status'] = $request->input('status', $expiry->status);
 
     $expiry->update($data);
@@ -35,7 +36,16 @@ class ItemExpiryController extends Controller
   public function destroy($id): JsonResponse
   {
     $expiry = Itemexpiry::findOrFail($id);
-    $expiry->delete();
+
+    DB::transaction(function () use ($expiry) {
+      if ($expiry->usage_id === null) {
+        Itemexpiry::where('item_id', $expiry->item_id)
+          ->whereNotNull('usage_id')
+          ->delete();
+      }
+
+      $expiry->delete();
+    });
 
     return response()->json([ 'ok' => true ]);
   }
@@ -97,7 +107,7 @@ class ItemExpiryController extends Controller
     return response()->json($expiry->fresh());
   }
 
-  private function validateExpiry(Request $request): array
+  private function validateExpiry(Request $request, ?Itemexpiry $existingExpiry = null): array
   {
     $data = $request->validate([
       'item_id' => 'required|integer|exists:items,id',
@@ -105,18 +115,47 @@ class ItemExpiryController extends Controller
       'expiryAt' => 'required|date',
       'expiryQuantity' => 'nullable|integer|min:1|max:99999',
       'status' => 'nullable|string|max:255',
+      'is_ordered' => 'sometimes|boolean',
       'note' => 'nullable|string|max:255',
     ]);
 
+    $data['is_ordered'] = $request->has('is_ordered')
+      ? $request->boolean('is_ordered')
+      : (bool) ($existingExpiry?->is_ordered ?? false);
+
     if (($data['usage_id'] ?? null) === null) {
       $data['expiryQuantity'] = 1;
-    } else if (!isset($data['expiryQuantity'])) {
-      throw ValidationException::withMessages([
-        'expiryQuantity' => ['Die Menge muss ausgefüllt werden.'],
-      ]);
+    } else {
+      if (!isset($data['expiryQuantity'])) {
+        throw ValidationException::withMessages([
+          'expiryQuantity' => ['Die Menge muss ausgefüllt werden.'],
+        ]);
+      }
+
+      if (!$this->hasStockExpiry($data['item_id'], $existingExpiry)) {
+        throw ValidationException::withMessages([
+          'usage_id' => ['Bitte erfasse zuerst den Verfall für den Lagerbestand.'],
+        ]);
+      }
     }
 
     return $data;
+  }
+
+  private function hasStockExpiry(int $itemId, ?Itemexpiry $existingExpiry = null): bool
+  {
+    $query = Itemexpiry::query()
+      ->where('item_id', $itemId)
+      ->whereNull('usage_id')
+      ->where('status', 'reserved')
+      ->where('expiryQuantity', '>', 0)
+      ->whereNotNull('expiryAt');
+
+    if ($existingExpiry !== null) {
+      $query->where('id', '!=', $existingExpiry->id);
+    }
+
+    return $query->exists();
   }
 
   private function getInventoryExpiry(Itemexpiry $expiry): ?CarbonImmutable

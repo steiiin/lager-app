@@ -12,14 +12,21 @@
   import { computed, ref, onMounted, onUnmounted } from 'vue'
   import { Head, router } from '@inertiajs/vue3'
 
+  import { useInventoryStore } from '@/Services/StoreService'
   import InputService from '@/Services/InputService'
 
   import LcPagebar from '@/Components/LcPagebar.vue'
+  import LcItemInput from '@/Components/LcItemInput.vue'
+  import LcUsageInput from '@/Components/LcUsageInput.vue'
+  import LcButton from '@/Components/LcButton.vue'
   import LcRouteOverlay from '@/Components/LcRouteOverlay.vue'
+  import LcFeedback from '@/Components/LcFeedback.vue'
   import IdleCursor from '@/Components/IdleCursor.vue'
 
 // #endregion
 // #region Props
+
+  const inventoryStore = useInventoryStore()
 
   const props = defineProps({
     expiryData: {
@@ -41,6 +48,11 @@
       return
     }
 
+    if (isAnnouncementMode.value) {
+      cancelAnnouncement()
+      return
+    }
+
     router.get('/')
   }
 
@@ -58,6 +70,9 @@
   ])
   const getItemNote = (item) => item.note?.trim() ?? ''
   const getStateLabel = (item) => {
+    if (item.is_ordered) {
+      return 'Bestellt'
+    }
     if (item.state === 'green') {
       return `${item.state_label} (${item.inventory_expiry_label})`
     }
@@ -78,6 +93,197 @@
       })),
     }))
   })
+
+// #endregion
+// #region Announcement
+
+  const feedback = ref(null)
+  const announcementItemPicker = ref(null)
+  const isAnnouncementMode = ref(false)
+  const isAnnouncementSaving = ref(false)
+  const announcementError = ref('')
+  const announcementUsage = ref(null)
+  const announcementItem = ref(null)
+  const announcementAmount = ref(1)
+  const announcementMonth = ref(null)
+  const announcementYear = ref(null)
+
+  const hasAnnouncementUsage = computed(() => announcementUsage.value !== null)
+  const hasAnnouncementItem = computed(() => announcementItem.value !== null)
+  const announcementUsageName = computed(() => announcementUsage.value?.name ?? '')
+  const announcementItemUnit = computed(() => announcementItem.value?.basesize?.unit ?? 'Stk')
+  const isAnnouncementValid = computed(() => {
+    return hasAnnouncementUsage.value
+      && hasAnnouncementItem.value
+      && Number(announcementAmount.value) > 0
+      && !!announcementMonth.value
+      && !!announcementYear.value
+      && announcementMonth.value >= 1
+      && announcementMonth.value <= 12
+  })
+
+  const startAnnouncement = () => {
+    resetAnnouncement()
+    isAnnouncementMode.value = true
+    inventoryStore.fetchStore()
+  }
+
+  const resetAnnouncement = () => {
+    const now = new Date()
+    announcementError.value = ''
+    announcementUsage.value = null
+    announcementItem.value = null
+    announcementAmount.value = 1
+    announcementMonth.value = now.getMonth() + 1
+    announcementYear.value = now.getFullYear()
+  }
+
+  const cancelAnnouncement = () => {
+    if (isAnnouncementSaving.value) { return }
+    isAnnouncementMode.value = false
+    resetAnnouncement()
+  }
+
+  const clearAnnouncementUsage = () => {
+    if (isAnnouncementSaving.value) { return }
+    announcementUsage.value = null
+    announcementItem.value = null
+  }
+
+  const clearAnnouncementItem = () => {
+    if (isAnnouncementSaving.value) { return }
+    announcementItem.value = null
+    announcementAmount.value = 1
+  }
+
+  const warnAboutAnnouncementUsage = () => {
+    feedback.value?.error('Verwendung vergessen!', 'Bitte wähle zuerst eine Verwendung für den gemeldeten Verfall.')
+  }
+
+  const selectAnnouncementUsage = (usage) => {
+    if (!usage?.could_expire) {
+      feedback.value?.error('Nicht möglich', 'Diese Verwendung kann keinen Verfall melden.')
+      return
+    }
+
+    announcementUsage.value = usage
+  }
+
+  const selectAnnouncementItem = (item, amount) => {
+    announcementItem.value = item
+    announcementAmount.value = amount ?? 1
+    announcementError.value = ''
+  }
+
+  const getReservedStockExpiry = (item) => {
+    return [ ...(item?.expiry_entries ?? []) ]
+      .filter(entry => (
+        entry.usage_id === null
+        && entry.status === 'reserved'
+        && Number(entry.expiryQuantity ?? 0) > 0
+        && !!entry.expiryAt
+      ))
+      .sort((a, b) => new Date(a.expiryAt) - new Date(b.expiryAt))[0] ?? null
+  }
+
+  const getReservedUsageExpiry = (item, usageId) => {
+    return [ ...(item?.expiry_entries ?? []) ]
+      .filter(entry => (
+        Number(entry.usage_id) === Number(usageId)
+        && entry.status === 'reserved'
+        && Number(entry.expiryQuantity ?? 0) > 0
+        && !!entry.expiryAt
+      ))
+      .sort((a, b) => new Date(a.expiryAt) - new Date(b.expiryAt))[0] ?? null
+  }
+
+  const finishAnnouncement = async () => {
+    if (!isAnnouncementValid.value || isAnnouncementSaving.value) {
+      feedback.value?.error('Unvollständig', 'Bitte wähle Verwendung und Material und fülle Menge und Verfall aus.')
+      return
+    }
+
+    isAnnouncementSaving.value = true
+    announcementError.value = ''
+
+    const expiryAt = toDateString(new Date(announcementYear.value, announcementMonth.value, 0))
+    const stockExpiry = getReservedStockExpiry(announcementItem.value)
+    const usageExpiry = getReservedUsageExpiry(announcementItem.value, announcementUsage.value.id)
+
+    try {
+      if (!stockExpiry) {
+        await axios.post('/api/item-expiry', {
+          item_id: announcementItem.value.id,
+          usage_id: null,
+          expiryAt,
+          expiryQuantity: 1,
+        })
+      }
+
+      const payload = {
+        item_id: announcementItem.value.id,
+        usage_id: announcementUsage.value.id,
+        expiryAt,
+        expiryQuantity: announcementAmount.value,
+      }
+
+      if (usageExpiry) {
+        await axios.put(`/api/item-expiry/${usageExpiry.id}`, payload)
+      } else {
+        await axios.post('/api/item-expiry', payload)
+      }
+
+      feedback.value?.success('Verfall gemeldet', `${announcementItem.value.name} wurde erfasst.`)
+      isAnnouncementMode.value = false
+      resetAnnouncement()
+      await inventoryStore.fetchStore(true)
+      router.reload({ only: ['expiryData'] })
+    } catch (error) {
+      announcementError.value = error?.response?.data?.message ?? 'Der Verfall konnte nicht gemeldet werden.'
+      feedback.value?.error('Fehler', announcementError.value)
+    } finally {
+      isAnnouncementSaving.value = false
+    }
+  }
+
+  const handleAnnouncementScan = (params) => {
+    if (!isAnnouncementMode.value) { return }
+    if (params.text === 'LC-2000001000' && hasAnnouncementItem.value) {
+      finishAnnouncement()
+    }
+  }
+
+  const handleEscape = () => {
+    if (!isAnnouncementMode.value) {
+      openWelcome()
+      return
+    }
+
+    const canExitPicker = announcementItemPicker.value?.handleEscape() ?? true
+    if (!canExitPicker) { return }
+
+    if (hasAnnouncementItem.value) {
+      clearAnnouncementItem()
+      return
+    }
+
+    cancelAnnouncement()
+  }
+
+  const handleEnter = () => {
+    if (isAnnouncementMode.value && hasAnnouncementItem.value) {
+      finishAnnouncement()
+    }
+  }
+
+  const handleIdle = () => {
+    if (isAnnouncementMode.value && isAnnouncementValid.value) {
+      finishAnnouncement()
+      return
+    }
+
+    openWelcome()
+  }
 
 // #endregion
 // #region Dismiss
@@ -161,12 +367,16 @@
 // #region Lifecycle
 
   onMounted(() => {
-    InputService.registerEsc(openWelcome)
-    InputService.registerIdle(openWelcome)
+    InputService.registerEsc(handleEscape)
+    InputService.registerEnter(handleEnter)
+    InputService.registerIdle(handleIdle)
+    InputService.registerScan(handleAnnouncementScan)
   })
   onUnmounted(() => {
-    InputService.unregisterEsc(openWelcome)
-    InputService.unregisterIdle(openWelcome)
+    InputService.unregisterEsc(handleEscape)
+    InputService.unregisterEnter(handleEnter)
+    InputService.unregisterIdle(handleIdle)
+    InputService.unregisterScan(handleAnnouncementScan)
   })
 
 // #endregion
@@ -180,16 +390,119 @@
 
   <div class="page-expiry">
 
-    <LcPagebar title="Verfall" @back="openWelcome"></LcPagebar>
+    <LcPagebar title="Verfall" :disabled="isAnnouncementSaving" @back="openWelcome"></LcPagebar>
 
-    <main class="page-expiry__content">
+    <section v-if="isAnnouncementMode" class="page-expiry__announcement">
 
-      <v-alert
-        v-if="groupedExpiryData.length === 0"
-        type="info"
-        variant="tonal"
-        text="Kein Verfall erfasst"
-      />
+      <LcUsageInput v-if="!hasAnnouncementUsage"
+        @select-usage="selectAnnouncementUsage"
+        @other-code="warnAboutAnnouncementUsage"
+        @ctrl-finish="handleEnter">
+      </LcUsageInput>
+
+      <div v-else class="page-expiry__announcement-selected">
+        <LcButton v-if="!isAnnouncementSaving && !hasAnnouncementItem"
+          class="page-expiry__announcement-clear" prepend-icon="mdi-close"
+          @click="clearAnnouncementUsage">
+        </LcButton>
+
+        <v-spacer></v-spacer>
+
+        {{ announcementUsageName }}
+        <v-icon icon="mdi-truck"></v-icon>
+      </div>
+
+      <section v-if="hasAnnouncementUsage && !hasAnnouncementItem">
+        <LcItemInput ref="announcementItemPicker"
+          :cart="[]"
+          :result-specs="{ w: 850, i: 19.5 }"
+          :disabled="isAnnouncementSaving"
+          @select-item="selectAnnouncementItem"
+          @ctrl-finish="handleEnter">
+        </LcItemInput>
+      </section>
+
+      <section v-if="hasAnnouncementItem" class="page-expiry__announcement-form">
+        <div class="page-expiry__announcement-selected">
+          <LcButton v-if="!isAnnouncementSaving"
+            class="page-expiry__announcement-clear" prepend-icon="mdi-close"
+            @click="clearAnnouncementItem">
+          </LcButton>
+
+          <v-spacer></v-spacer>
+
+          {{ announcementItem.name }}
+          <v-icon icon="mdi-package-variant-closed"></v-icon>
+        </div>
+
+        <div class="page-expiry__announcement-fields">
+          <v-number-input
+            v-model="announcementAmount"
+            label="Menge"
+            controlVariant="split"
+            :hideInput="false"
+            :inset="false"
+            :min="1"
+            :max="99999"
+            :suffix="announcementItemUnit"
+            hide-details
+          />
+          <v-number-input
+            v-model="announcementMonth"
+            label="Monat"
+            controlVariant="split"
+            :hideInput="false"
+            :inset="false"
+            :min="1"
+            :max="12"
+            hide-details
+          />
+          <v-number-input
+            v-model="announcementYear"
+            label="Jahr"
+            controlVariant="split"
+            :hideInput="false"
+            :inset="false"
+            :min="(new Date()).getFullYear() - 1"
+            :max="(new Date()).getFullYear() + 99"
+            hide-details
+          />
+        </div>
+
+        <v-alert
+          v-if="announcementError"
+          type="error"
+          :text="announcementError"
+        />
+
+        <LcButton
+          class="page-expiry__announcement-finish"
+          type="primary"
+          prepend-icon="mdi-timer-check"
+          :loading="isAnnouncementSaving"
+          @click="finishAnnouncement">
+          {{ isAnnouncementSaving ? 'Verfall melden ...' : 'Verfall melden' }}
+        </LcButton>
+      </section>
+
+    </section>
+
+    <main v-else class="page-expiry__content">
+
+      <LcButton
+        class="page-expiry__announce"
+        type="primary"
+        prepend-icon="mdi-timer-plus"
+        @click="startAnnouncement">
+        Verfall melden
+      </LcButton>
+
+      <section class="page-bookin__empty" v-if="groupedExpiryData.length === 0">
+        <v-empty-state
+          icon="mdi-timer-sand-complete"
+          title="Kein Verfall erkannt">
+        </v-empty-state>
+      </section>
 
       <section
         v-for="usage in groupedExpiryData"
@@ -335,6 +648,8 @@
       </v-card>
     </v-dialog>
 
+    <LcFeedback ref="feedback" />
+
   </div>
 
 </template>
@@ -349,6 +664,56 @@
     height: calc(100% - 6rem);
     overflow-y: auto;
     padding: 1rem;
+  }
+
+  &__announce {
+    width: 100%;
+    height: 5rem;
+    margin-bottom: 1rem;
+    max-width: 850px !important;
+    margin: 0 auto 1.5rem auto;
+  }
+
+  &__announcement {
+    padding: 0.5rem;
+  }
+
+  &__announcement-selected {
+    height: 4rem;
+    background: var(--accent-primary-background);
+    color: var(--accent-primary-foreground);
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 0.5rem;
+    padding-left: 1.5rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+  }
+
+  &__announcement-clear {
+    width: 10rem;
+    height: 100%;
+    outline: 0.5rem solid var(--main-light);
+  }
+
+  &__announcement-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  &__announcement-fields {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: var(--accent-secondary-background);
+  }
+
+  &__announcement-finish {
+    width: 100%;
+    height: 6rem;
   }
 
   &__usage {

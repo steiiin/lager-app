@@ -31,7 +31,7 @@
     ...props.usages.filter(e=>e.could_expire),
   ])
 
-  const isEditExpiryNew = computed(() => !currentEditExpiryItem.value?.id)
+  const isEditExpiryNew = computed(() => !currentEditExpiryItem.value?.id && !currentEditExpiryItem.value?.client_id)
   const isStockExpiry = computed(() => currentEditExpiryItem.value?.usage_id === null)
   const isEditExpiryEmpty = computed(() => {
     const cur = currentEditExpiryItem.value
@@ -76,6 +76,7 @@
       expiryAt: null,
       expiryQuantity: 1,
       status: 'reserved',
+      is_ordered: false,
       note: '',
     }
     updateExpiry()
@@ -96,11 +97,13 @@
 
     currentEditExpiryItem.value = {
       id: item?.id ?? null,
+      client_id: item?.client_id ?? null,
       item_id: item?.item_id ?? null,
       usage_id: item?.usage_id ?? null,
       expiryAt,
       expiryQuantity: item?.expiryQuantity ?? 1,
       status: item?.status ?? 'reserved',
+      is_ordered: item?.is_ordered ?? false,
       note: item?.note ?? '',
     }
     isDialogVisible.value = true
@@ -129,11 +132,13 @@
 
     emit('save', {
       id: cur.id,
+      client_id: cur.client_id,
       item_id: cur.item_id,
       usage_id: cur.usage_id,
       expiryAt: cur.expiryAt,
       expiryQuantity: isStockExpiry.value ? 1 : cur.expiryQuantity,
       status: cur.status ?? 'reserved',
+      is_ordered: cur.is_ordered ?? false,
       note: cur.note,
     })
     cancel()
@@ -209,6 +214,14 @@
           class="mt-2"
           label="Notizen"
           rows="2"
+          hide-details
+        />
+
+        <v-switch
+          v-model="currentEditExpiryItem.is_ordered"
+          class="mt-2"
+          color="primary"
+          label="Bestellt"
           hide-details
         />
 

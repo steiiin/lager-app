@@ -483,7 +483,7 @@
       itemForm.max_order_quantity = item.max_order_quantity
       itemForm.max_bookin_quantity = item.max_bookin_quantity
 
-      itemForm.sizes = item.sizes
+      itemForm.sizes = (item.sizes ?? []).map((size) => ({ ...size }))
       itemForm.expiry_entries = item.expiry_entries ?? []
       itemForm.stockchangeReason = -1
 
@@ -615,7 +615,7 @@
         { title: 'Verwendung', key: 'usage_name', minWidth: '25%' },
         { title: 'Verfall', key: 'expiryAt', minWidth: '15%' },
         { title: 'Menge', key: 'expiryQuantityLabel', minWidth: '15%' },
-        { title: 'Status', key: 'status', minWidth: '15%' },
+        { title: 'Bestellt', key: 'is_ordered', minWidth: '12%' },
         { title: 'Notiz', key: 'note', minWidth: '20%' },
         { title: 'Bearbeiten', key: 'action', sortable: false },
       ])
@@ -640,9 +640,20 @@
         { id: null, name: 'Lagerbestand' },
         ...inventoryStore.usages.filter(usage => usage.could_expire),
       ])
+      const hasStockExpiry = computed(() => {
+        return itemForm.expiry_entries.some(entry => (
+          entry.usage_id === null
+          && entry.status === 'reserved'
+          && Number(entry.expiryQuantity ?? 0) > 0
+          && !!entry.expiryAt
+        ))
+      })
       const visibleExpiryAddOptions = computed(() => {
-        const hasStockExpiry = itemForm.expiry_entries.some(entry => entry.usage_id === null)
-        return expiryUsageOptions.value.filter(usage => usage.id !== null || !hasStockExpiry)
+        return expiryUsageOptions.value.filter(usage => (
+          hasStockExpiry.value
+            ? usage.id !== null
+            : usage.id === null
+        ))
       })
 
       const refreshCurrentItemFromStore = () => {
@@ -658,6 +669,7 @@
           expiryAt: entry.expiryAt,
           expiryQuantity: entry.expiryQuantity,
           status: entry.status,
+          is_ordered: entry.is_ordered ?? false,
           note: entry.note,
         }
 
@@ -1035,6 +1047,17 @@
                   </template>
                   <template v-slot:item.note="{ item }">
                     {{ item.note || '-' }}
+                  </template>
+                  <template v-slot:item.is_ordered="{ item }">
+                    <v-chip
+                      v-if="item.is_ordered"
+                      color="primary"
+                      size="small"
+                      variant="tonal"
+                    >
+                      Ja
+                    </v-chip>
+                    <span v-else>-</span>
                   </template>
                   <template v-slot:item.action="{ item }">
                     <v-btn small variant="outlined" @click="editExpiry(item)">

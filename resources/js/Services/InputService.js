@@ -119,7 +119,7 @@ const InputService = {
   },
   trackIdle () {
     if (this.idleTimer) { clearTimeout(this.idleTimer) }
-    this.idleTimer = setInterval(() => this.runCallbacks('Idle'), 1800000)
+    this.idleTimer = setInterval(() => this.runCallbacks('Idle'), 300000)
   },
 
   registerCallback(key, callback) {

@@ -13,12 +13,12 @@ class ExpiryService
   public function generate(): array
   {
     $today = CarbonImmutable::today();
-    $visibleUntil = $today->addMonthsNoOverflow(2)->endOfDay();
+    $currentMonthEnd = $today->endOfMonth();
+    $visibleUntil = $today->startOfMonth()->addMonthsNoOverflow(2)->endOfMonth();
     $items = Item::query()
       ->with(['basesize', 'expiryEntries.usage'])
       ->get();
 
-    $usageTotals = $this->getUsageTotals($items);
     $expiringUsages = Usage::query()
       ->where('could_expire', true)
       ->orderBy('name')
@@ -39,10 +39,10 @@ class ExpiryService
 
       $stock = $this->getStockState($item, $stockEntry);
 
-      if ($stockEntry !== null && $this->isVisibleExpiry($stockEntry, $visibleUntil) && $stockEntry->expiryAt->lte($today)) {
+      if ($stockEntry !== null && $this->isVisibleExpiry($stockEntry, $visibleUntil)) {
         foreach ($expiringUsages as $usage) {
           if (!$this->hasActiveUsageExpiry($entries, $usage->id)) {
-            $this->addStockExpiryGroup($groups, $item, $usage, $stockEntry, $stock);
+            $this->addStockExpiryGroup($groups, $item, $usage, $stockEntry, $stock, $currentMonthEnd, $visibleUntil);
           }
         }
       }
@@ -51,8 +51,7 @@ class ExpiryService
         $usageId = $entry->usage_id;
         $usageName = $entry->usage?->name ?? 'Unbekannt';
         $date = $entry->expiryAt->toDateString();
-        $totalUsageAmount = $usageTotals[$item->id][$date] ?? 0;
-        $state = $this->getEntryState($entry, $stock, $totalUsageAmount);
+        $state = $this->getEntryState($entry, $currentMonthEnd, $visibleUntil);
 
         $groups[$usageId] ??= [
           'usage_id' => $usageId,
@@ -82,6 +81,7 @@ class ExpiryService
           'state_label' => $this->getStateLabel($state),
           'note' => $entry->note ?: $stockEntry?->note,
           'status' => $entry->status,
+          'is_ordered' => (bool) $entry->is_ordered,
         ];
       }
     }
@@ -108,29 +108,11 @@ class ExpiryService
       ->all();
   }
 
-  private function getUsageTotals(Collection $items): array
-  {
-    $totals = [];
-
-    foreach ($items as $item) {
-      foreach ($item->expiryEntries as $entry) {
-        if (!$this->isActiveExpiry($entry) || $entry->usage_id === null) {
-          continue;
-        }
-
-        $date = $entry->expiryAt->toDateString();
-        $totals[$item->id][$date] ??= 0;
-        $totals[$item->id][$date] += (int) $entry->expiryQuantity;
-      }
-    }
-
-    return $totals;
-  }
-
-  private function addStockExpiryGroup(array &$groups, Item $item, Usage $usage, $stockEntry, array $stock): void
+  private function addStockExpiryGroup(array &$groups, Item $item, Usage $usage, $stockEntry, array $stock, CarbonImmutable $currentMonthEnd, CarbonImmutable $visibleUntil): void
   {
     $usageId = $usage->id;
     $date = $stockEntry->expiryAt->toDateString();
+    $state = $this->getEntryState($stockEntry, $currentMonthEnd, $visibleUntil);
 
     $groups[$usageId] ??= [
       'usage_id' => $usageId,
@@ -156,10 +138,11 @@ class ExpiryService
       'inventory_amount' => $stock['amount'],
       'inventory_expiry' => $stock['expiry']?->toDateString(),
       'inventory_expiry_label' => $this->formatExpiry($stock['expiry']),
-      'state' => 'red',
-      'state_label' => 'Bestellt',
+      'state' => $state,
+      'state_label' => $this->getStateLabel($state),
       'note' => $stockEntry->note,
       'status' => $stockEntry->status,
+      'is_ordered' => (bool) $stockEntry->is_ordered,
     ];
   }
 
@@ -191,28 +174,23 @@ class ExpiryService
     ];
   }
 
-  private function getEntryState($entry, array $stock, int $totalUsageAmount): string
+  private function getEntryState($entry, CarbonImmutable $currentMonthEnd, CarbonImmutable $visibleUntil): string
   {
-    if ($stock['amount'] <= 0 || $stock['expiry'] === null) {
+    if ($entry->expiryAt->lte($currentMonthEnd)) {
       return 'red';
     }
-    if ($stock['expiry']->lte($entry->expiryAt)) {
-      return $stock['expiry']->lte(CarbonImmutable::today()->addDays(30))
-        ? 'red'
-        : 'yellow';
+    if ($entry->expiryAt->lte($visibleUntil)) {
+      return 'yellow';
     }
-    if ($totalUsageAmount < $stock['amount']) {
-      return 'green';
-    }
-    return 'yellow';
+    return 'green';
   }
 
   private function getStateLabel(string $state): string
   {
     return match ($state) {
-      'red' => 'Bestellt',
-      'green' => 'Im Lager',
-      default => 'Zu Wenig',
+      'red' => 'Abgelaufen',
+      'green' => 'OK',
+      default => 'Läuft bald ab',
     };
   }
 

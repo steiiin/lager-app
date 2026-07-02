@@ -23,15 +23,17 @@ class ExpiryServiceTest extends TestCase
     parent::tearDown();
   }
 
-  public function test_generate_only_includes_expiries_for_the_next_two_months(): void
+  public function test_generate_includes_current_month_and_next_two_full_months(): void
   {
     CarbonImmutable::setTestNow('2026-07-01');
 
     $usage = $this->createUsage();
     $item = $this->createItem(['current_quantity' => 10]);
 
+    $this->createExpiry($item, $usage, '2026-07-31');
     $this->createExpiry($item, $usage, '2026-08-31');
     $this->createExpiry($item, $usage, '2026-09-30');
+    $this->createExpiry($item, $usage, '2026-10-31');
 
     $data = app(ExpiryService::class)->generate();
 
@@ -40,37 +42,57 @@ class ExpiryServiceTest extends TestCase
       ->values()
       ->all();
 
-    $this->assertSame(['2026-08-31'], $dates);
+    $this->assertSame(['2026-07-31', '2026-08-31', '2026-09-30'], $dates);
   }
 
-  public function test_inventory_expiry_before_usage_expiry_is_yellow_until_it_is_within_30_days(): void
+  public function test_current_month_expiry_is_red_and_abgelaufen(): void
   {
     CarbonImmutable::setTestNow('2026-07-01');
 
     $usage = $this->createUsage();
     $item = $this->createItem(['current_quantity' => 10]);
 
-    $this->createExpiry($item, null, '2026-08-15');
-    $usageExpiry = $this->createExpiry($item, $usage, '2026-08-31');
-
-    $row = $this->findExpiryRow(app(ExpiryService::class)->generate(), $usageExpiry->id);
-
-    $this->assertSame('yellow', $row['state']);
-  }
-
-  public function test_inventory_expiry_before_usage_expiry_is_red_within_30_days(): void
-  {
-    CarbonImmutable::setTestNow('2026-07-01');
-
-    $usage = $this->createUsage();
-    $item = $this->createItem(['current_quantity' => 10]);
-
-    $this->createExpiry($item, null, '2026-07-31');
-    $usageExpiry = $this->createExpiry($item, $usage, '2026-08-31');
+    $usageExpiry = $this->createExpiry($item, $usage, '2026-07-31');
 
     $row = $this->findExpiryRow(app(ExpiryService::class)->generate(), $usageExpiry->id);
 
     $this->assertSame('red', $row['state']);
+    $this->assertSame('Abgelaufen', $row['state_label']);
+  }
+
+  public function test_next_two_months_expiry_is_yellow_and_laeuft_bald_ab(): void
+  {
+    CarbonImmutable::setTestNow('2026-07-01');
+
+    $usage = $this->createUsage();
+    $item = $this->createItem(['current_quantity' => 10]);
+
+    $nextMonthExpiry = $this->createExpiry($item, $usage, '2026-08-31');
+    $monthAfterNextExpiry = $this->createExpiry($item, $usage, '2026-09-30');
+
+    $data = app(ExpiryService::class)->generate();
+    $nextMonthRow = $this->findExpiryRow($data, $nextMonthExpiry->id);
+    $monthAfterNextRow = $this->findExpiryRow($data, $monthAfterNextExpiry->id);
+
+    $this->assertSame('yellow', $nextMonthRow['state']);
+    $this->assertSame('Läuft bald ab', $nextMonthRow['state_label']);
+    $this->assertSame('yellow', $monthAfterNextRow['state']);
+    $this->assertSame('Läuft bald ab', $monthAfterNextRow['state_label']);
+  }
+
+  public function test_is_ordered_is_included_and_does_not_affect_calendar_state(): void
+  {
+    CarbonImmutable::setTestNow('2026-07-01');
+
+    $usage = $this->createUsage();
+    $item = $this->createItem(['current_quantity' => 10]);
+
+    $usageExpiry = $this->createExpiry($item, $usage, '2026-08-31', ['is_ordered' => true]);
+
+    $row = $this->findExpiryRow(app(ExpiryService::class)->generate(), $usageExpiry->id);
+
+    $this->assertSame('yellow', $row['state']);
+    $this->assertTrue($row['is_ordered']);
   }
 
   public function test_future_usage_expiry_suppresses_stock_row_only_for_that_usage(): void
@@ -171,6 +193,7 @@ class ExpiryServiceTest extends TestCase
       'expiryAt' => $expiryAt,
       'expiryQuantity' => $attributes['expiryQuantity'] ?? 1,
       'status' => $attributes['status'] ?? 'reserved',
+      'is_ordered' => $attributes['is_ordered'] ?? false,
       'note' => $attributes['note'] ?? null,
     ]);
   }

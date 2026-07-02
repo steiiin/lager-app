@@ -8,10 +8,11 @@ class Itemexpiry extends Model
 {
 
   protected $table = 'itemexpiry';
-  protected $fillable = [ 'item_id', 'usage_id', 'expiryAt', 'expiryQuantity', 'status', 'note' ];
+  protected $fillable = [ 'item_id', 'usage_id', 'expiryAt', 'expiryQuantity', 'status', 'is_ordered', 'note' ];
   protected $casts = [
     'expiryAt' => 'date',
     'expiryQuantity' => 'integer',
+    'is_ordered' => 'boolean',
   ];
   protected $with = [ 'usage' ];
 

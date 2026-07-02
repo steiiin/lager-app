@@ -56,6 +56,15 @@ class InventoryController extends Controller
       'sizes.*.unit'        => 'required|string',
       'sizes.*.amount'      => 'required|numeric|min:1|max:99999',
       'sizes.*.is_default'  => 'required|boolean',
+      'expiry_entries'      => 'nullable|array',
+      'expiry_entries.*.id' => 'nullable|integer|exists:itemexpiry,id',
+      'expiry_entries.*.item_id' => 'nullable|integer|exists:items,id',
+      'expiry_entries.*.usage_id' => 'nullable|integer|exists:usages,id',
+      'expiry_entries.*.expiryAt' => 'required_with:expiry_entries|date',
+      'expiry_entries.*.expiryQuantity' => 'nullable|integer|min:1|max:99999',
+      'expiry_entries.*.status' => 'nullable|string',
+      'expiry_entries.*.is_ordered' => 'sometimes|boolean',
+      'expiry_entries.*.note' => 'nullable|string',
       'checked_at'          => 'nullable|string',
       'current_expiry'      => 'nullable|string',
       'current_quantity'    => 'required|numeric|min:-99999|max:99999',
@@ -65,8 +74,9 @@ class InventoryController extends Controller
 
     DB::transaction(function () use ($request) {
 
-      $newItem = Item::create($request->except('sizes'));
+      $newItem = Item::create($request->except('sizes', 'expiry_entries'));
       $this->handleSizes($request->input('sizes'), $newItem);
+      $this->handleExpiryEntries($request->input('expiry_entries', []), $newItem);
 
     });
 
@@ -94,6 +104,15 @@ class InventoryController extends Controller
       'sizes.*.unit'        => 'required|string',
       'sizes.*.amount'      => 'required|numeric|min:1|max:99999',
       'sizes.*.is_default'  => 'required|boolean',
+      'expiry_entries'      => 'nullable|array',
+      'expiry_entries.*.id' => 'nullable|integer|exists:itemexpiry,id',
+      'expiry_entries.*.item_id' => 'nullable|integer|exists:items,id',
+      'expiry_entries.*.usage_id' => 'nullable|integer|exists:usages,id',
+      'expiry_entries.*.expiryAt' => 'required_with:expiry_entries|date',
+      'expiry_entries.*.expiryQuantity' => 'nullable|integer|min:1|max:99999',
+      'expiry_entries.*.status' => 'nullable|string',
+      'expiry_entries.*.is_ordered' => 'sometimes|boolean',
+      'expiry_entries.*.note' => 'nullable|string',
       'checked_at'          => 'nullable|string',
       'current_expiry'      => 'nullable|string',
       'current_quantity'    => 'required|numeric|min:-99999|max:99999',
@@ -107,8 +126,9 @@ class InventoryController extends Controller
       $item = Item::findOrFail($id);
 
       $this->handleStockChange($request, $item);
-      $item->update($request->except('sizes'));
+      $item->update($request->except('sizes', 'expiry_entries', 'stockchangeReason'));
       $this->handleSizes($request->input('sizes'), $item);
+      $this->handleExpiryEntries($request->input('expiry_entries', []), $item);
       $this->handleCheck($item);
 
     });
@@ -172,6 +192,46 @@ class InventoryController extends Controller
         }
       }
 
+    }
+  }
+
+  private function handleExpiryEntries(array $entries, Item $item)
+  {
+    $entryIds = collect($entries)
+      ->pluck('id')
+      ->filter()
+      ->values();
+
+    $deleteQuery = Itemexpiry::where('item_id', $item->id);
+
+    if ($entryIds->isNotEmpty()) {
+      $deleteQuery->whereNotIn('id', $entryIds);
+    }
+
+    $deleteQuery->delete();
+
+    foreach ($entries as $entry) {
+      $data = [
+        'item_id' => $item->id,
+        'usage_id' => $entry['usage_id'] ?? null,
+        'expiryAt' => $entry['expiryAt'],
+        'expiryQuantity' => ($entry['usage_id'] ?? null) === null
+          ? 1
+          : ($entry['expiryQuantity'] ?? 1),
+        'status' => $entry['status'] ?? 'reserved',
+        'is_ordered' => (bool) ($entry['is_ordered'] ?? false),
+        'note' => $entry['note'] ?? '',
+      ];
+
+      if (empty($entry['id'])) {
+        Itemexpiry::create($data);
+        continue;
+      }
+
+      $item->expiryEntries()
+        ->where('id', $entry['id'])
+        ->firstOrFail()
+        ->update($data);
     }
   }
 
