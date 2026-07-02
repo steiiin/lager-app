@@ -70,9 +70,6 @@
   function openInventoryLabels() {
     router.get('/inventory-labels')
   }
-  function openInventoryInsights() {
-    router.get('/inventory-insights')
-  }
 
   // #region KeyboardShortcuts
 
@@ -768,26 +765,6 @@
           :result-specs="{ w: 850, i: 19.0 }" :allow-new="inEditMode" :disabled="isItemSelected"
           @create-new="createNew" @select-item="editItem">
         </LcItemInput>
-
-        <!-- Dashboard -->
-        <v-card class="mt-2" variant="outlined" v-show="inCheckMode" v-if="false"><!-- Remove temporarly Insights -->
-          <v-list-item class="px-6" height="88">
-            <template v-slot:prepend>
-              <v-icon icon="mdi-gauge-low"></v-icon>
-            </template>
-            <template v-slot:title> <b>Entnahme & Insights</b> </template>
-
-            <template v-slot:append>
-              <v-btn v-if="inCheckMode"
-                class="text-none"
-                color="primary"
-                text="DASHBOARD ÖFFNEN"
-                variant="text"
-                slim @click="openInventoryInsights"
-              ></v-btn>
-            </template>
-          </v-list-item>
-        </v-card>
 
         <!-- CheckBoad -->
         <v-card class="mt-2" variant="outlined" v-show="inCheckMode">
