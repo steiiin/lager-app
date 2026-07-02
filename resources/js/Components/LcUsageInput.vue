@@ -28,6 +28,13 @@
 // #endregion
 // #region Props
 
+  const props = defineProps({
+    onlyExpireable: {
+      type: Boolean,
+      default: false,
+    },
+  })
+
   const inventoryStore = useInventoryStore()
 
   // #region TemplateProps
@@ -55,9 +62,8 @@
 
   const selectionOptions = computed(() => {
     if (!hasAnyUsages.value) { return [] }
-
     return [
-      ...inventoryStore.usages.map(usage => ({
+      ...inventoryStore.usages.filter(u=>props.onlyExpireable ? u.could_expire : true).map(usage => ({
         type: 'usage',
         value: usage,
         key: `usage-${usage.barcode}`,

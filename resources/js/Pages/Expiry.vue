@@ -394,7 +394,7 @@
 
     <section v-if="isAnnouncementMode" class="page-expiry__announcement">
 
-      <LcUsageInput v-if="!hasAnnouncementUsage"
+      <LcUsageInput v-if="!hasAnnouncementUsage" only-expireable
         @select-usage="selectAnnouncementUsage"
         @other-code="warnAboutAnnouncementUsage"
         @ctrl-finish="handleEnter">
@@ -671,7 +671,7 @@
     height: 5rem;
     margin-bottom: 1rem;
     max-width: 850px !important;
-    margin: 0 auto 1.5rem auto;
+    margin: -.5rem auto 1rem auto;
   }
 
   &__announcement {
