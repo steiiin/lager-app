@@ -997,6 +997,14 @@
           <v-expansion-panel class="mt-1" title="Aktueller Bestand" color="black">
             <v-expansion-panel-text>
 
+              <v-alert v-if="itemForm.onvehicle_stock >= itemForm.max_stock"
+                style="margin:1rem 0"
+                text="Der Fahrzeugbestand übersteigt den Lagerbestand."
+                title="Achtung"
+                type="warning"
+                variant="tonal"
+              />
+
               <v-form>
                 <v-row>
                   <v-col cols="4" class="page-inventory__table--result">
@@ -1042,6 +1050,7 @@
               />
 
               <template v-else>
+
                 <v-data-table
                   :items="getExpiryTableItems"
                   :headers="expiryHeaders"
