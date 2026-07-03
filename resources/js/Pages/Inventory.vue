@@ -353,6 +353,17 @@
       clearSelectedItem(true)
     }
 
+    const checkAllLowStockItems = () => {
+
+      const itemsToCheck = [ ...inventoryStore.items ]
+        .filter(item => Number(item.onvehicle_stock ?? 0) > Number(item.max_stock ?? 0))
+        .sort(compareByLocation)
+
+      checkAllList.value = itemsToCheck.map(item => item.id)
+
+      clearSelectedItem(true)
+    }
+
     const checkAllItems = () => {
 
       const todayStart = getTodayStart()
@@ -785,17 +796,8 @@
             <template v-slot:prepend>
               <v-icon icon="mdi-clipboard-clock"></v-icon>
             </template>
-
-            <template v-slot:title> <b>Regelmäßige Prüfung</b> </template>
-
+            <template v-slot:title> <b>Checklisten</b> </template>
             <template v-slot:append>
-              <v-btn v-if="inCheckMode"
-                class="text-none"
-                color="primary"
-                text="PRÜFE LISTE"
-                variant="text"
-                slim @click="checkAllNecessaryItems"
-              ></v-btn>
               <v-btn v-if="inCheckMode"
                 class="text-none"
                 color="primary"
@@ -806,9 +808,35 @@
               <v-btn v-if="inCheckMode"
                 class="text-none"
                 color="primary"
+                text="GERING-BESTAND"
+                variant="text"
+                slim @click="checkAllLowStockItems"
+              ></v-btn>
+              <v-btn v-if="inCheckMode"
+                class="text-none"
+                color="primary"
                 text="ALLES"
                 variant="text"
                 slim @click="checkAllItems"
+              ></v-btn>
+            </template>
+          </v-list-item>
+        </v-card>
+        <v-card class="mt-2" variant="outlined" v-show="inCheckMode">
+          <v-list-item class="px-6" height="88">
+            <template v-slot:prepend>
+              <v-icon icon="mdi-clipboard-clock"></v-icon>
+            </template>
+
+            <template v-slot:title> <b>Regelmäßige Prüfung</b> </template>
+
+            <template v-slot:append>
+              <v-btn v-if="inCheckMode"
+                class="text-none"
+                color="primary"
+                text="PRÜFE LISTE"
+                variant="text"
+                slim @click="checkAllNecessaryItems"
               ></v-btn>
             </template>
           </v-list-item>
