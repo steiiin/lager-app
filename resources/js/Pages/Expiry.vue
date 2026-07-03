@@ -487,7 +487,7 @@
 
     </section>
 
-    <main v-else class="page-expiry__content">
+    <section v-else class="page-expiry__content">
 
       <LcButton
         class="page-expiry__announce"
@@ -571,10 +571,9 @@
         </section>
       </section>
 
-    </main>
+    </section>
 
     <LcRouteOverlay v-show="isRouting" />
-
     <v-dialog v-model="isDismissDialogVisible" max-width="480px" persistent>
       <v-card
         v-if="dismissItem"
@@ -647,7 +646,6 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-
     <LcFeedback ref="feedback" />
 
   </div>
