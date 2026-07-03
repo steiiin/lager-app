@@ -46,7 +46,7 @@
 
   let cursorVisible = false
   let hideCursorTimeout = null
-  const timeoutDuration = 3000
+  const timeoutDuration = 6000
 
   const showCursor = () => {
     if (!cursorVisible) {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Itemexpiry;
+use App\Services\ItemExpiryCleanupService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,45 +13,60 @@ use Illuminate\Validation\ValidationException;
 class ItemExpiryController extends Controller
 {
 
-  public function store(Request $request): JsonResponse
+  public function store(Request $request, ItemExpiryCleanupService $cleanupService): JsonResponse
   {
     $data = $this->validateExpiry($request);
     $data['status'] = 'reserved';
 
-    $expiry = Itemexpiry::create($data);
+    $expiry = DB::transaction(function () use ($data, $request, $cleanupService) {
+      $expiry = Itemexpiry::create($data);
+
+      if ($expiry->usage_id !== null && $request->boolean('update_inventory')) {
+        $this->updateInventoryExpiryIfOlder($expiry, CarbonImmutable::parse($expiry->expiryAt)->startOfDay());
+      }
+
+      $cleanupService->cleanupItem($expiry->item_id);
+
+      return $expiry;
+    });
 
     return response()->json($expiry->fresh(), 201);
   }
 
-  public function update(Request $request, $id): JsonResponse
+  public function update(Request $request, $id, ItemExpiryCleanupService $cleanupService): JsonResponse
   {
     $expiry = Itemexpiry::findOrFail($id);
     $data = $this->validateExpiry($request, $expiry);
     $data['status'] = $request->input('status', $expiry->status);
 
-    $expiry->update($data);
+    DB::transaction(function () use ($expiry, $data, $request, $cleanupService) {
+      $expiry->update($data);
+
+      if ($expiry->usage_id !== null && $request->boolean('update_inventory')) {
+        $this->updateInventoryExpiryIfOlder($expiry, CarbonImmutable::parse($expiry->expiryAt)->startOfDay());
+      }
+
+      $cleanupService->cleanupItem($expiry->item_id);
+    });
 
     return response()->json($expiry->fresh());
   }
 
-  public function destroy($id): JsonResponse
+  public function destroy($id, ItemExpiryCleanupService $cleanupService): JsonResponse
   {
     $expiry = Itemexpiry::findOrFail($id);
+    $itemId = $expiry->item_id;
 
-    DB::transaction(function () use ($expiry) {
-      if ($expiry->usage_id === null) {
-        Itemexpiry::where('item_id', $expiry->item_id)
-          ->whereNotNull('usage_id')
-          ->delete();
-      }
-
+    DB::transaction(function () use ($expiry, $cleanupService, $itemId) {
       $expiry->delete();
+
+      $cleanupService->cleanupItem($itemId);
     });
 
     return response()->json([ 'ok' => true ]);
   }
 
-  public function dismiss(Request $request, $id): JsonResponse
+  public function dismiss(Request $request, $id, ItemExpiryCleanupService $cleanupService): JsonResponse
   {
     $data = $request->validate([
       'nextExpiryAt' => 'required|date',
@@ -85,6 +101,8 @@ class ItemExpiryController extends Controller
       $usageExpiry->note = null;
       $usageExpiry->save();
 
+      $cleanupService->cleanupItem($expiry->item_id);
+
       return response()->json($usageExpiry->fresh());
     }
 
@@ -93,6 +111,8 @@ class ItemExpiryController extends Controller
 
       $expiry->expiryAt = $nextExpiry;
       $expiry->save();
+
+      $cleanupService->cleanupItem($expiry->item_id);
 
       return response()->json($expiry->fresh());
     }
@@ -103,6 +123,7 @@ class ItemExpiryController extends Controller
       ? $inventoryExpiry
       : $nextExpiry;
     $expiry->save();
+    $cleanupService->cleanupItem($expiry->item_id);
 
     return response()->json($expiry->fresh());
   }
@@ -131,31 +152,9 @@ class ItemExpiryController extends Controller
           'expiryQuantity' => ['Die Menge muss ausgefüllt werden.'],
         ]);
       }
-
-      if (!$this->hasStockExpiry($data['item_id'], $existingExpiry)) {
-        throw ValidationException::withMessages([
-          'usage_id' => ['Bitte erfasse zuerst den Verfall für den Lagerbestand.'],
-        ]);
-      }
     }
 
     return $data;
-  }
-
-  private function hasStockExpiry(int $itemId, ?Itemexpiry $existingExpiry = null): bool
-  {
-    $query = Itemexpiry::query()
-      ->where('item_id', $itemId)
-      ->whereNull('usage_id')
-      ->where('status', 'reserved')
-      ->where('expiryQuantity', '>', 0)
-      ->whereNotNull('expiryAt');
-
-    if ($existingExpiry !== null) {
-      $query->where('id', '!=', $existingExpiry->id);
-    }
-
-    return $query->exists();
   }
 
   private function getInventoryExpiry(Itemexpiry $expiry): ?CarbonImmutable
@@ -192,6 +191,22 @@ class ItemExpiryController extends Controller
     if ($expiry->item?->current_expiry) {
       $expiry->item->current_expiry = $nextExpiry;
       $expiry->item->save();
+    }
+  }
+
+  private function updateInventoryExpiryIfOlder(Itemexpiry $expiry, CarbonImmutable $nextExpiry): void
+  {
+    $stockEntry = $this->getStockEntry($expiry);
+
+    if ($stockEntry === null || $stockEntry->expiryAt === null) {
+      return;
+    }
+
+    $stockExpiry = CarbonImmutable::parse($stockEntry->expiryAt)->startOfDay();
+
+    if ($stockExpiry->lt($nextExpiry)) {
+      $stockEntry->expiryAt = $nextExpiry;
+      $stockEntry->save();
     }
   }
 

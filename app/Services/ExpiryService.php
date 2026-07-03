@@ -13,8 +13,8 @@ class ExpiryService
   public function generate(): array
   {
     $today = CarbonImmutable::today();
-    $currentMonthEnd = $today->endOfMonth();
-    $visibleUntil = $today->startOfMonth()->addMonthsNoOverflow(2)->endOfMonth();
+    $redUntil = $today->addDays(10);
+    $visibleUntil = $today->addDays(30);
     $items = Item::query()
       ->with(['basesize', 'expiryEntries.usage'])
       ->get();
@@ -35,14 +35,16 @@ class ExpiryService
         ->whereNull('usage_id')
         ->sortBy('expiryAt')
         ->first();
-      $usageEntries = $visibleEntries->whereNotNull('usage_id');
+      $usageEntries = $visibleEntries
+        ->whereNotNull('usage_id')
+        ->reject(fn($entry) => $this->isUsageExpiryCoveredByStock($entry, $stockEntry));
 
       $stock = $this->getStockState($item, $stockEntry);
 
       if ($stockEntry !== null && $this->isVisibleExpiry($stockEntry, $visibleUntil)) {
         foreach ($expiringUsages as $usage) {
-          if (!$this->hasActiveUsageExpiry($entries, $usage->id)) {
-            $this->addStockExpiryGroup($groups, $item, $usage, $stockEntry, $stock, $currentMonthEnd, $visibleUntil);
+          if (!$this->hasEarlierUsageExpiry($entries, $usage->id, $stockEntry)) {
+            $this->addStockExpiryGroup($groups, $item, $usage, $stockEntry, $stock, $redUntil, $visibleUntil);
           }
         }
       }
@@ -51,7 +53,7 @@ class ExpiryService
         $usageId = $entry->usage_id;
         $usageName = $entry->usage?->name ?? 'Unbekannt';
         $date = $entry->expiryAt->toDateString();
-        $state = $this->getEntryState($entry, $currentMonthEnd, $visibleUntil);
+        $state = $this->getEntryState($entry, $redUntil, $visibleUntil);
 
         $groups[$usageId] ??= [
           'usage_id' => $usageId,
@@ -108,11 +110,11 @@ class ExpiryService
       ->all();
   }
 
-  private function addStockExpiryGroup(array &$groups, Item $item, Usage $usage, $stockEntry, array $stock, CarbonImmutable $currentMonthEnd, CarbonImmutable $visibleUntil): void
+  private function addStockExpiryGroup(array &$groups, Item $item, Usage $usage, $stockEntry, array $stock, CarbonImmutable $redUntil, CarbonImmutable $visibleUntil): void
   {
     $usageId = $usage->id;
     $date = $stockEntry->expiryAt->toDateString();
-    $state = $this->getEntryState($stockEntry, $currentMonthEnd, $visibleUntil);
+    $state = $this->getEntryState($stockEntry, $redUntil, $visibleUntil);
 
     $groups[$usageId] ??= [
       'usage_id' => $usageId,
@@ -133,8 +135,8 @@ class ExpiryService
       'item_name' => $item->name,
       'usage_id' => null,
       'expiry_date' => $date,
-      'amount' => $stock['amount'],
-      'unit' => $item->basesize?->unit ?? 'Stk',
+      'amount' => '', // $stock['amount'],
+      'unit' => '-', // $item->basesize?->unit ?? 'Stk',
       'inventory_amount' => $stock['amount'],
       'inventory_expiry' => $stock['expiry']?->toDateString(),
       'inventory_expiry_label' => $this->formatExpiry($stock['expiry']),
@@ -146,9 +148,18 @@ class ExpiryService
     ];
   }
 
-  private function hasActiveUsageExpiry(Collection $entries, int $usageId): bool
+  private function hasEarlierUsageExpiry(Collection $entries, int $usageId, $stockEntry): bool
   {
-    return $entries->contains(fn($entry) => (int) $entry->usage_id === $usageId);
+    return $entries->contains(fn($entry) => (int) $entry->usage_id === $usageId
+      && !$this->isUsageExpiryCoveredByStock($entry, $stockEntry));
+  }
+
+  private function isUsageExpiryCoveredByStock($entry, $stockEntry): bool
+  {
+    return $stockEntry !== null
+      && $entry->expiryAt !== null
+      && $stockEntry->expiryAt !== null
+      && $entry->expiryAt->gte($stockEntry->expiryAt);
   }
 
   private function isActiveExpiry($entry): bool
@@ -174,9 +185,9 @@ class ExpiryService
     ];
   }
 
-  private function getEntryState($entry, CarbonImmutable $currentMonthEnd, CarbonImmutable $visibleUntil): string
+  private function getEntryState($entry, CarbonImmutable $redUntil, CarbonImmutable $visibleUntil): string
   {
-    if ($entry->expiryAt->lte($currentMonthEnd)) {
+    if ($entry->expiryAt->lte($redUntil)) {
       return 'red';
     }
     if ($entry->expiryAt->lte($visibleUntil)) {
@@ -199,7 +210,6 @@ class ExpiryService
     if (!$date) {
       return 'Kein MHD';
     }
-
     return $date->format('m-Y');
   }
 

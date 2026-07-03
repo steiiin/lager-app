@@ -66,7 +66,7 @@ class ItemExpiryDismissTest extends TestCase
     ]);
 
     $response->assertOk();
-    $this->assertSame('2026-08-31', $entry->fresh()->expiryAt->toDateString());
+    $this->assertDatabaseMissing('itemexpiry', [ 'id' => $entry->id ]);
   }
 
   public function test_stock_expiry_rows_can_be_dismissed(): void
@@ -112,13 +112,9 @@ class ItemExpiryDismissTest extends TestCase
 
     $response->assertOk();
     $this->assertSame('2026-10-31', $stockEntry->fresh()->expiryAt->toDateString());
-    $this->assertDatabaseHas('itemexpiry', [
+    $this->assertDatabaseMissing('itemexpiry', [
       'item_id' => $item->id,
       'usage_id' => $usage->id,
-      'expiryAt' => '2026-10-31',
-      'expiryQuantity' => 1,
-      'status' => 'reserved',
-      'note' => null,
     ]);
   }
 
@@ -153,10 +149,10 @@ class ItemExpiryDismissTest extends TestCase
 
     $response->assertOk();
     $this->assertSame('2026-10-31', $stockEntry->fresh()->expiryAt->toDateString());
-    $this->assertSame('2026-10-31', $usageEntry->fresh()->expiryAt->toDateString());
+    $this->assertDatabaseMissing('itemexpiry', [ 'id' => $usageEntry->id ]);
   }
 
-  public function test_usage_expiry_requires_a_stock_expiry(): void
+  public function test_usage_expiry_can_be_created_without_stock_expiry(): void
   {
     $item = $this->createItem();
     $usage = Usage::create([
@@ -171,11 +167,13 @@ class ItemExpiryDismissTest extends TestCase
       'expiryQuantity' => 1,
     ]);
 
-    $response->assertUnprocessable();
-    $response->assertJsonValidationErrors(['usage_id']);
-    $this->assertDatabaseMissing('itemexpiry', [
+    $response->assertCreated();
+    $this->assertDatabaseHas('itemexpiry', [
       'item_id' => $item->id,
       'usage_id' => $usage->id,
+      'expiryAt' => '2026-08-31',
+      'expiryQuantity' => 1,
+      'status' => 'reserved',
     ]);
   }
 
@@ -189,7 +187,7 @@ class ItemExpiryDismissTest extends TestCase
     Itemexpiry::create([
       'item_id' => $item->id,
       'usage_id' => null,
-      'expiryAt' => '2026-07-31',
+      'expiryAt' => '2026-09-30',
       'expiryQuantity' => 1,
       'status' => 'reserved',
       'note' => null,
@@ -226,7 +224,7 @@ class ItemExpiryDismissTest extends TestCase
     Itemexpiry::create([
       'item_id' => $item->id,
       'usage_id' => null,
-      'expiryAt' => '2026-07-31',
+      'expiryAt' => '2026-09-30',
       'expiryQuantity' => 1,
       'status' => 'reserved',
       'note' => null,
@@ -253,7 +251,7 @@ class ItemExpiryDismissTest extends TestCase
     $this->assertTrue((bool) $entry->fresh()->is_ordered);
   }
 
-  public function test_deleting_stock_expiry_deletes_usage_expiries_for_the_item(): void
+  public function test_deleting_stock_expiry_keeps_usage_expiries_for_the_item(): void
   {
     $item = $this->createItem();
     $otherItem = $this->createItem(['name' => 'Other item']);
@@ -290,8 +288,134 @@ class ItemExpiryDismissTest extends TestCase
 
     $response->assertOk();
     $this->assertDatabaseMissing('itemexpiry', [ 'id' => $stockEntry->id ]);
-    $this->assertDatabaseMissing('itemexpiry', [ 'id' => $usageEntry->id ]);
+    $this->assertDatabaseHas('itemexpiry', [ 'id' => $usageEntry->id ]);
     $this->assertDatabaseHas('itemexpiry', [ 'id' => $otherUsageEntry->id ]);
+  }
+
+  public function test_stock_update_deletes_later_usage_expiry(): void
+  {
+    $item = $this->createItem();
+    $usage = Usage::create([
+      'name' => 'Station',
+      'could_expire' => true,
+    ]);
+    $stockEntry = Itemexpiry::create([
+      'item_id' => $item->id,
+      'usage_id' => null,
+      'expiryAt' => '2026-06-30',
+      'expiryQuantity' => 1,
+      'status' => 'reserved',
+      'note' => null,
+    ]);
+    $usageEntry = Itemexpiry::create([
+      'item_id' => $item->id,
+      'usage_id' => $usage->id,
+      'expiryAt' => '2028-08-31',
+      'expiryQuantity' => 1,
+      'status' => 'reserved',
+      'note' => null,
+    ]);
+
+    $response = $this->putJson("/api/item-expiry/{$stockEntry->id}", [
+      'item_id' => $item->id,
+      'usage_id' => null,
+      'expiryAt' => '2027-08-31',
+      'expiryQuantity' => 1,
+    ]);
+
+    $response->assertOk();
+    $this->assertDatabaseMissing('itemexpiry', [ 'id' => $usageEntry->id ]);
+  }
+
+  public function test_stock_update_keeps_earlier_usage_expiry(): void
+  {
+    $item = $this->createItem();
+    $usage = Usage::create([
+      'name' => 'Station',
+      'could_expire' => true,
+    ]);
+    $stockEntry = Itemexpiry::create([
+      'item_id' => $item->id,
+      'usage_id' => null,
+      'expiryAt' => '2026-06-30',
+      'expiryQuantity' => 1,
+      'status' => 'reserved',
+      'note' => null,
+    ]);
+    $usageEntry = Itemexpiry::create([
+      'item_id' => $item->id,
+      'usage_id' => $usage->id,
+      'expiryAt' => '2028-08-31',
+      'expiryQuantity' => 1,
+      'status' => 'reserved',
+      'note' => null,
+    ]);
+
+    $response = $this->putJson("/api/item-expiry/{$stockEntry->id}", [
+      'item_id' => $item->id,
+      'usage_id' => null,
+      'expiryAt' => '2029-08-31',
+      'expiryQuantity' => 1,
+    ]);
+
+    $response->assertOk();
+    $this->assertDatabaseHas('itemexpiry', [ 'id' => $usageEntry->id ]);
+  }
+
+  public function test_announcement_updates_older_stock_and_removes_redundant_usage_expiry(): void
+  {
+    $item = $this->createItem();
+    $usage = Usage::create([
+      'name' => 'Station',
+      'could_expire' => true,
+    ]);
+    $stockEntry = Itemexpiry::create([
+      'item_id' => $item->id,
+      'usage_id' => null,
+      'expiryAt' => '2026-06-30',
+      'expiryQuantity' => 1,
+      'status' => 'reserved',
+      'note' => null,
+    ]);
+
+    $response = $this->postJson('/api/item-expiry', [
+      'item_id' => $item->id,
+      'usage_id' => $usage->id,
+      'expiryAt' => '2027-07-31',
+      'expiryQuantity' => 1,
+      'update_inventory' => true,
+    ]);
+
+    $response->assertCreated();
+    $this->assertSame('2027-07-31', $stockEntry->fresh()->expiryAt->toDateString());
+    $this->assertDatabaseMissing('itemexpiry', [
+      'item_id' => $item->id,
+      'usage_id' => $usage->id,
+    ]);
+  }
+
+  public function test_usage_only_expiry_remains_when_update_inventory_has_no_stock_expiry(): void
+  {
+    $item = $this->createItem();
+    $usage = Usage::create([
+      'name' => 'Station',
+      'could_expire' => true,
+    ]);
+
+    $response = $this->postJson('/api/item-expiry', [
+      'item_id' => $item->id,
+      'usage_id' => $usage->id,
+      'expiryAt' => '2027-07-31',
+      'expiryQuantity' => 1,
+      'update_inventory' => true,
+    ]);
+
+    $response->assertCreated();
+    $this->assertDatabaseHas('itemexpiry', [
+      'item_id' => $item->id,
+      'usage_id' => $usage->id,
+      'expiryAt' => '2027-07-31',
+    ]);
   }
 
   public function test_dismiss_requires_a_valid_next_expiry(): void

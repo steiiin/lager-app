@@ -342,6 +342,17 @@
       clearSelectedItem(true)
     }
 
+    const checkAllVehicleItems = () => {
+
+      const itemsToCheck = [ ...inventoryStore.items ]
+        .filter(item => Number(item.max_stock ?? 0) === 0)
+        .sort(compareByLocation)
+
+      checkAllList.value = itemsToCheck.map(item => item.id)
+
+      clearSelectedItem(true)
+    }
+
     const checkAllItems = () => {
 
       const todayStart = getTodayStart()
@@ -792,7 +803,14 @@
               <v-btn v-if="inCheckMode"
                 class="text-none"
                 color="primary"
-                text="INVENTUR"
+                text="KFZ-BESTAND"
+                variant="text"
+                slim @click="checkAllVehicleItems"
+              ></v-btn>
+              <v-btn v-if="inCheckMode"
+                class="text-none"
+                color="primary"
+                text="ALLES"
                 variant="text"
                 slim @click="checkAllItems"
               ></v-btn>

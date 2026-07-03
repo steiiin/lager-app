@@ -207,24 +207,15 @@
     announcementError.value = ''
 
     const expiryAt = toDateString(new Date(announcementYear.value, announcementMonth.value, 0))
-    const stockExpiry = getReservedStockExpiry(announcementItem.value)
     const usageExpiry = getReservedUsageExpiry(announcementItem.value, announcementUsage.value.id)
 
     try {
-      if (!stockExpiry) {
-        await axios.post('/api/item-expiry', {
-          item_id: announcementItem.value.id,
-          usage_id: null,
-          expiryAt,
-          expiryQuantity: 1,
-        })
-      }
-
       const payload = {
         item_id: announcementItem.value.id,
         usage_id: announcementUsage.value.id,
         expiryAt,
         expiryQuantity: announcementAmount.value,
+        update_inventory: true,
       }
 
       if (usageExpiry) {
@@ -668,7 +659,7 @@
 
   &__content {
 
-    height: calc(100% - 20rem);
+    height: calc(100% - 12.5rem);
 
   }
 
@@ -816,7 +807,7 @@
     }
 
     &--yellow {
-      border-left-color: #f9a825;
+      border-left-color: #f9e225;
     }
 
     &--green {
@@ -837,7 +828,7 @@
     }
 
     &--yellow {
-      background: #f9a825;
+      background: #f9e225;
       color: var(--main-dark);
     }
 
@@ -860,7 +851,7 @@
     }
 
     &--yellow {
-      background: #f9a825;
+      background: #f9e225;
       color: var(--main-dark);
     }
 
@@ -882,7 +873,7 @@
     }
 
     &--yellow .page-expiry__note {
-      border-left-color: #f9a825;
+      border-left-color: #f9e225;
     }
 
     &--green .page-expiry__note {
