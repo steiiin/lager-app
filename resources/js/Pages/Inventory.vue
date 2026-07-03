@@ -656,11 +656,7 @@
         ))
       })
       const visibleExpiryAddOptions = computed(() => {
-        return expiryUsageOptions.value.filter(usage => (
-          hasStockExpiry.value
-            ? usage.id !== null
-            : usage.id === null
-        ))
+        return expiryUsageOptions.value
       })
 
       const refreshCurrentItemFromStore = () => {
