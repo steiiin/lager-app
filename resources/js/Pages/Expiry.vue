@@ -392,6 +392,7 @@
 
     <LcPagebar title="Verfall" :disabled="isAnnouncementSaving" @back="openWelcome"></LcPagebar>
 
+    <!-- Announcement (Pickers) -->
     <section v-if="isAnnouncementMode" class="page-expiry__announcement">
 
       <LcUsageInput v-if="!hasAnnouncementUsage" only-expireable
@@ -487,92 +488,99 @@
 
     </section>
 
-    <main v-else class="page-expiry__content">
+    <!-- Content -->
+    <section v-else class="page-expiry__content">
 
+      <!-- Announce button -->
       <LcButton
         class="page-expiry__announce"
-        type="primary"
-        prepend-icon="mdi-timer-plus"
-        @click="startAnnouncement">
-        Verfall melden
+        type="primary" prepend-icon="mdi-timer-plus"
+        @click="startAnnouncement">Verfall melden
       </LcButton>
 
-      <section class="page-bookin__empty" v-if="groupedExpiryData.length === 0">
+      <!-- Empty state -->
+      <section class="page-expiry__empty" v-if="groupedExpiryData.length === 0">
         <v-empty-state
           icon="mdi-timer-sand-complete"
-          title="Kein Verfall erkannt">
+          title="Kein Verfall bekannt">
         </v-empty-state>
       </section>
 
-      <section
-        v-for="usage in groupedExpiryData"
-        :key="usage.usage_id"
-        class="page-expiry__usage"
-      >
-        <header class="page-expiry__usage-title">
-          <v-icon icon="mdi-truck"></v-icon>
-          {{ usage.usage_name }}
-        </header>
+      <!-- Expiry list -->
+      <div class="page-expiry__list" v-else>
 
         <section
-          v-for="dateGroup in usage.dates"
-          :key="dateGroup.expiry_date"
-          class="page-expiry__date"
+          v-for="usage in groupedExpiryData"
+          :key="usage.usage_id"
+          class="page-expiry__usage"
         >
-          <div class="page-expiry__date-title">
-            <v-icon icon="mdi-timer-sand-complete"></v-icon>
-            {{ dateGroup.expiry_label }}
-          </div>
+          <header class="page-expiry__usage-title">
+            <v-icon icon="mdi-truck"></v-icon>
+            {{ usage.usage_name }}
+          </header>
 
-          <v-data-table
-            :items="dateGroup.items"
-            :headers="tableHeader"
-            :sort-by="tableSortBy"
-            density="compact"
-            :items-per-page="999"
-            hide-default-footer
-            class="page-expiry__table"
+          <section
+            v-for="dateGroup in usage.dates"
+            :key="dateGroup.expiry_date"
+            class="page-expiry__date"
           >
-            <template v-slot:item="{ item }">
-              <tr class="page-expiry__row" :class="{ 'page-expiry__row--with-note': getItemNote(item) }">
-                <td>
-                  <div class="page-expiry__item" :class="`page-expiry__item--${item.state}`">
-                    {{ item.item_name }}
-                  </div>
-                </td>
-                <td class="text-end">{{ item.amountLabel }}</td>
-                <td
-                  :class="['text-center', 'page-expiry__status-cell', `page-expiry__status-cell--${item.state}`]"
-                >
-                  <span class="page-expiry__state" :class="`page-expiry__state--${item.state}`">
-                    {{ getStateLabel(item) }}
-                  </span>
-                </td>
-                <td class="text-center">
-                  <v-btn
-                    icon="mdi-check"
-                    size="small"
-                    variant="text"
-                    :disabled="isDismissing"
-                    @click="openDismissDialog(item, usage.usage_id)"
-                  ></v-btn>
-                </td>
-              </tr>
-              <tr v-if="getItemNote(item)" class="page-expiry__note-row" :class="`page-expiry__note-row--${item.state}`">
-                <td colspan="4">
-                  <div class="page-expiry__note">
-                    <v-icon icon="mdi-note-text-outline" size="small"></v-icon>
-                    <span>{{ getItemNote(item) }}</span>
-                  </div>
-                </td>
-              </tr>
-            </template>
-          </v-data-table>
+            <div class="page-expiry__date-title">
+              <v-icon icon="mdi-timer-sand-complete"></v-icon>
+              {{ dateGroup.expiry_label }}
+            </div>
+
+            <v-data-table
+              :items="dateGroup.items"
+              :headers="tableHeader"
+              :sort-by="tableSortBy"
+              density="compact"
+              :items-per-page="999"
+              hide-default-footer
+              class="page-expiry__table"
+            >
+              <template v-slot:item="{ item }">
+                <tr class="page-expiry__row" :class="{ 'page-expiry__row--with-note': getItemNote(item) }">
+                  <td>
+                    <div class="page-expiry__item" :class="`page-expiry__item--${item.state}`">
+                      {{ item.item_name }}
+                    </div>
+                  </td>
+                  <td class="text-end">{{ item.amountLabel }}</td>
+                  <td
+                    :class="['text-center', 'page-expiry__status-cell', `page-expiry__status-cell--${item.state}`]"
+                  >
+                    <span class="page-expiry__state" :class="`page-expiry__state--${item.state}`">
+                      {{ getStateLabel(item) }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <v-btn
+                      icon="mdi-check"
+                      size="small"
+                      variant="text"
+                      :disabled="isDismissing"
+                      @click="openDismissDialog(item, usage.usage_id)"
+                    ></v-btn>
+                  </td>
+                </tr>
+                <tr v-if="getItemNote(item)" class="page-expiry__note-row" :class="`page-expiry__note-row--${item.state}`">
+                  <td colspan="4">
+                    <div class="page-expiry__note">
+                      <v-icon icon="mdi-note-text-outline" size="small"></v-icon>
+                      <span>{{ getItemNote(item) }}</span>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </v-data-table>
+          </section>
         </section>
-      </section>
 
-    </main>
+      </div>
 
+    </section>
+
+    <!-- Dialoge -->
     <LcRouteOverlay v-show="isRouting" />
 
     <v-dialog v-model="isDismissDialogVisible" max-width="480px" persistent>
@@ -657,25 +665,29 @@
 .page-expiry {
 
   height: 100%;
-  background: var(--main-light);
-  color: var(--main-dark);
 
   &__content {
-    height: calc(100% - 6rem);
-    overflow-y: auto;
-    padding: 1rem;
+
+    height: calc(100% - 20rem);
+
   }
 
   &__announce {
     width: 100%;
-    height: 5rem;
-    margin-bottom: 1rem;
-    max-width: 850px !important;
-    margin: -.5rem auto 1rem auto;
+    height: 6rem;
+    margin-bottom: 0.5rem;
   }
 
-  &__announcement {
-    padding: 0.5rem;
+  &__empty {
+    height: 100%;
+  }
+
+  &__list {
+    height: calc(100% );
+    box-sizing: border-box;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin-top: -0.5rem;
   }
 
   &__announcement-selected {
