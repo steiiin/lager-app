@@ -12,6 +12,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\Item;
+use App\Models\Itemexpiry;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -60,6 +61,13 @@ class BookOutController extends Controller
             'item_id' => $entry['item_id'],
             'item_amount' => $entry['item_amount']
           ]);
+
+          if ($usageId > 0) {
+            Itemexpiry::query()
+              ->where('usage_id', $usageId)
+              ->where('item_id', $entry['item_id'])
+              ->update([ 'is_modified' => true ]);
+          }
 
         }
       });

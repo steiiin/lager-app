@@ -342,11 +342,20 @@
       clearSelectedItem(true)
     }
 
-    const checkAllVehicleItems = () => {
-
-      const itemsToCheck = [ ...inventoryStore.items ]
-        .filter(item => Number(item.max_stock ?? 0) === 0)
+    const modifiedVehicleExpiryItems = computed(() => {
+      return [ ...inventoryStore.items ]
+        .filter(item => (item.expiry_entries ?? []).some(entry => (
+          entry.usage_id !== null
+          && entry.is_modified === true
+        )))
         .sort(compareByLocation)
+    })
+
+    const hasModifiedVehicleExpiryItems = computed(() => modifiedVehicleExpiryItems.value.length > 0)
+
+    const checkAllVehicleExpiryItems = () => {
+
+      const itemsToCheck = modifiedVehicleExpiryItems.value
 
       checkAllList.value = itemsToCheck.map(item => item.id)
 
@@ -634,6 +643,7 @@
         { title: 'Verfall', key: 'expiryAt', minWidth: '15%' },
         { title: 'Menge', key: 'expiryQuantityLabel', minWidth: '15%' },
         { title: 'Bestellt', key: 'is_ordered', minWidth: '12%' },
+        { title: '', key: 'is_modified', align: 'center', width: '3rem', sortable: false },
         { title: 'Notiz', key: 'note', minWidth: '20%' },
         { title: 'Bearbeiten', key: 'action', sortable: false },
       ])
@@ -684,6 +694,7 @@
           expiryQuantity: entry.expiryQuantity,
           status: entry.status,
           is_ordered: entry.is_ordered ?? false,
+          is_modified: false,
           note: entry.note,
         }
 
@@ -801,9 +812,11 @@
               <v-btn v-if="inCheckMode"
                 class="text-none"
                 color="primary"
-                text="KFZ-BESTAND"
+                text="KFZ-VERFALL"
                 variant="text"
-                slim @click="checkAllVehicleItems"
+                slim
+                :disabled="!hasModifiedVehicleExpiryItems"
+                @click="checkAllVehicleExpiryItems"
               ></v-btn>
               <v-btn v-if="inCheckMode"
                 class="text-none"
@@ -1098,6 +1111,24 @@
                       v-if="item.is_ordered"
                       color="primary"
                       size="small"
+                      variant="tonal"
+                    >
+                      Ja
+                    </v-chip>
+                    <span v-else>-</span>
+                  </template>
+                  <template v-slot:header.is_modified>
+                    <v-icon
+                      icon="mdi-alert"
+                      size="small"
+                      v-tooltip:bottom="'Nach Buchung geändert'"
+                    ></v-icon>
+                  </template>
+                  <template v-slot:item.is_modified="{ item }">
+                    <v-chip
+                      v-if="item.is_modified"
+                      color="warning"
+                      size="x-small"
                       variant="tonal"
                     >
                       Ja

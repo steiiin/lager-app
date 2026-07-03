@@ -17,6 +17,7 @@ class ItemExpiryController extends Controller
   {
     $data = $this->validateExpiry($request);
     $data['status'] = 'reserved';
+    $data['is_modified'] = false;
 
     $expiry = DB::transaction(function () use ($data, $request, $cleanupService) {
       $expiry = Itemexpiry::create($data);
@@ -38,6 +39,7 @@ class ItemExpiryController extends Controller
     $expiry = Itemexpiry::findOrFail($id);
     $data = $this->validateExpiry($request, $expiry);
     $data['status'] = $request->input('status', $expiry->status);
+    $data['is_modified'] = false;
 
     DB::transaction(function () use ($expiry, $data, $request, $cleanupService) {
       $expiry->update($data);
@@ -137,12 +139,17 @@ class ItemExpiryController extends Controller
       'expiryQuantity' => 'nullable|integer|min:1|max:99999',
       'status' => 'nullable|string|max:255',
       'is_ordered' => 'sometimes|boolean',
+      'is_modified' => 'sometimes|boolean',
       'note' => 'nullable|string|max:255',
     ]);
 
     $data['is_ordered'] = $request->has('is_ordered')
       ? $request->boolean('is_ordered')
       : (bool) ($existingExpiry?->is_ordered ?? false);
+
+    $data['is_modified'] = $request->has('is_modified')
+      ? $request->boolean('is_modified')
+      : (bool) ($existingExpiry?->is_modified ?? false);
 
     if (($data['usage_id'] ?? null) === null) {
       $data['expiryQuantity'] = 1;

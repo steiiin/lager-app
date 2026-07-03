@@ -65,6 +65,7 @@ class InventoryController extends Controller
       'expiry_entries.*.expiryQuantity' => 'nullable|integer|min:1|max:99999',
       'expiry_entries.*.status' => 'nullable|string',
       'expiry_entries.*.is_ordered' => 'sometimes|boolean',
+      'expiry_entries.*.is_modified' => 'sometimes|boolean',
       'expiry_entries.*.note' => 'nullable|string',
       'checked_at'          => 'nullable|string',
       'current_expiry'      => 'nullable|string',
@@ -113,6 +114,7 @@ class InventoryController extends Controller
       'expiry_entries.*.expiryQuantity' => 'nullable|integer|min:1|max:99999',
       'expiry_entries.*.status' => 'nullable|string',
       'expiry_entries.*.is_ordered' => 'sometimes|boolean',
+      'expiry_entries.*.is_modified' => 'sometimes|boolean',
       'expiry_entries.*.note' => 'nullable|string',
       'checked_at'          => 'nullable|string',
       'current_expiry'      => 'nullable|string',
@@ -212,6 +214,12 @@ class InventoryController extends Controller
     $deleteQuery->delete();
 
     foreach ($entries as $entry) {
+      $existingExpiry = empty($entry['id'])
+        ? null
+        : $item->expiryEntries()
+          ->where('id', $entry['id'])
+          ->firstOrFail();
+
       $data = [
         'item_id' => $item->id,
         'usage_id' => $entry['usage_id'] ?? null,
@@ -221,6 +229,9 @@ class InventoryController extends Controller
           : ($entry['expiryQuantity'] ?? 1),
         'status' => $entry['status'] ?? 'reserved',
         'is_ordered' => (bool) ($entry['is_ordered'] ?? false),
+        'is_modified' => array_key_exists('is_modified', $entry)
+          ? (bool) $entry['is_modified']
+          : (bool) ($existingExpiry?->is_modified ?? false),
         'note' => $entry['note'] ?? '',
       ];
 
@@ -229,10 +240,7 @@ class InventoryController extends Controller
         continue;
       }
 
-      $item->expiryEntries()
-        ->where('id', $entry['id'])
-        ->firstOrFail()
-        ->update($data);
+      $existingExpiry->update($data);
     }
 
     app(ItemExpiryCleanupService::class)->cleanupItem($item->id);

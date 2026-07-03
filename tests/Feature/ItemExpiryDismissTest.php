@@ -251,6 +251,34 @@ class ItemExpiryDismissTest extends TestCase
     $this->assertTrue((bool) $entry->fresh()->is_ordered);
   }
 
+  public function test_saving_usage_expiry_clears_is_modified(): void
+  {
+    $item = $this->createItem();
+    $usage = Usage::create([
+      'name' => 'Station',
+      'could_expire' => true,
+    ]);
+    $entry = Itemexpiry::create([
+      'item_id' => $item->id,
+      'usage_id' => $usage->id,
+      'expiryAt' => '2026-08-31',
+      'expiryQuantity' => 1,
+      'status' => 'reserved',
+      'is_modified' => true,
+      'note' => null,
+    ]);
+
+    $response = $this->putJson("/api/item-expiry/{$entry->id}", [
+      'item_id' => $item->id,
+      'usage_id' => $usage->id,
+      'expiryAt' => '2026-09-30',
+      'expiryQuantity' => 1,
+    ]);
+
+    $response->assertOk();
+    $this->assertFalse((bool) $entry->fresh()->is_modified);
+  }
+
   public function test_deleting_stock_expiry_keeps_usage_expiries_for_the_item(): void
   {
     $item = $this->createItem();
