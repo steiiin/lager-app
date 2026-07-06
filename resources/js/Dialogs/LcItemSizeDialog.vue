@@ -142,9 +142,15 @@
     const cur = currentEditSizeItem.value
     if (!cur) return
 
-    const idx = props.sizes.findIndex((e) => e.unit === cur.unit)
+    const idx = props.sizes.findIndex((e) => (
+      (cur.id !== null && e.id === cur.id)
+        || (
+          e.amount === cur.origOneAmount
+          && (e.unit ?? '').toLowerCase() === cur.origOneUnit
+        )
+    ))
     if (idx !== -1) {
-      const deleted = props.sizes.splice(idx, 1)[0]
+      props.sizes.splice(idx, 1)
     }
 
     cancel()

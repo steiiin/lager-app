@@ -52,7 +52,7 @@ class InventoryController extends Controller
       'min_stock'           => 'required|numeric|min:0|max:99999',
       'max_stock'           => 'required|numeric|min:0|max:99999|gte:min_stock',
       'onvehicle_stock'     => 'required|numeric|min:0|max:99999',
-      'sizes'               => 'required|array',
+      'sizes'               => 'required|array|min:1',
       'sizes.*.id'          => 'nullable|integer|exists:itemsizes,id',
       'sizes.*.unit'        => 'required|string',
       'sizes.*.amount'      => 'required|numeric|min:1|max:99999',
@@ -100,7 +100,7 @@ class InventoryController extends Controller
       'min_stock'           => 'required|numeric|min:0|max:99999',
       'max_stock'           => 'required|numeric|min:0|max:99999|gte:min_stock',
       'onvehicle_stock'     => 'required|numeric|min:0|max:99999',
-      'sizes'               => 'required|array',
+      'sizes'               => 'required|array|min:1',
       'sizes.*.id'          => 'nullable|integer|exists:itemsizes,id',
       'sizes.*.unit'        => 'required|string',
       'sizes.*.amount'      => 'required|numeric|min:1|max:99999',
@@ -183,13 +183,33 @@ class InventoryController extends Controller
 
       }
 
-      foreach ($sizes as $size) {
+      $submittedSizeIds = collect($sizes)
+        ->pluck('id')
+        ->filter()
+        ->values();
 
-        if ($size['id'] === null) {
-          Itemsize::create(array_merge($size, ['item_id' => $item->id]));
+      $deleteQuery = $item->sizes();
+
+      if ($submittedSizeIds->isNotEmpty()) {
+        $deleteQuery->whereNotIn('id', $submittedSizeIds);
+      }
+
+      $deleteQuery->delete();
+
+      foreach ($sizes as $size) {
+        $sizeData = [
+          'unit' => $size['unit'],
+          'amount' => $size['amount'],
+          'is_default' => $size['is_default'],
+        ];
+
+        if (empty($size['id'])) {
+          $item->sizes()->create($sizeData);
         } else {
-          $itemsize = Itemsize::findOrFail($size['id']);
-          $itemsize->update($size);
+          $itemsize = $item->sizes()
+            ->where('id', $size['id'])
+            ->firstOrFail();
+          $itemsize->update($sizeData);
         }
       }
 
