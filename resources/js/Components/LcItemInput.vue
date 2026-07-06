@@ -11,6 +11,7 @@
  *  - hidden (Boolean): hides the input for scanning only.
  *  - disabled (Boolean): Disables the component for scanning/searching.
  *  - resultSpecs (Object): Set the width (w) and indent (i) of the absolute placed result panel.
+ *  - preserveSearchOnSelect (Boolean): Keeps text search results open after selecting an item.
  *  - cart (String): The current booking table, to show booking info in results.
  *
  * Emits:
@@ -66,6 +67,10 @@
       type: Object,
       default: { w: 850, i: 11 },
     },
+    preserveSearchOnSelect: {
+      type: Boolean,
+      default: false,
+    },
     cart: {
       type: Array,
       required: false,
@@ -111,7 +116,9 @@
 
   const selectItemBySearch = (item) => {
     emit('selectItem', item, null)
-    changeModeToScan()
+    if (!props.preserveSearchOnSelect) {
+      changeModeToScan()
+    }
   }
   const selectItemByScan = (item, amount) => {
     emit('selectItem', item, amount)
@@ -371,7 +378,8 @@
       const resultRefs = ref([])
       const selectedResultIndex = ref(-1)
       const selectedResult = computed(() => filteredItems.value[selectedResultIndex.value] ?? null)
-      watch(() => hasAnyResults.value, (val) => {
+      const shouldLockAppOverflow = computed(() => hasAnyResults.value && !props.disabled && !props.hidden)
+      watch(shouldLockAppOverflow, (val) => {
         if (val) {
           disableAppOverflow()
         } else {
@@ -411,8 +419,8 @@
         if (searchText.value.startsWith('LC-')) {
           // scanned something while in text-mode
           searchText.value = ''
+          changeModeToScan()
         }
-        changeModeToScan()
       }
       const selectFirstResult = () => {
         if (hasExactlyOneResult.value) {
@@ -521,6 +529,7 @@
     InputService.unregisterScan(findItem)
     InputService.unregisterKeys(receiveKeys)
     InputService.unregisterBackspace(receiveBackspace)
+    enableAppOverflow()
   })
 
 // #endregion

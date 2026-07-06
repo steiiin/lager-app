@@ -805,10 +805,17 @@
           { label: 'Prüfen', value: 'check' },
         ]"></LcButtonGroup>
 
+      </template>
+
+      <div v-show="!isItemSelected">
         <LcItemInput
           :result-specs="{ w: 850, i: 19.0 }" :allow-new="inEditMode" :disabled="isItemSelected"
+          preserve-search-on-select
           @create-new="createNew" @select-item="editItem">
         </LcItemInput>
+      </div>
+
+      <template v-if="!isItemSelected">
 
         <!-- CheckBoad -->
         <v-card class="mt-2" variant="outlined" v-show="inCheckMode">
