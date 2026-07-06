@@ -271,9 +271,9 @@
 
       const inventoryExpiryDate = getInventoryExpiryDate(item)
       if (inventoryExpiryDate && !isCheckedToday(item)) {
-        const current_expiry = parseDate(inventoryExpiryDate)
+        const inventoryExpiry = parseDate(inventoryExpiryDate)
         const thresholdExpiry = getExpiryCheckThreshold()
-        if (current_expiry !== null && current_expiry <= thresholdExpiry) {
+        if (inventoryExpiry !== null && inventoryExpiry <= thresholdExpiry) {
           tags.push({ type: 'expiry', label: getExpiryLabel(inventoryExpiryDate) })
         }
 
@@ -354,11 +354,8 @@
     const hasModifiedVehicleExpiryItems = computed(() => modifiedVehicleExpiryItems.value.length > 0)
 
     const checkAllVehicleExpiryItems = () => {
-
       const itemsToCheck = modifiedVehicleExpiryItems.value
-
       checkAllList.value = itemsToCheck.map(item => item.id)
-
       clearSelectedItem(true)
     }
 
@@ -424,7 +421,6 @@
       location: { room:'', cab:'', exact:'' },
       min_stock: 0,
       max_stock: 0,
-      current_expiry: null,
       current_quantity: 0,
       onvehicle_stock: 0,
       checked_at: null,
@@ -471,7 +467,6 @@
       itemForm.max_stock = 0
       itemForm.onvehicle_stock = 1
 
-      itemForm.current_expiry = null
       itemForm.current_quantity = 0
       itemForm.checked_at = null
       itemForm.max_order_quantity = 0
@@ -502,8 +497,6 @@
       itemForm.min_stock = item.min_stock
       itemForm.max_stock = item.max_stock
       itemForm.onvehicle_stock = item.onvehicle_stock
-
-      itemForm.current_expiry = !item.current_expiry ? null : new Date(item.current_expiry)
 
       itemForm.current_quantity = item.current_quantity
       itemForm.checked_at = !item.checked_at ? null : new Date(item.checked_at)
@@ -596,7 +589,7 @@
           .filter(entry => entry.usage_id === null && entry.status === 'reserved' && Number(entry.expiryQuantity ?? 0) > 0 && !!entry.expiryAt)
           .sort((a, b) => new Date(a.expiryAt) - new Date(b.expiryAt))[0] ?? null
 
-        return stockExpiryEntry?.expiryAt ?? item.current_expiry ?? null
+        return stockExpiryEntry?.expiryAt ?? null
       }
 
       const isSizeDialogVisible = ref(false)

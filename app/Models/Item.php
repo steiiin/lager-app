@@ -11,7 +11,7 @@ class Item extends Model
 {
 
   protected $table = 'items';
-  protected $fillable = ['name', 'location', 'name_alt', 'search_size', 'demand_id', 'min_stock', 'max_stock', 'onvehicle_stock', 'current_expiry', 'current_quantity', 'checked_at', 'max_order_quantity', 'max_bookin_quantity'];
+  protected $fillable = ['name', 'location', 'name_alt', 'search_size', 'demand_id', 'min_stock', 'max_stock', 'onvehicle_stock', 'current_quantity', 'checked_at', 'max_order_quantity', 'max_bookin_quantity'];
   protected $casts = [ 'location' => 'array' ];
   protected $with = [ 'demand', 'sizes', 'basesize', 'expiryEntries' ];
   protected $appends = ['barcodes', 'pending_quantity', 'has_stats' ];

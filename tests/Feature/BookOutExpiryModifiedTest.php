@@ -96,7 +96,6 @@ class BookOutExpiryModifiedTest extends TestCase
       'location' => $attributes['location'] ?? [],
       'min_stock' => $attributes['min_stock'] ?? 0,
       'max_stock' => $attributes['max_stock'] ?? 0,
-      'current_expiry' => $attributes['current_expiry'] ?? null,
       'current_quantity' => $attributes['current_quantity'] ?? 10,
     ]);
   }

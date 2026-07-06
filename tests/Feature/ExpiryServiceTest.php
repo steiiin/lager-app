@@ -175,6 +175,23 @@ class ExpiryServiceTest extends TestCase
     $this->assertSame('Usage note', $row['note']);
   }
 
+  public function test_inventory_expiry_is_empty_without_stock_expiry(): void
+  {
+    CarbonImmutable::setTestNow('2026-07-01');
+
+    $usage = $this->createUsage();
+    $item = $this->createItem([
+      'current_quantity' => 10,
+    ]);
+
+    $usageExpiry = $this->createExpiry($item, $usage, '2026-07-12');
+
+    $row = $this->findExpiryRow(app(ExpiryService::class)->generate(), $usageExpiry->id);
+
+    $this->assertNull($row['inventory_expiry']);
+    $this->assertSame('Kein MHD', $row['inventory_expiry_label']);
+  }
+
   private function createUsage(array $attributes = []): Usage
   {
     return Usage::create([
@@ -196,7 +213,6 @@ class ExpiryServiceTest extends TestCase
       'location' => $attributes['location'] ?? [],
       'min_stock' => $attributes['min_stock'] ?? 0,
       'max_stock' => $attributes['max_stock'] ?? 0,
-      'current_expiry' => $attributes['current_expiry'] ?? null,
       'current_quantity' => $attributes['current_quantity'] ?? 0,
     ]);
 

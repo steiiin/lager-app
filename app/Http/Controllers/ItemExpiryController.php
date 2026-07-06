@@ -176,10 +176,6 @@ class ItemExpiryController extends Controller
       return CarbonImmutable::parse($stockEntry->expiryAt)->startOfDay();
     }
 
-    if ($expiry->item?->current_expiry) {
-      return CarbonImmutable::parse($expiry->item->current_expiry)->startOfDay();
-    }
-
     return null;
   }
 
@@ -193,11 +189,6 @@ class ItemExpiryController extends Controller
       $stockEntry->expiryAt = $nextExpiry;
       $stockEntry->save();
       return;
-    }
-
-    if ($expiry->item?->current_expiry) {
-      $expiry->item->current_expiry = $nextExpiry;
-      $expiry->item->save();
     }
   }
 

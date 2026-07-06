@@ -13,7 +13,7 @@ class ItemExpiryDismissTest extends TestCase
 {
   use RefreshDatabase;
 
-  public function test_dismiss_uses_user_expiry_when_inventory_expiry_is_missing(): void
+  public function test_dismiss_uses_user_expiry_when_stock_expiry_is_missing(): void
   {
     $item = $this->createItem();
     $usage = Usage::create([
@@ -479,7 +479,6 @@ class ItemExpiryDismissTest extends TestCase
       'location' => $attributes['location'] ?? [],
       'min_stock' => $attributes['min_stock'] ?? 0,
       'max_stock' => $attributes['max_stock'] ?? 0,
-      'current_expiry' => $attributes['current_expiry'] ?? null,
       'current_quantity' => $attributes['current_quantity'] ?? 0,
     ]);
   }

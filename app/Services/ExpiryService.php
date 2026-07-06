@@ -180,8 +180,7 @@ class ExpiryService
 
     return [
       'amount' => max(0, $currentAmount),
-      'expiry' => $stockEntry?->expiryAt
-        ?? ($item->current_expiry ? CarbonImmutable::parse($item->current_expiry) : null),
+      'expiry' => $stockEntry?->expiryAt,
     ];
   }
 
