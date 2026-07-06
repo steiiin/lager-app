@@ -16,6 +16,7 @@
 
   // Local composables
   import { useBaseSize } from '@/Composables/useBaseSize'
+  import { useOptimalSize } from '@/Composables/useOptimalSize'
   import { useInventoryStore } from '@/Services/StoreService'
   import InputService from '@/Services/InputService'
 
@@ -600,7 +601,22 @@
 
     // #region Sizes-Group
 
-      const { baseUnit } = useBaseSize(toRef(itemForm, 'sizes'))
+      const sizesRef = toRef(itemForm, 'sizes')
+      const minStockRef = toRef(itemForm, 'min_stock')
+      const maxStockRef = toRef(itemForm, 'max_stock')
+
+      const { baseUnit } = useBaseSize(sizesRef)
+      const { text: minStockOptimalText } = useOptimalSize(sizesRef, minStockRef)
+      const { text: maxStockOptimalText } = useOptimalSize(sizesRef, maxStockRef)
+
+      const getStockSizeText = (stock, optimalText) => {
+        const baseText = baseUnit.value ? `${stock ?? 0} ${baseUnit.value}` : `${stock ?? 0}`
+        if (!optimalText || optimalText === baseText) { return baseText }
+        return `${baseText} bzw. ${optimalText}`
+      }
+
+      const minStockTitleText = computed(() => getStockSizeText(itemForm.min_stock, minStockOptimalText.value))
+      const maxStockTitleText = computed(() => getStockSizeText(itemForm.max_stock, maxStockOptimalText.value))
 
       const sizeDialog = ref(null)
       const createSize = () => sizeDialog.value?.create()
@@ -877,7 +893,13 @@
             icon="mdi-arrow-left" :disabled="itemForm.processing"
             @click="clearSelectedItem()"></v-app-bar-nav-icon>
           <v-toolbar-title>
-            <b>{{ editorTitle }}</b>
+            <div class="title-with-minmax">
+              <b>{{ editorTitle }}</b>
+              <p v-if="inCheckMode">
+                Min: {{ minStockTitleText }}<br>
+                Max: {{ maxStockTitleText }}
+              </p>
+            </div>
           </v-toolbar-title>
           <v-toolbar-items>
             <v-btn v-if="inCheckMode"
@@ -1260,4 +1282,19 @@
   width: 100%;
   height: calc(var(--v-btn-height) + 0px);
 }
+
+.title-with-minmax {
+
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+
+  & p
+  {
+    font-size: 0.7em;
+    line-height: 1;
+  }
+
+}
+
 </style>

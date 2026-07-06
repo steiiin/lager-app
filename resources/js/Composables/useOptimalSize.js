@@ -20,13 +20,13 @@ export function useOptimalSize(sizes, amount) {
 
   // Computed property for formatted text
   const formattedText = computed(() => {
-    if (!optimalSize.value.unit || optimalSize.value.amount === null) return null
+    if (!optimalSize.value?.unit || optimalSize.value.amount === null) return null
     return `${optimalSize.value.amount} ${optimalSize.value.unit}`
   })
 
   return {
-    unit: computed(() => optimalSize.value.unit),
-    amount: computed(() => optimalSize.value.amount),
+    unit: computed(() => optimalSize.value?.unit ?? null),
+    amount: computed(() => optimalSize.value?.amount ?? null),
     text: formattedText
   }
 }
