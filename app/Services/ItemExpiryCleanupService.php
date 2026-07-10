@@ -28,6 +28,7 @@ class ItemExpiryCleanupService
       ->where('status', 'reserved')
       ->where('expiryQuantity', '>', 0)
       ->whereNotNull('expiryAt')
+      ->where('is_modified', false)
       ->whereDate('expiryAt', '>=', $stockEntry->expiryAt->toDateString())
       ->delete();
   }

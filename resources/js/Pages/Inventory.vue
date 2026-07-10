@@ -319,6 +319,81 @@
 
     })
 
+    const getExpiringSoonThreshold = () => {
+      const threshold = new Date()
+      threshold.setMonth(threshold.getMonth() + 2)
+      threshold.setHours(23, 59, 59, 999)
+      return threshold
+    }
+
+    const isReservedExpiringEntry = (entry, threshold) => {
+      if (entry.status !== 'reserved' || Number(entry.expiryQuantity ?? 0) <= 0 || !entry.expiryAt) {
+        return false
+      }
+
+      const expiryAt = parseDate(entry.expiryAt)
+      return expiryAt !== null && expiryAt <= threshold
+    }
+
+    const getExpiryEntryUsageName = (entry) => {
+      return entry.usage?.name
+        ?? inventoryStore.usages.find(usage => usage.id === entry.usage_id)?.name
+        ?? ''
+    }
+
+    const getExpirySourceLabel = (entry) => {
+      if (entry.usage_id === null) {
+        return 'Lagerbestand'
+      }
+
+      return entry.note?.trim() || getExpiryEntryUsageName(entry)
+    }
+
+    const getExpiringSoonDemandLabel = (item, entries) => {
+      const hasInventoryExpiry = entries.some(entry => entry.usage_id === null)
+      const usageEntries = entries.filter(entry => entry.usage_id !== null)
+
+      if (hasInventoryExpiry && usageEntries.length > 0) {
+        return `< ${item.onvehicle_stock ?? 0}`
+      }
+
+      if (hasInventoryExpiry) {
+        return `< ${item.max_stock ?? 0}`
+      }
+
+      const usageDemand = usageEntries.reduce((sum, entry) => sum + Number(entry.expiryQuantity ?? 0), 0)
+      return usageDemand > 0 ? `${usageDemand}` : '-'
+    }
+
+    const expiringSoonItems = computed(() => {
+      const threshold = getExpiringSoonThreshold()
+
+      return inventoryStore.items
+        .map(item => {
+          const entries = [ ...(item.expiry_entries ?? []) ]
+            .filter(entry => isReservedExpiringEntry(entry, threshold))
+            .sort((a, b) => new Date(a.expiryAt) - new Date(b.expiryAt))
+
+          if (entries.length === 0) { return null }
+
+          const sourceLabels = [ ...new Set(entries.map(getExpirySourceLabel).filter(label => !!label)) ]
+
+          return {
+            ...item,
+            expiring_sources: sourceLabels.join(', '),
+            expiring_demand: getExpiringSoonDemandLabel(item, entries),
+            expiring_date: entries[0]?.expiryAt ?? null,
+          }
+        })
+        .filter(item => item !== null)
+        .sort((a, b) => {
+          return (
+            (parseDate(a.expiring_date) - parseDate(b.expiring_date)) ||
+            compareByLocation(a, b)
+          )
+        })
+    })
+
     // Table
     const tableCheckNecessary = ref([
       { title: 'Name', key: 'name' },
@@ -327,6 +402,13 @@
     ])
     const tableDontOrder = ref([
       { title: 'Name', key: 'name' },
+      { title: '', key: 'action', sortable: false },
+    ])
+    const tableExpiringSoon = ref([
+      { title: 'Name', key: 'name' },
+      { title: 'Verfall', key: 'expiring_date', width: '8rem' },
+      { title: 'Betrifft', key: 'expiring_sources' },
+      { title: 'Benötigt', key: 'expiring_demand', align: 'end', width: '8rem' },
       { title: '', key: 'action', sortable: false },
     ])
 
@@ -862,6 +944,35 @@
               :headers="tableDontOrder" hide-default-footer hide-default-header
               :items-per-page="20"
               no-data-text="Keine ausgesetzten Bestellungen">
+              <template v-slot:item.action="{ item }">
+                <v-btn small variant="outlined" @click="editItem(item)">
+                  <v-icon icon="mdi-cog"></v-icon>
+                </v-btn>
+              </template>
+            </v-data-table>
+
+          </v-card-text>
+        </v-card>
+
+        <v-card class="mt-2" variant="outlined" v-show="inCheckMode && expiringSoonItems.length>0">
+          <v-list-item class="px-6" height="88">
+            <template v-slot:prepend>
+              <v-icon icon="mdi-timer-alert-outline"></v-icon>
+            </template>
+
+            <template v-slot:title> <b>Verfall in den nächsten 2 Monaten</b> </template>
+          </v-list-item>
+
+          <v-divider></v-divider>
+          <v-card-text>
+
+            <v-data-table
+              :items="expiringSoonItems"
+              :headers="tableExpiringSoon"
+              :items-per-page="20">
+              <template v-slot:item.expiring_date="{ item }">
+                {{ getExpiryLabel(item.expiring_date) }}
+              </template>
               <template v-slot:item.action="{ item }">
                 <v-btn small variant="outlined" @click="editItem(item)">
                   <v-icon icon="mdi-cog"></v-icon>
