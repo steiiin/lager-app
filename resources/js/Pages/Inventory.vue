@@ -299,10 +299,34 @@
 
     })
 
+    const getLocationLabel = (item) => {
+      const location = item.location ?? {}
+      return [location.room, location.cab, location.exact]
+        .filter(part => !!part)
+        .join(' / ')
+    }
+
+    const itemsDontOrder = computed(() => {
+
+      return inventoryStore.items
+        .filter(item => item.dont_order === true)
+        .map(item => ({
+          ...item,
+          demand_name: item.demand?.name ?? '',
+          location_label: getLocationLabel(item),
+        }))
+        .sort(compareByLocation)
+
+    })
+
     // Table
     const tableCheckNecessary = ref([
       { title: 'Name', key: 'name' },
       { title: '', key: 'tags', align: 'end' },
+      { title: '', key: 'action', sortable: false },
+    ])
+    const tableDontOrder = ref([
+      { title: 'Name', key: 'name' },
       { title: '', key: 'action', sortable: false },
     ])
 
@@ -821,6 +845,33 @@
       <template v-if="!isItemSelected">
 
         <!-- CheckBoad -->
+        <v-card class="mt-2" variant="outlined" v-show="inCheckMode && itemsDontOrder.length>0">
+          <v-list-item class="px-6" height="88">
+            <template v-slot:prepend>
+              <v-icon icon="mdi-cart-off"></v-icon>
+            </template>
+
+            <template v-slot:title> <b>Bestellung ausgesetzt</b> </template>
+          </v-list-item>
+
+          <v-divider></v-divider>
+          <v-card-text>
+
+            <v-data-table
+              :items="itemsDontOrder"
+              :headers="tableDontOrder" hide-default-footer hide-default-header
+              :items-per-page="20"
+              no-data-text="Keine ausgesetzten Bestellungen">
+              <template v-slot:item.action="{ item }">
+                <v-btn small variant="outlined" @click="editItem(item)">
+                  <v-icon icon="mdi-cog"></v-icon>
+                </v-btn>
+              </template>
+            </v-data-table>
+
+          </v-card-text>
+        </v-card>
+
         <v-card class="mt-2" variant="outlined" v-show="inCheckMode">
           <v-list-item class="px-6" height="88">
             <template v-slot:prepend>
@@ -954,14 +1005,6 @@
                 text="Du musst eine Anforderung angeben."
                 type="error">
               </v-alert>
-
-              <v-checkbox
-                v-model="itemForm.dont_order"
-                class="mt-2"
-                label="Bestellung vorrübergehend aussetzen"
-                color="warning"
-                hide-details>
-              </v-checkbox>
 
             </v-expansion-panel-text>
           </v-expansion-panel>
@@ -1109,6 +1152,13 @@
                 </v-row>
               </v-form>
 
+              <v-checkbox
+                v-model="itemForm.dont_order"
+                class="mt-2"
+                label="Bestellung vorrübergehend aussetzen"
+                color="warning"
+                hide-details>
+              </v-checkbox>
 
             </v-expansion-panel-text>
           </v-expansion-panel>
