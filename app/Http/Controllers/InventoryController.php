@@ -17,7 +17,6 @@ use App\Models\Itemsize;
 use App\Models\ItemsStats;
 use App\Models\Order;
 use App\Models\Usage;
-use App\Services\ItemExpiryCleanupService;
 use App\Services\StatisticService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -262,8 +261,6 @@ class InventoryController extends Controller
 
       $existingExpiry->update($data);
     }
-
-    app(ItemExpiryCleanupService::class)->cleanupItem($item->id);
   }
 
   private function handleCheck(Item $item)
