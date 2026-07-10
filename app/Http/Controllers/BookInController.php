@@ -10,6 +10,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\Itemexpiry;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -60,6 +61,11 @@ class BookInController extends Controller
               'order_id' => $order->id,
               'item_amount' => $delivered,
             ]);
+
+            Itemexpiry::query()
+              ->where('item_id', $order->item_id)
+              ->whereNull('usage_id')
+              ->update([ 'is_modified' => true ]);
           }
 
         }
