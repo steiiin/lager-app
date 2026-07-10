@@ -71,6 +71,7 @@ class InventoryController extends Controller
       'current_quantity'    => 'required|numeric|min:-99999|max:99999',
       'max_order_quantity'  => 'required|numeric|min:0|max:99999',
       'max_bookin_quantity' => 'required|numeric|min:0|max:99999',
+      'dont_order'          => 'required|boolean',
     ]);
 
     DB::transaction(function () use ($request) {
@@ -119,6 +120,7 @@ class InventoryController extends Controller
       'current_quantity'    => 'required|numeric|min:-99999|max:99999',
       'max_order_quantity'  => 'required|numeric|min:0|max:99999',
       'max_bookin_quantity' => 'required|numeric|min:0|max:99999',
+      'dont_order'          => 'required|boolean',
       'stockchangeReason'   => 'required|numeric|min:-3|max:-1',
     ]);
 

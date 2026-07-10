@@ -144,6 +144,7 @@ class ApiOrderController extends Controller
     $items = Item::query()
       ->withPending()
       ->with(['ordersize', 'basesize', 'demand'])
+      ->where('dont_order', false)
       ->whereColumn('current_quantity', '<=', 'min_stock')
       ->get();
 

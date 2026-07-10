@@ -427,6 +427,7 @@
       checked_at: null,
       max_order_quantity: 0,
       max_bookin_quantity: 0,
+      dont_order: false,
 
       sizes: [],
       expiry_entries: [],
@@ -472,6 +473,7 @@
       itemForm.checked_at = null
       itemForm.max_order_quantity = 0
       itemForm.max_bookin_quantity = 0
+      itemForm.dont_order = false
 
       itemForm.sizes.splice(0, itemForm.sizes.length)
       itemForm.sizes.push({ id: null, unit: 'Stk.', amount: 1, is_default: true })
@@ -503,6 +505,7 @@
       itemForm.checked_at = !item.checked_at ? null : new Date(item.checked_at)
       itemForm.max_order_quantity = item.max_order_quantity
       itemForm.max_bookin_quantity = item.max_bookin_quantity
+      itemForm.dont_order = item.dont_order ?? false
 
       itemForm.sizes = (item.sizes ?? []).map((size) => ({ ...size }))
       itemForm.expiry_entries = item.expiry_entries ?? []
@@ -951,6 +954,14 @@
                 text="Du musst eine Anforderung angeben."
                 type="error">
               </v-alert>
+
+              <v-checkbox
+                v-model="itemForm.dont_order"
+                class="mt-2"
+                label="Bestellung vorrübergehend aussetzen"
+                color="warning"
+                hide-details>
+              </v-checkbox>
 
             </v-expansion-panel-text>
           </v-expansion-panel>

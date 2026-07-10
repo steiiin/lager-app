@@ -53,6 +53,7 @@ class InventorySizeUpdateTest extends TestCase
       'current_quantity' => $item->current_quantity,
       'max_order_quantity' => $item->max_order_quantity,
       'max_bookin_quantity' => $item->max_bookin_quantity,
+      'dont_order' => $item->dont_order,
       'stockchangeReason' => -1,
     ]);
 
@@ -75,7 +76,6 @@ class InventorySizeUpdateTest extends TestCase
   {
     $demandId = DB::table('demands')->insertGetId([
       'name' => 'Default',
-      'sp_name' => 'Default',
     ]);
 
     return Item::create([
@@ -95,6 +95,7 @@ class InventorySizeUpdateTest extends TestCase
       'checked_at' => null,
       'max_order_quantity' => 0,
       'max_bookin_quantity' => 0,
+      'dont_order' => false,
     ]);
   }
 }
