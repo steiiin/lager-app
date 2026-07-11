@@ -452,8 +452,7 @@
     const modifiedVehicleExpiryItems = computed(() => {
       return [ ...inventoryStore.items ]
         .filter(item => (item.expiry_entries ?? []).some(entry => (
-          entry.usage_id !== null
-          && entry.is_modified === true
+          entry.is_modified === true
         )))
         .sort(compareByLocation)
     })
@@ -984,7 +983,7 @@
                 <v-btn v-if="inCheckMode"
                   class="text-none"
                   color="primary"
-                  text="KFZ-VERFALL"
+                  text="VERFALL-MODS"
                   variant="text"
                   slim
                   :disabled="!hasModifiedVehicleExpiryItems"
