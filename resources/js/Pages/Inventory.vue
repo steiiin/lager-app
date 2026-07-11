@@ -905,18 +905,15 @@
       </template>
     </LcPagebar>
 
-    <section>
+    <section class="page-inventory__section">
 
-      <template v-if="!isItemSelected">
-
+      <div v-if="!isItemSelected" class="page-inventory__controls" style="margin-top:-.5rem">
         <LcButtonGroup v-model="inventoryMode" :items="[
           { label: 'Bearbeiten', value: 'edit' },
           { label: 'Prüfen', value: 'check' },
         ]"></LcButtonGroup>
-
-      </template>
-
-      <div v-show="!isItemSelected">
+      </div>
+      <div v-show="!isItemSelected" class="page-inventory__item-select">
         <LcItemInput
           :result-specs="{ w: 850, i: 19.0 }" :allow-new="inEditMode" :disabled="isItemSelected"
           preserve-search-on-select
@@ -924,496 +921,492 @@
         </LcItemInput>
       </div>
 
-      <template v-if="!isItemSelected">
+      <template v-if="!isItemSelected && inCheckMode">
 
-        <!-- CheckBoad -->
-        <v-card class="mt-2" variant="outlined" v-show="inCheckMode && itemsDontOrder.length>0">
-          <v-list-item class="px-6" height="88">
-            <template v-slot:prepend>
-              <v-icon icon="mdi-cart-off"></v-icon>
-            </template>
+        <div class="page-inventory__checkboard">
 
-            <template v-slot:title> <b>Bestellung ausgesetzt</b> </template>
-          </v-list-item>
-
-          <v-divider></v-divider>
-          <v-card-text>
-
-            <v-data-table
-              :items="itemsDontOrder"
-              :headers="tableDontOrder" hide-default-footer hide-default-header
-              :items-per-page="20"
-              no-data-text="Keine ausgesetzten Bestellungen">
-              <template v-slot:item.action="{ item }">
-                <v-btn small variant="outlined" @click="editItem(item)">
-                  <v-icon icon="mdi-cog"></v-icon>
-                </v-btn>
+          <!-- CheckBoard -->
+          <v-card class="mt-2" variant="outlined" v-show="itemsDontOrder.length>0">
+            <v-list-item class="px-6" height="88">
+              <template v-slot:prepend>
+                <v-icon icon="mdi-cart-off"></v-icon>
               </template>
-            </v-data-table>
-
-          </v-card-text>
-        </v-card>
-
-        <v-card class="mt-2" variant="outlined" v-show="inCheckMode && expiringSoonItems.length>0">
-          <v-list-item class="px-6" height="88">
-            <template v-slot:prepend>
-              <v-icon icon="mdi-timer-alert-outline"></v-icon>
-            </template>
-
-            <template v-slot:title> <b>Verfall in den nächsten 2 Monaten</b> </template>
-          </v-list-item>
-
-          <v-divider></v-divider>
-          <v-card-text>
-
-            <v-data-table
-              :items="expiringSoonItems"
-              :headers="tableExpiringSoon"
-              :items-per-page="20">
-              <template v-slot:item.expiring_date="{ item }">
-                {{ getExpiryLabel(item.expiring_date) }}
-              </template>
-              <template v-slot:item.action="{ item }">
-                <v-btn small variant="outlined" @click="editItem(item)">
-                  <v-icon icon="mdi-cog"></v-icon>
-                </v-btn>
-              </template>
-            </v-data-table>
-
-          </v-card-text>
-        </v-card>
-
-        <v-card class="mt-2" variant="outlined" v-show="inCheckMode">
-          <v-list-item class="px-6" height="88">
-            <template v-slot:prepend>
-              <v-icon icon="mdi-clipboard-clock"></v-icon>
-            </template>
-            <template v-slot:title> <b>Checklisten</b> </template>
-            <template v-slot:append>
-              <v-btn v-if="inCheckMode"
-                class="text-none"
-                color="primary"
-                text="KFZ-VERFALL"
-                variant="text"
-                slim
-                :disabled="!hasModifiedVehicleExpiryItems"
-                @click="checkAllVehicleExpiryItems"
-              ></v-btn>
-              <v-btn v-if="inCheckMode"
-                class="text-none"
-                color="primary"
-                text="GERING-BESTAND"
-                variant="text"
-                slim @click="checkAllLowStockItems"
-              ></v-btn>
-              <v-btn v-if="inCheckMode"
-                class="text-none"
-                color="primary"
-                text="ALLES"
-                variant="text"
-                slim @click="checkAllItems"
-              ></v-btn>
-            </template>
-          </v-list-item>
-        </v-card>
-        <v-card class="mt-2" variant="outlined" v-show="inCheckMode">
-          <v-list-item class="px-6" height="88">
-            <template v-slot:prepend>
-              <v-icon icon="mdi-clipboard-clock"></v-icon>
-            </template>
-
-            <template v-slot:title> <b>Regelmäßige Prüfung</b> </template>
-
-            <template v-slot:append>
-              <v-btn v-if="inCheckMode"
-                class="text-none"
-                color="primary"
-                text="PRÜFE LISTE"
-                variant="text"
-                slim @click="checkAllNecessaryItems"
-              ></v-btn>
-            </template>
-          </v-list-item>
-
-          <v-divider></v-divider>
-          <v-card-text>
-
-            <v-data-table
-              :items="itemsCheckNecessary"
-              :headers="tableCheckNecessary"
-              :items-per-page="20">
-              <template v-slot:item.tags="{ item }">
-                <LcCheckTags :tags="item.tags"></LcCheckTags>
-              </template>
-              <template v-slot:item.action="{ item }">
-                <v-btn small variant="outlined" @click="editItem(item)">
-                  <v-icon icon="mdi-cog"></v-icon>
-                </v-btn>
-              </template>
-            </v-data-table>
-
-          </v-card-text>
-        </v-card>
-
-      </template>
-      <template v-else>
-
-        <LcItemInput @select-item="changeItem" hidden></LcItemInput>
-
-        <v-toolbar flat>
-          <v-app-bar-nav-icon
-            icon="mdi-arrow-left" :disabled="itemForm.processing"
-            @click="clearSelectedItem()"></v-app-bar-nav-icon>
-          <v-toolbar-title>
-            <div class="title-with-minmax">
-              <b>{{ editorTitle }}</b>
-              <p v-if="inCheckMode">
-                Min: {{ minStockTitleText }}<br>
-                Max: {{ maxStockTitleText }}
-              </p>
-            </div>
-          </v-toolbar-title>
-          <v-toolbar-items>
-            <v-btn v-if="inCheckMode"
-              @click="toEditMode"
-              icon="mdi-wrench"
-              v-tooltip:bottom="'Artikel bearbeiten'"
-            ></v-btn>
-            <v-btn v-if="inEditMode && !isNewItem"
-              @click="toCheckMode"
-              icon="mdi-check"
-              v-tooltip:bottom="'Nur Prüfen'"
-            ></v-btn>
-          </v-toolbar-items>
-        </v-toolbar>
-
-        <v-expansion-panels class="mt-2" flat multiple
-          v-model="editorAccordionOpened" :disabled="itemForm.processing">
-
-          <v-expansion-panel class="mt-1" title="Allgemein" color="black" outlined v-show="inEditMode">
-            <v-expansion-panel-text>
-
-              <v-text-field v-model="itemForm.name"
-                label="Name" required hide-details>
-              </v-text-field>
-              <v-alert v-if="!isValidName"
-                text="Du musst einen Namen angeben."
-                type="error">
-              </v-alert>
-
-              <v-text-field v-model="itemForm.name_alt"
-                class="mt-2" label="Alternative Namen" hide-details>
-              </v-text-field>
-              <v-text-field v-model="itemForm.search_size"
-                class="mt-2" label="Größenangabe ('m' oder 'm,6.5')" hide-details>
-              </v-text-field>
-
-              <v-select v-model="itemForm.demand_id" :items="demands"
-                class="mt-2" label="Anforderung" item-title="name"
-                item-value="id" required hide-details>
-              </v-select>
-              <v-alert v-if="!isValidDemand"
-                text="Du musst eine Anforderung angeben."
-                type="error">
-              </v-alert>
-
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-
-          <v-expansion-panel class="mt-1" title="Wo ist ... ?" color="black" v-show="inEditMode">
-            <v-expansion-panel-text>
-
-              <v-text-field v-model="itemForm.location.room"
-                label="Raum" hide-details>
-              </v-text-field>
-
-              <v-text-field v-model="itemForm.location.cab"
-                label="Schrank" hide-details>
-              </v-text-field>
-
-              <v-text-field v-model="itemForm.location.exact"
-                label="Genauer Ort (z.B. Schublade)" hide-details>
-              </v-text-field>
-
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-
-          <v-expansion-panel class="mt-1" title="Packungsgrößen" color="black" v-show="inEditMode">
-            <v-expansion-panel-text>
-
-              <v-data-table :items="itemForm.sizes"
-                :headers="sizesHeaders" :sort-by="sizesSortBy"
-                hide-default-footer :items-per-page="100">
+              <template v-slot:title> <b>Bestellung ausgesetzt</b> </template>
+            </v-list-item>
+            <v-divider></v-divider>
+            <v-card-text>
+              <v-data-table
+                :items="itemsDontOrder"
+                :headers="tableDontOrder" hide-default-footer hide-default-header
+                :items-per-page="20"
+                no-data-text="Keine ausgesetzten Bestellungen">
                 <template v-slot:item.action="{ item }">
-                  <v-btn small variant="outlined" @click="editSize(item)">
+                  <v-btn small variant="outlined" @click="editItem(item)">
                     <v-icon icon="mdi-cog"></v-icon>
                   </v-btn>
                 </template>
               </v-data-table>
+            </v-card-text>
+          </v-card>
 
-              <v-divider></v-divider>
+          <v-card class="mt-2" variant="outlined" v-show="expiringSoonItems.length>0">
+            <v-list-item class="px-6" height="88">
+              <template v-slot:prepend>
+                <v-icon icon="mdi-timer-alert-outline"></v-icon>
+              </template>
+              <template v-slot:title> <b>Verfall in den nächsten 2 Monaten</b> </template>
+            </v-list-item>
+            <v-divider></v-divider>
+            <v-card-text>
+              <v-data-table
+                :items="expiringSoonItems"
+                :headers="tableExpiringSoon"
+                :items-per-page="20">
+                <template v-slot:item.expiring_date="{ item }">
+                  {{ getExpiryLabel(item.expiring_date) }}
+                </template>
+                <template v-slot:item.action="{ item }">
+                  <v-btn small variant="outlined" @click="editItem(item)">
+                    <v-icon icon="mdi-cog"></v-icon>
+                  </v-btn>
+                </template>
+              </v-data-table>
+            </v-card-text>
+          </v-card>
 
-              <v-btn color="primary" variant="outlined" class="mt-4" prepend-icon="mdi-plus"
-                @click="createSize()">Hinzufügen
-              </v-btn>
+          <v-card class="mt-2" variant="outlined">
+            <v-list-item class="px-6" height="88">
+              <template v-slot:prepend>
+                <v-icon icon="mdi-clipboard-clock"></v-icon>
+              </template>
+              <template v-slot:title> <b>Checklisten</b> </template>
+              <template v-slot:append>
+                <v-btn v-if="inCheckMode"
+                  class="text-none"
+                  color="primary"
+                  text="KFZ-VERFALL"
+                  variant="text"
+                  slim
+                  :disabled="!hasModifiedVehicleExpiryItems"
+                  @click="checkAllVehicleExpiryItems"
+                ></v-btn>
+                <v-btn v-if="inCheckMode"
+                  class="text-none"
+                  color="primary"
+                  text="GERING-BESTAND"
+                  variant="text"
+                  slim @click="checkAllLowStockItems"
+                ></v-btn>
+                <v-btn v-if="inCheckMode"
+                  class="text-none"
+                  color="primary"
+                  text="ALLES"
+                  variant="text"
+                  slim @click="checkAllItems"
+                ></v-btn>
+              </template>
+            </v-list-item>
+          </v-card>
 
-              </v-expansion-panel-text>
-          </v-expansion-panel>
+          <v-card class="mt-2" variant="outlined">
+            <v-list-item class="px-6" height="88">
+              <template v-slot:prepend>
+                <v-icon icon="mdi-clipboard-clock"></v-icon>
+              </template>
+              <template v-slot:title> <b>Regelmäßige Prüfung</b> </template>
+              <template v-slot:append>
+                <v-btn v-if="inCheckMode"
+                  class="text-none"
+                  color="primary"
+                  text="PRÜFE LISTE"
+                  variant="text"
+                  slim @click="checkAllNecessaryItems"
+                ></v-btn>
+              </template>
+            </v-list-item>
+            <v-divider></v-divider>
+            <v-card-text>
+              <v-data-table
+                :items="itemsCheckNecessary"
+                :headers="tableCheckNecessary"
+                :items-per-page="20">
+                <template v-slot:item.tags="{ item }">
+                  <LcCheckTags :tags="item.tags"></LcCheckTags>
+                </template>
+                <template v-slot:item.action="{ item }">
+                  <v-btn small variant="outlined" @click="editItem(item)">
+                    <v-icon icon="mdi-cog"></v-icon>
+                  </v-btn>
+                </template>
+              </v-data-table>
+            </v-card-text>
+          </v-card>
+        </div>
+      </template>
+      <template v-if="isItemSelected">
 
-          <v-expansion-panel class="mt-1" title="Min- & Maxbestand" color="black" v-show="inEditMode">
-            <v-expansion-panel-text>
+        <div class="page-inventory__editor">
 
-              <v-form class="mb-6">
+          <LcItemInput @select-item="changeItem" hidden></LcItemInput>
 
-                <LcStockAmount
-                  v-model:stock="itemForm.min_stock"
-                  v-model:visible="isStockDialogVisible"
-                  :sizes="itemForm.sizes"
-                  title="Min-Bestand berechnen"
-                  message="Gib eine Packungsgröße und eine Menge ein, um einen neuen Min-Bestand zu errechnen."
-                  button-text="Min-Bestand ändern">
-                </LcStockAmount>
+          <v-toolbar flat class="page-inventory__editor-toolbar">
+            <v-app-bar-nav-icon
+              icon="mdi-arrow-left" :disabled="itemForm.processing"
+              @click="clearSelectedItem()"></v-app-bar-nav-icon>
+            <v-toolbar-title>
+              <div class="title-with-minmax">
+                <b>{{ editorTitle }}</b>
+                <p v-if="inCheckMode">
+                  Min: {{ minStockTitleText }}<br>
+                  Max: {{ maxStockTitleText }}
+                </p>
+              </div>
+            </v-toolbar-title>
+            <v-toolbar-items>
+              <v-btn v-if="inCheckMode"
+                @click="toEditMode"
+                icon="mdi-wrench"
+                v-tooltip:bottom="'Artikel bearbeiten'"
+              ></v-btn>
+              <v-btn v-if="inEditMode && !isNewItem"
+                @click="toCheckMode"
+                icon="mdi-check"
+                v-tooltip:bottom="'Nur Prüfen'"
+              ></v-btn>
+            </v-toolbar-items>
+          </v-toolbar>
 
-                <LcStockAmount
-                  v-model:stock="itemForm.max_stock"
-                  v-model:visible="isStockDialogVisible"
-                  :sizes="itemForm.sizes"
-                  title="Max-Bestand berechnen"
-                  message="Gib eine Packungsgröße und eine Menge ein, um einen neuen Max-Bestand zu errechnen."
-                  button-text="Max-Bestand ändern">
-                </LcStockAmount>
+          <div class="page-inventory__editor-panels">
+            <v-expansion-panels class="mt-2" flat multiple
+              v-model="editorAccordionOpened" :disabled="itemForm.processing">
 
-              </v-form>
-              <v-form class="mb-6">
+              <v-expansion-panel class="mt-1" title="Allgemein" color="black" outlined v-show="inEditMode">
+                <v-expansion-panel-text>
 
-                <LcStockAmount
-                  v-model:stock="itemForm.onvehicle_stock"
-                  v-model:visible="isStockDialogVisible"
-                  :sizes="itemForm.sizes"
-                  title="Fahrzeugbestand berechnen"
-                  message="Gib eine Packungsgröße und eine Menge ein, um einen neuen Fahrzeugbestand zu errechnen."
-                  button-text="Fahrzeugbestand ändern">
-                </LcStockAmount>
+                  <v-text-field v-model="itemForm.name"
+                    label="Name" required hide-details>
+                  </v-text-field>
+                  <v-alert v-if="!isValidName"
+                    text="Du musst einen Namen angeben."
+                    type="error">
+                  </v-alert>
 
-              </v-form>
-              <v-form class="pb-3">
+                  <v-text-field v-model="itemForm.name_alt"
+                    class="mt-2" label="Alternative Namen" hide-details>
+                  </v-text-field>
+                  <v-text-field v-model="itemForm.search_size"
+                    class="mt-2" label="Größenangabe ('m' oder 'm,6.5')" hide-details>
+                  </v-text-field>
 
-                <LcStockAmount
-                  v-model:stock="itemForm.max_bookin_quantity"
-                  v-model:visible="isStockDialogVisible"
-                  :sizes="itemForm.sizes"
-                  title="Max/Buchung berechnen"
-                  message="Gib eine Packungsgröße und eine Menge ein, um die maximal Menge pro Buchung einzugeben."
-                  button-text="Max/Buchung ändern">
-                </LcStockAmount>
+                  <v-select v-model="itemForm.demand_id" :items="demands"
+                    class="mt-2" label="Anforderung" item-title="name"
+                    item-value="id" required hide-details>
+                  </v-select>
+                  <v-alert v-if="!isValidDemand"
+                    text="Du musst eine Anforderung angeben."
+                    type="error">
+                  </v-alert>
 
-                <LcStockAmount
-                  v-model:stock="itemForm.max_order_quantity"
-                  v-model:visible="isStockDialogVisible"
-                  :sizes="itemForm.sizes"
-                  title="Max/Bestellung berechnen"
-                  message="Gib eine Packungsgröße und eine Menge ein, um die maximal Menge pro Bestellung einzugeben."
-                  button-text="Max/Bestellung ändern">
-                </LcStockAmount>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
 
-              </v-form>
+              <v-expansion-panel class="mt-1" title="Wo ist ... ?" color="black" v-show="inEditMode">
+                <v-expansion-panel-text>
+
+                  <v-text-field v-model="itemForm.location.room"
+                    label="Raum" hide-details>
+                  </v-text-field>
+
+                  <v-text-field v-model="itemForm.location.cab"
+                    label="Schrank" hide-details>
+                  </v-text-field>
+
+                  <v-text-field v-model="itemForm.location.exact"
+                    label="Genauer Ort (z.B. Schublade)" hide-details>
+                  </v-text-field>
+
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+
+              <v-expansion-panel class="mt-1" title="Packungsgrößen" color="black" v-show="inEditMode">
+                <v-expansion-panel-text>
+
+                  <v-data-table :items="itemForm.sizes"
+                    :headers="sizesHeaders" :sort-by="sizesSortBy"
+                    hide-default-footer :items-per-page="100">
+                    <template v-slot:item.action="{ item }">
+                      <v-btn small variant="outlined" @click="editSize(item)">
+                        <v-icon icon="mdi-cog"></v-icon>
+                      </v-btn>
+                    </template>
+                  </v-data-table>
+
+                  <v-divider></v-divider>
+
+                  <v-btn color="primary" variant="outlined" class="mt-4" prepend-icon="mdi-plus"
+                    @click="createSize()">Hinzufügen
+                  </v-btn>
+
+                  </v-expansion-panel-text>
+              </v-expansion-panel>
+
+              <v-expansion-panel class="mt-1" title="Min- & Maxbestand" color="black" v-show="inEditMode">
+                <v-expansion-panel-text>
+
+                  <v-form class="mb-6">
+
+                    <LcStockAmount
+                      v-model:stock="itemForm.min_stock"
+                      v-model:visible="isStockDialogVisible"
+                      :sizes="itemForm.sizes"
+                      title="Min-Bestand berechnen"
+                      message="Gib eine Packungsgröße und eine Menge ein, um einen neuen Min-Bestand zu errechnen."
+                      button-text="Min-Bestand ändern">
+                    </LcStockAmount>
+
+                    <LcStockAmount
+                      v-model:stock="itemForm.max_stock"
+                      v-model:visible="isStockDialogVisible"
+                      :sizes="itemForm.sizes"
+                      title="Max-Bestand berechnen"
+                      message="Gib eine Packungsgröße und eine Menge ein, um einen neuen Max-Bestand zu errechnen."
+                      button-text="Max-Bestand ändern">
+                    </LcStockAmount>
+
+                  </v-form>
+                  <v-form class="mb-6">
+
+                    <LcStockAmount
+                      v-model:stock="itemForm.onvehicle_stock"
+                      v-model:visible="isStockDialogVisible"
+                      :sizes="itemForm.sizes"
+                      title="Fahrzeugbestand berechnen"
+                      message="Gib eine Packungsgröße und eine Menge ein, um einen neuen Fahrzeugbestand zu errechnen."
+                      button-text="Fahrzeugbestand ändern">
+                    </LcStockAmount>
+
+                  </v-form>
+                  <v-form class="pb-3">
+
+                    <LcStockAmount
+                      v-model:stock="itemForm.max_bookin_quantity"
+                      v-model:visible="isStockDialogVisible"
+                      :sizes="itemForm.sizes"
+                      title="Max/Buchung berechnen"
+                      message="Gib eine Packungsgröße und eine Menge ein, um die maximal Menge pro Buchung einzugeben."
+                      button-text="Max/Buchung ändern">
+                    </LcStockAmount>
+
+                    <LcStockAmount
+                      v-model:stock="itemForm.max_order_quantity"
+                      v-model:visible="isStockDialogVisible"
+                      :sizes="itemForm.sizes"
+                      title="Max/Bestellung berechnen"
+                      message="Gib eine Packungsgröße und eine Menge ein, um die maximal Menge pro Bestellung einzugeben."
+                      button-text="Max/Bestellung ändern">
+                    </LcStockAmount>
+
+                  </v-form>
 
 
-            </v-expansion-panel-text>
-          </v-expansion-panel>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
 
-          <v-expansion-panel class="mt-1" title="Aktueller Bestand" color="black">
-            <v-expansion-panel-text>
+              <v-expansion-panel class="mt-1" title="Aktueller Bestand" color="black">
+                <v-expansion-panel-text>
 
-              <v-alert v-if="itemForm.onvehicle_stock >= itemForm.max_stock"
-                style="margin:1rem 0"
-                text="Der Fahrzeugbestand übersteigt den Lagerbestand."
-                title="Achtung"
-                type="warning"
-                variant="tonal"
-              />
+                  <v-alert v-if="itemForm.onvehicle_stock >= itemForm.max_stock"
+                    style="margin:1rem 0"
+                    text="Der Fahrzeugbestand übersteigt den Lagerbestand."
+                    title="Achtung"
+                    type="warning"
+                    variant="tonal"
+                  />
+
+                  <v-form>
+                    <v-row>
+                      <v-col cols="4" class="page-inventory__table--result">
+                        Aktueller Bestand ({{ baseUnit }})
+                      </v-col>
+                      <v-col cols="5">
+                        <v-number-input
+                          v-model="itemForm.current_quantity"
+                          :reverse="false"
+                          controlVariant="split"
+                          :hideInput="false"
+                          :inset="false" hide-details
+                          :min="-999"
+                          :max="999"
+                        ></v-number-input>
+                      </v-col>
+                      <v-col cols="3">
+                        <v-select v-if="!isNewItem"
+                          v-model="itemForm.stockchangeReason"
+                          :items="selectableStockChangeReasons"
+                          label="Grund"
+                          item-title="name"
+                          item-value="value"
+                          required
+                          hide-details
+                        ></v-select>
+                      </v-col>
+                    </v-row>
+                  </v-form>
+
+                  <v-checkbox
+                    v-model="itemForm.dont_order"
+                    class="mt-2"
+                    label="Bestellung vorrübergehend aussetzen"
+                    color="warning"
+                    hide-details>
+                  </v-checkbox>
+
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+
+              <v-expansion-panel class="mt-1" title="Verfall" color="black">
+                <v-expansion-panel-text>
+
+                  <v-alert
+                    v-if="isNewItem"
+                    text="Speichere den Artikel zuerst, bevor du Verfälle hinzufügst."
+                    type="info"
+                    variant="tonal"
+                  />
+
+                  <template v-else>
+
+                    <v-data-table
+                      :items="getExpiryTableItems"
+                      :headers="expiryHeaders"
+                      :sort-by="expirySortBy"
+                      hide-default-footer
+                      :items-per-page="100"
+                      no-data-text="Kein Verfall erfasst"
+                    >
+                      <template v-slot:item.expiryAt="{ item }">
+                        {{ getExpiryLabel(item.expiryAt) }}
+                      </template>
+                      <template v-slot:item.note="{ item }">
+                        {{ item.note || '-' }}
+                      </template>
+                      <template v-slot:item.is_ordered="{ item }">
+                        <v-chip
+                          v-if="item.is_ordered"
+                          color="primary"
+                          size="small"
+                          variant="tonal"
+                        >
+                          Ja
+                        </v-chip>
+                        <span v-else>-</span>
+                      </template>
+                      <template v-slot:header.is_modified>
+                        <v-icon
+                          icon="mdi-alert"
+                          size="small"
+                          v-tooltip:bottom="'Nach Buchung geändert'"
+                        ></v-icon>
+                      </template>
+                      <template v-slot:item.is_modified="{ item }">
+                        <v-chip
+                          v-if="item.is_modified"
+                          color="warning"
+                          size="x-small"
+                          variant="tonal"
+                        >
+                          Ja
+                        </v-chip>
+                        <span v-else>-</span>
+                      </template>
+                      <template v-slot:item.action="{ item }">
+                        <v-btn small variant="outlined" @click="editExpiry(item)">
+                          <v-icon icon="mdi-cog"></v-icon>
+                        </v-btn>
+                      </template>
+                    </v-data-table>
+
+                    <v-divider></v-divider>
+
+                    <div class="page-inventory__expiry-add mt-4">
+                      <v-btn
+                        v-for="usage in visibleExpiryAddOptions"
+                        :key="usage.id ?? 'stock'"
+                        color="primary"
+                        variant="outlined"
+                        prepend-icon="mdi-plus"
+                        @click="createExpiry(usage.id)"
+                      >
+                        {{ usage.name }}
+                      </v-btn>
+                    </div>
+                  </template>
+
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+
+              <v-expansion-panel class="mt-1" title="Statistik" color="black" v-if="itemStats.has_stats && inCheckMode">
+                <v-expansion-panel-text>
+                  <v-container>
+                    <v-row>
+                      <v-col cols="3" class="page-inventory__table--result">Verbrauch/Woche</v-col>
+                      <v-col cols="2">
+                        {{ `${itemStats.consumption_per_week_recent.toFixed(2)} ${baseUnit}` }}
+                        <LcTrend :trend="itemStats.consumption_trend" />
+                      </v-col>
+                      <v-col cols="3" class="page-inventory__table--result">Abweichung/Woche</v-col>
+                      <v-col cols="2">
+                        {{ `${itemStats.adjustment_per_week_recent.toFixed(2)} ${baseUnit}` }}
+                        <LcTrend :trend="itemStats.adjustment_trend" />
+                      </v-col>
+                    </v-row>
+                    <v-row class="mt-n5">
+                      <v-col cols="3" class="page-inventory__table--result">Maximalverbrauch</v-col>
+                      <v-col cols="2">
+                        {{ `${itemStats.consumption_week_max_recent.toFixed(0)} ${baseUnit}` }}
+                      </v-col>
+                      <v-col cols="3" class="page-inventory__table--result">Standardabweichung</v-col>
+                      <v-col cols="2">
+                        {{ `${itemStats.consumption_week_stddev_total.toFixed(2)} ${baseUnit}` }}
+                      </v-col>
+                    </v-row>
+
+                  </v-container>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+
+            </v-expansion-panels>
+          </div>
+
+          <!-- DIALOG BUTTONS -->
+          <v-card class="page-inventory__editor-actions mt-2 rounded-0" variant="outlined" :disabled="itemForm.processing">
+            <v-card-text class="pa-4">
 
               <v-form>
                 <v-row>
-                  <v-col cols="4" class="page-inventory__table--result">
-                    Aktueller Bestand ({{ baseUnit }})
+                  <v-col cols="3" v-if="!isNewItem && inEditMode">
+                    <v-btn color="error" variant="flat" block
+                      @click="deleteItem">
+                      Löschen
+                    </v-btn>
                   </v-col>
-                  <v-col cols="5">
-                    <v-number-input
-                      v-model="itemForm.current_quantity"
-                      :reverse="false"
-                      controlVariant="split"
-                      :hideInput="false"
-                      :inset="false" hide-details
-                      :min="-999"
-                      :max="999"
-                    ></v-number-input>
+                  <v-col cols="3" style="display:flex" v-if="inCheckMode">
+                    <v-chip class="lastcheck-chip" prepend-icon="mdi-progress-clock">
+                      <b>{{currentLastCheckedLabel}}</b></v-chip>
                   </v-col>
-                  <v-col cols="3">
-                    <v-select v-if="!isNewItem"
-                      v-model="itemForm.stockchangeReason"
-                      :items="selectableStockChangeReasons"
-                      label="Grund"
-                      item-title="name"
-                      item-value="value"
-                      required
-                      hide-details
-                    ></v-select>
+                  <v-col :cols="isNewItem ? 12 : 9">
+                    <v-btn color="success" variant="flat" block :disabled="!isValidItem" :loading="itemForm.processing"
+                      @click="saveItem">
+                      {{ saveBtnLabel }}
+                    </v-btn>
                   </v-col>
                 </v-row>
               </v-form>
 
-              <v-checkbox
-                v-model="itemForm.dont_order"
-                class="mt-2"
-                label="Bestellung vorrübergehend aussetzen"
-                color="warning"
-                hide-details>
-              </v-checkbox>
+            </v-card-text>
+          </v-card>
 
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-
-          <v-expansion-panel class="mt-1" title="Verfall" color="black">
-            <v-expansion-panel-text>
-
-              <v-alert
-                v-if="isNewItem"
-                text="Speichere den Artikel zuerst, bevor du Verfälle hinzufügst."
-                type="info"
-                variant="tonal"
-              />
-
-              <template v-else>
-
-                <v-data-table
-                  :items="getExpiryTableItems"
-                  :headers="expiryHeaders"
-                  :sort-by="expirySortBy"
-                  hide-default-footer
-                  :items-per-page="100"
-                  no-data-text="Kein Verfall erfasst"
-                >
-                  <template v-slot:item.expiryAt="{ item }">
-                    {{ getExpiryLabel(item.expiryAt) }}
-                  </template>
-                  <template v-slot:item.note="{ item }">
-                    {{ item.note || '-' }}
-                  </template>
-                  <template v-slot:item.is_ordered="{ item }">
-                    <v-chip
-                      v-if="item.is_ordered"
-                      color="primary"
-                      size="small"
-                      variant="tonal"
-                    >
-                      Ja
-                    </v-chip>
-                    <span v-else>-</span>
-                  </template>
-                  <template v-slot:header.is_modified>
-                    <v-icon
-                      icon="mdi-alert"
-                      size="small"
-                      v-tooltip:bottom="'Nach Buchung geändert'"
-                    ></v-icon>
-                  </template>
-                  <template v-slot:item.is_modified="{ item }">
-                    <v-chip
-                      v-if="item.is_modified"
-                      color="warning"
-                      size="x-small"
-                      variant="tonal"
-                    >
-                      Ja
-                    </v-chip>
-                    <span v-else>-</span>
-                  </template>
-                  <template v-slot:item.action="{ item }">
-                    <v-btn small variant="outlined" @click="editExpiry(item)">
-                      <v-icon icon="mdi-cog"></v-icon>
-                    </v-btn>
-                  </template>
-                </v-data-table>
-
-                <v-divider></v-divider>
-
-                <div class="page-inventory__expiry-add mt-4">
-                  <v-btn
-                    v-for="usage in visibleExpiryAddOptions"
-                    :key="usage.id ?? 'stock'"
-                    color="primary"
-                    variant="outlined"
-                    prepend-icon="mdi-plus"
-                    @click="createExpiry(usage.id)"
-                  >
-                    {{ usage.name }}
-                  </v-btn>
-                </div>
-              </template>
-
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-
-          <v-expansion-panel class="mt-1" title="Statistik" color="black" v-if="itemStats.has_stats && inCheckMode">
-            <v-expansion-panel-text>
-              <v-container>
-                <v-row>
-                  <v-col cols="3" class="page-inventory__table--result">Verbrauch/Woche</v-col>
-                  <v-col cols="2">
-                    {{ `${itemStats.consumption_per_week_recent.toFixed(2)} ${baseUnit}` }}
-                    <LcTrend :trend="itemStats.consumption_trend" />
-                  </v-col>
-                  <v-col cols="3" class="page-inventory__table--result">Abweichung/Woche</v-col>
-                  <v-col cols="2">
-                    {{ `${itemStats.adjustment_per_week_recent.toFixed(2)} ${baseUnit}` }}
-                    <LcTrend :trend="itemStats.adjustment_trend" />
-                  </v-col>
-                </v-row>
-                <v-row class="mt-n5">
-                  <v-col cols="3" class="page-inventory__table--result">Maximalverbrauch</v-col>
-                  <v-col cols="2">
-                    {{ `${itemStats.consumption_week_max_recent.toFixed(0)} ${baseUnit}` }}
-                  </v-col>
-                  <v-col cols="3" class="page-inventory__table--result">Standardabweichung</v-col>
-                  <v-col cols="2">
-                    {{ `${itemStats.consumption_week_stddev_total.toFixed(2)} ${baseUnit}` }}
-                  </v-col>
-                </v-row>
-
-              </v-container>
-            </v-expansion-panel-text>
-          </v-expansion-panel>
-
-        </v-expansion-panels>
-
-        <!-- DIALOG BUTTONS -->
-        <v-card class="mt-2 rounded-0" variant="outlined" :disabled="itemForm.processing">
-          <v-card-text class="pa-4">
-
-            <v-form>
-              <v-row>
-                <v-col cols="3" v-if="!isNewItem && inEditMode">
-                  <v-btn color="error" variant="flat" block
-                    @click="deleteItem">
-                    Löschen
-                  </v-btn>
-                </v-col>
-                <v-col cols="3" style="display:flex" v-if="inCheckMode">
-                  <v-chip class="lastcheck-chip" prepend-icon="mdi-progress-clock">
-                    <b>{{currentLastCheckedLabel}}</b></v-chip>
-                </v-col>
-                <v-col :cols="isNewItem ? 12 : 9">
-                  <v-btn color="success" variant="flat" block :disabled="!isValidItem" :loading="itemForm.processing"
-                    @click="saveItem">
-                    {{ saveBtnLabel }}
-                  </v-btn>
-                </v-col>
-              </v-row>
-            </v-form>
-
-          </v-card-text>
-        </v-card>
+        </div>
 
       </template>
 
@@ -1437,6 +1430,53 @@
 </template>
 <style lang="scss" scoped>
 .page-inventory {
+
+  height: 100%;
+  overflow: hidden;
+
+  &__section {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    width: min(850px, calc(100vw - 1rem));
+    margin: 0 auto;
+    height: calc(100vh - 7rem);
+  }
+
+  &__controls,
+  &__item-select,
+  &__editor-toolbar,
+  &__editor-actions {
+    flex: 0 0 auto;
+  }
+
+  &__checkboard,
+  &__editor-panels {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: .25rem;
+    scrollbar-gutter: stable;
+  }
+
+  &__checkboard {
+    padding-bottom: .5rem;
+    overflow: scroll;
+  }
+
+  &__checkboard > .v-card:first-child,
+  &__editor-panels > .v-expansion-panels:first-child {
+    margin-top: 0 !important;
+  }
+
+  &__editor {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
 
   &__table--result-centered,
   &__table--result {
