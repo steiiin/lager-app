@@ -321,7 +321,7 @@
 
     const getExpiringSoonThreshold = () => {
       const threshold = new Date()
-      threshold.setMonth(threshold.getMonth() + 2)
+      threshold.setMonth(threshold.getMonth() + 3)
       threshold.setHours(23, 59, 59, 999)
       return threshold
     }
@@ -953,7 +953,7 @@
               <template v-slot:prepend>
                 <v-icon icon="mdi-timer-alert-outline"></v-icon>
               </template>
-              <template v-slot:title> <b>Verfall in den nächsten 2 Monaten</b> </template>
+              <template v-slot:title> <b>Verfall in den nächsten 3 Monaten</b> </template>
             </v-list-item>
             <v-divider></v-divider>
             <v-card-text>
