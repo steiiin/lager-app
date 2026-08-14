@@ -10,6 +10,7 @@ Route::get('/inventory-jobs', [InventoryController::class, 'jobs']);
 
 Route::post('/item-expiry', [ItemExpiryController::class, 'store']);
 Route::put('/item-expiry/{id}/dismiss', [ItemExpiryController::class, 'dismiss']);
+Route::put('/item-expiry/{id}/check', [ItemExpiryController::class, 'check']);
 Route::put('/item-expiry/{id}', [ItemExpiryController::class, 'update']);
 Route::delete('/item-expiry/{id}', [ItemExpiryController::class, 'destroy']);
 

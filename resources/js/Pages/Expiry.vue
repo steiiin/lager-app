@@ -473,7 +473,7 @@
           prepend-icon="mdi-timer-check"
           :loading="isAnnouncementSaving"
           @click="finishAnnouncement">
-          {{ isAnnouncementSaving ? 'Verfall melden ...' : 'Verfall melden' }}
+          {{ isAnnouncementSaving ? 'Verfall melden ...' : 'Zukünftigen Verfall melden' }}
         </LcButton>
       </section>
 
@@ -486,7 +486,7 @@
       <LcButton
         class="page-expiry__announce"
         type="primary" prepend-icon="mdi-timer-plus"
-        @click="startAnnouncement">Verfall melden
+        @click="startAnnouncement">Zukünftigen Verfall melden
       </LcButton>
 
       <!-- Empty state -->

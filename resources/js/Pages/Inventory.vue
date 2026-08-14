@@ -825,6 +825,12 @@
         refreshCurrentItemFromStore()
       }
 
+      const checkExpiry = async (entry) => {
+        await axios.put(`/api/item-expiry/${entry.id}/check`)
+        await inventoryStore.fetchStore(true)
+        refreshCurrentItemFromStore()
+      }
+
       const deleteExpiry = async (entry) => {
         if (!entry.id || !confirm('Willst du das wirklich löschen?')) { return }
 
@@ -1319,6 +1325,16 @@
                         <span v-else>-</span>
                       </template>
                       <template v-slot:item.action="{ item }">
+                        <v-btn
+                          v-if="item.is_modified"
+                          class="mr-2"
+                          small
+                          variant="outlined"
+                          @click="checkExpiry(item)"
+                          v-tooltip:bottom="'Als geprüft markieren'"
+                        >
+                          <v-icon icon="mdi-check"></v-icon>
+                        </v-btn>
                         <v-btn small variant="outlined" @click="editExpiry(item)">
                           <v-icon icon="mdi-cog"></v-icon>
                         </v-btn>

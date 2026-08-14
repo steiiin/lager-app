@@ -60,6 +60,14 @@ class ItemExpiryController extends Controller
     return response()->json([ 'ok' => true ]);
   }
 
+  public function check($id): JsonResponse
+  {
+    $expiry = Itemexpiry::findOrFail($id);
+    $expiry->update([ 'is_modified' => false ]);
+
+    return response()->json($expiry->fresh());
+  }
+
   public function dismiss(Request $request, $id): JsonResponse
   {
     $data = $request->validate([
