@@ -386,6 +386,14 @@
     <!-- Announcement (Pickers) -->
     <section v-if="isAnnouncementMode" class="page-expiry__announcement">
 
+      <v-alert
+        class="page-expiry__announcement-notice"
+        title="Hinweis"
+        text="Hier kannst du eine Meldung für Material erstellen, das in den nächsten Wochen verfällt. Möchtest du bereits verfallenes Material ersetzen, scanne es wie gewohnt aus, anstatt eine Meldung zu erstellen."
+        type="info"
+        variant="tonal"
+      />
+
       <LcUsageInput v-if="!hasAnnouncementUsage" only-expireable
         @select-usage="selectAnnouncementUsage"
         @other-code="warnAboutAnnouncementUsage"
@@ -692,6 +700,10 @@
     padding-left: 1.5rem;
     font-size: 1.2rem;
     font-weight: bold;
+  }
+
+  &__announcement-notice {
+    margin-bottom: 0.5rem;
   }
 
   &__announcement-clear {
