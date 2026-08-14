@@ -762,6 +762,7 @@
         { title: 'Bestellt', key: 'is_ordered', minWidth: '12%' },
         { title: '', key: 'is_modified', align: 'center', width: '3rem', sortable: false },
         { title: 'Notiz', key: 'note', minWidth: '20%' },
+        { title: ' ', key: 'check', sortable: false },
         { title: 'Bearbeiten', key: 'action', sortable: false },
       ])
       const expirySortBy = ref([
@@ -1324,17 +1325,16 @@
                         </v-chip>
                         <span v-else>-</span>
                       </template>
-                      <template v-slot:item.action="{ item }">
+                      <template v-slot:item.check="{ item }">
                         <v-btn
                           v-if="item.is_modified"
-                          class="mr-2"
-                          small
-                          variant="outlined"
+                          small variant="outlined"
                           @click="checkExpiry(item)"
-                          v-tooltip:bottom="'Als geprüft markieren'"
-                        >
+                          v-tooltip:bottom="'Als geprüft markieren'">
                           <v-icon icon="mdi-check"></v-icon>
                         </v-btn>
+                      </template>
+                      <template v-slot:item.action="{ item }">
                         <v-btn small variant="outlined" @click="editExpiry(item)">
                           <v-icon icon="mdi-cog"></v-icon>
                         </v-btn>
