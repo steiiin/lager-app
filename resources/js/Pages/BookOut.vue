@@ -279,7 +279,14 @@
     })
     const bookoutFormOptions = {
       preserveScroll: true,
-      onSuccess: () => {
+      onError: () => {
+        is_booking.value = false
+      },
+      onCancel: () => {
+        is_booking.value = false
+      },
+      onFinish: () => {
+        is_booking.value = false
       },
     }
 
