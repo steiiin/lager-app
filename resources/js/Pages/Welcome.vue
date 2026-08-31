@@ -34,8 +34,14 @@
     isTouchMode: {
       type: Boolean,
       required: true,
-    }
+    },
+    newsfeed: {
+      type: Array,
+      required: true,
+    },
   })
+
+  const hasNews = computed(() => props.newsfeed.length > 0)
 
 // #endregion
 // #region Navigation
@@ -118,7 +124,7 @@
   <Head title="Home" />
   <IdleCursor />
 
-  <div class="page-welcome">
+  <div class="page-welcome" :class="{ 'with-news': hasNews }">
 
     <LcButton class="page-welcome__BookOut"
       type="primary" icon="mdi-barcode-scan"
@@ -134,6 +140,14 @@
       icon="mdi-lock-open-variant-outline"
       @click="unlockInventory">
     </LcButton>
+
+    <div v-if="hasNews" class="page-welcome__News">
+      <h1>Infos</h1>
+      <article v-for="news in newsfeed" :key="news.id" class="page-welcome__News-item">
+        <h2>{{ news.title }}</h2>
+        <p>{{ news.message }}</p>
+      </article>
+    </div>
 
   </div>
   <div class="page-welcome__invisible-usagescanner">
@@ -178,6 +192,43 @@
     grid-area: Inventory;
   }
 
+  &__News {
+    grid-area: News;
+    min-height: 0;
+    padding: 1.5rem;
+    overflow-y: auto;
+    border: .5rem solid var(--main-dark);
+
+    & > h1 {
+      margin: -1.5rem -1.5rem 1rem -1.5rem;
+      padding: 1.5rem;
+      font-size: 1.5rem;
+      text-transform: uppercase;
+      background: var(--main-dark);
+      color: var(--main-light);
+    }
+
+    &-item {
+
+      border-bottom: .2rem solid var(--main-dark);
+      padding: 1rem 0;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      & h2 {
+        font-size: 1.15rem;
+      }
+
+      & p {
+        white-space: pre-line;
+        overflow-wrap: anywhere;
+      }
+    }
+
+  }
+
   & :deep(.lc-button) {
     font-size: 2rem;
     letter-spacing: 0;
@@ -197,4 +248,17 @@
   }
 
 }
+
+.page-welcome.with-news {
+
+  grid-template-columns: 0.3fr 0.3fr 0.3fr 0.5fr;
+  grid-template-rows: 1.0fr 1.0fr 0.5fr;
+  gap: 1rem;
+  grid-template-areas:
+    "BookOut BookOut BookOut News"
+    "BookOut BookOut BookOut News"
+    "BookIn BookIn Inventory News";
+
+}
+
 </style>

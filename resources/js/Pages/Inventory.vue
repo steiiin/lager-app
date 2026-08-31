@@ -48,6 +48,10 @@
       type: Array,
       required: true,
     },
+    newsfeed: {
+      type: Array,
+      required: true,
+    },
   })
 
 // #endregion
@@ -78,7 +82,9 @@
   // #region KeyboardShortcuts
 
     const handleEsc = () => {
-      if (isItemSelected.value) {
+      if (newsfeedDialogVisible.value) {
+        closeNewsfeedDialog()
+      } else if (isItemSelected.value) {
         clearSelectedItem()
       } else {
         openWelcome()
@@ -121,6 +127,7 @@
     const inventoryMode = ref('edit')
     const inEditMode = computed(() => inventoryMode.value == 'edit')
     const inCheckMode = computed(() => inventoryMode.value == 'check')
+    const inNewsfeedMode = computed(() => inventoryMode.value == 'newsfeed')
 
     const toEditMode = () => {
       inventoryMode.value = 'edit'
@@ -130,6 +137,134 @@
     const toCheckMode = () => {
       inventoryMode.value = 'check'
       editorAccordionOpened.value = [ 4, 5, 6 ]
+    }
+
+  // #endregion
+
+  // #region Newsfeed
+
+    const newsfeedDialogVisible = ref(false)
+    const newsfeedForm = useForm({
+      id: null,
+      title: '',
+      message: '',
+      from: '',
+      until: '',
+    })
+
+    const isNewNewsfeed = computed(() => newsfeedForm.id === null)
+    const newsfeedDialogTitle = computed(() => (
+      isNewNewsfeed.value ? 'Neue Nachricht' : 'Nachricht bearbeiten'
+    ))
+    const hasValidNewsfeedRange = computed(() => {
+      if (!newsfeedForm.from || !newsfeedForm.until) { return true }
+      return new Date(newsfeedForm.until) >= new Date(newsfeedForm.from)
+    })
+    const isValidNewsfeed = computed(() => (
+      newsfeedForm.title.trim().length > 0 &&
+      newsfeedForm.message.trim().length > 0 &&
+      hasValidNewsfeedRange.value
+    ))
+
+    const newsfeedTableHeaders = ref([
+      { title: 'Titel', key: 'title' },
+      { title: 'Nachricht', key: 'message' },
+      { title: 'Von', key: 'from', width: '10rem' },
+      { title: 'Bis', key: 'until', width: '10rem' },
+      { title: 'Status', key: 'status', width: '7rem' },
+      { title: 'Bearbeiten', key: 'action', sortable: false, width: '7rem' },
+    ])
+
+    const newsfeedStatus = {
+      active: { label: 'Aktiv', color: 'success' },
+      scheduled: { label: 'Geplant', color: 'info' },
+      expired: { label: 'Abgelaufen', color: 'default' },
+    }
+
+    const getNewsfeedStatus = (status) => (
+      newsfeedStatus[status] ?? newsfeedStatus.active
+    )
+
+    const formatNewsfeedDate = (value) => {
+      if (!value) { return '–' }
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) { return '–' }
+
+      return new Intl.DateTimeFormat('de-DE', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      }).format(date)
+    }
+
+    const toLocalDateTimeInput = (value) => {
+      if (!value) { return '' }
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) { return '' }
+
+      const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+      return localDate.toISOString().slice(0, 16)
+    }
+
+    const toUtcDateTime = (value) => {
+      if (!value) { return null }
+      const date = new Date(value)
+      return Number.isNaN(date.getTime()) ? value : date.toISOString()
+    }
+
+    const openNewNewsfeedDialog = async () => {
+      newsfeedForm.reset()
+      newsfeedForm.clearErrors()
+      newsfeedForm.id = null
+      newsfeedForm.title = ''
+      newsfeedForm.message = ''
+      newsfeedForm.from = ''
+      newsfeedForm.until = ''
+      newsfeedDialogVisible.value = true
+      await nextTick()
+      document.getElementById('id-newsfeed-title')?.focus()
+    }
+
+    const openEditNewsfeedDialog = (item) => {
+      newsfeedForm.reset()
+      newsfeedForm.clearErrors()
+      newsfeedForm.id = item.id
+      newsfeedForm.title = item.title
+      newsfeedForm.message = item.message
+      newsfeedForm.from = toLocalDateTimeInput(item.from)
+      newsfeedForm.until = toLocalDateTimeInput(item.until)
+      newsfeedDialogVisible.value = true
+    }
+
+    const closeNewsfeedDialog = () => {
+      newsfeedDialogVisible.value = false
+      newsfeedForm.clearErrors()
+    }
+
+    const newsfeedFormOptions = {
+      preserveScroll: true,
+      onSuccess: closeNewsfeedDialog,
+    }
+
+    const saveNewsfeed = () => {
+      if (!isValidNewsfeed.value) { return }
+
+      newsfeedForm.transform(data => ({
+        title: data.title,
+        message: data.message,
+        from: toUtcDateTime(data.from),
+        until: toUtcDateTime(data.until),
+      }))
+
+      if (isNewNewsfeed.value) {
+        newsfeedForm.post('/newsfeed', newsfeedFormOptions)
+      } else {
+        newsfeedForm.put(`/newsfeed/${newsfeedForm.id}`, newsfeedFormOptions)
+      }
+    }
+
+    const deleteNewsfeed = () => {
+      if (!confirm('Willst du diese Nachricht wirklich löschen?')) { return }
+      newsfeedForm.delete(`/newsfeed/${newsfeedForm.id}`, newsfeedFormOptions)
     }
 
   // #endregion
@@ -920,15 +1055,58 @@
         <LcButtonGroup v-model="inventoryMode" :items="[
           { label: 'Bearbeiten', value: 'edit' },
           { label: 'Prüfen', value: 'check' },
+          { label: 'Newsfeed', value: 'newsfeed' },
         ]"></LcButtonGroup>
       </div>
-      <div v-show="!isItemSelected" class="page-inventory__item-select">
+      <div v-show="!isItemSelected && !inNewsfeedMode" class="page-inventory__item-select">
         <LcItemInput
           :result-specs="{ w: 850, i: 19.0 }" :allow-new="inEditMode" :disabled="isItemSelected"
           preserve-search-on-select
           @create-new="createNew" @select-item="editItem">
         </LcItemInput>
       </div>
+
+      <template v-if="!isItemSelected && inNewsfeedMode">
+        <div class="page-inventory__newsfeed">
+          <v-toolbar flat>
+            <v-toolbar-title><b>Nachrichten</b></v-toolbar-title>
+            <v-spacer></v-spacer>
+            <v-toolbar-items>
+              <v-btn prepend-icon="mdi-plus" @click="openNewNewsfeedDialog">
+                Hinzufügen
+              </v-btn>
+            </v-toolbar-items>
+          </v-toolbar>
+
+          <v-data-table
+            :items="props.newsfeed"
+            :headers="newsfeedTableHeaders"
+            :items-per-page="100"
+            hide-default-footer
+            no-data-text="Keine Nachrichten vorhanden"
+            class="page-inventory__newsfeed-table">
+            <template v-slot:item.message="{ item }">
+              <span class="page-inventory__newsfeed-message">{{ item.message }}</span>
+            </template>
+            <template v-slot:item.from="{ item }">
+              {{ formatNewsfeedDate(item.from) }}
+            </template>
+            <template v-slot:item.until="{ item }">
+              {{ formatNewsfeedDate(item.until) }}
+            </template>
+            <template v-slot:item.status="{ item }">
+              <v-chip :color="getNewsfeedStatus(item.status).color" size="small">
+                {{ getNewsfeedStatus(item.status).label }}
+              </v-chip>
+            </template>
+            <template v-slot:item.action="{ item }">
+              <v-btn small color="primary" @click="openEditNewsfeedDialog(item)">
+                <v-icon icon="mdi-cog"></v-icon>
+              </v-btn>
+            </template>
+          </v-data-table>
+        </div>
+      </template>
 
       <template v-if="!isItemSelected && inCheckMode">
 
@@ -1440,6 +1618,93 @@
       </template>
 
       <!-- DIALOGS -->
+      <v-dialog v-model="newsfeedDialogVisible" max-width="650px">
+        <v-card
+          prepend-icon="mdi-newspaper-variant-outline"
+          :title="newsfeedDialogTitle"
+          :disabled="newsfeedForm.processing"
+          class="rounded-0">
+          <v-divider></v-divider>
+
+          <v-card-text>
+            <v-text-field
+              v-model="newsfeedForm.title"
+              id="id-newsfeed-title"
+              label="Titel"
+              maxlength="255"
+              counter
+              required
+              :error-messages="newsfeedForm.errors.title">
+            </v-text-field>
+
+            <v-textarea
+              v-model="newsfeedForm.message"
+              label="Nachricht"
+              maxlength="255"
+              counter
+              rows="4"
+              required
+              :error-messages="newsfeedForm.errors.message">
+            </v-textarea>
+
+            <v-row>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model="newsfeedForm.from"
+                  type="datetime-local"
+                  label="Von (optional)"
+                  :error-messages="newsfeedForm.errors.from">
+                </v-text-field>
+              </v-col>
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model="newsfeedForm.until"
+                  type="datetime-local"
+                  label="Bis (optional)"
+                  :error-messages="newsfeedForm.errors.until">
+                </v-text-field>
+              </v-col>
+            </v-row>
+
+            <v-alert
+              v-if="!hasValidNewsfeedRange"
+              type="error"
+              text="Das Ende darf nicht vor dem Beginn liegen.">
+            </v-alert>
+
+            <v-alert
+              v-for="(errorMessage, fieldName) in newsfeedForm.errors"
+              v-show="![ 'title', 'message', 'from', 'until' ].includes(fieldName)"
+              :key="fieldName"
+              type="error"
+              class="mt-4">
+              {{ errorMessage }}
+            </v-alert>
+          </v-card-text>
+
+          <v-divider></v-divider>
+          <v-card-actions class="mx-4 mb-2">
+            <v-btn
+              v-if="!isNewNewsfeed"
+              color="error"
+              variant="tonal"
+              @click="deleteNewsfeed">
+              Löschen
+            </v-btn>
+            <v-spacer></v-spacer>
+            <v-btn @click="closeNewsfeedDialog">Abbrechen</v-btn>
+            <v-btn
+              color="primary"
+              variant="tonal"
+              :loading="newsfeedForm.processing"
+              :disabled="!isValidNewsfeed"
+              @click="saveNewsfeed">
+              Speichern
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
       <LcItemSizeDialog ref="sizeDialog"
         v-model:visible="isSizeDialogVisible"
         :sizes="itemForm.sizes">
@@ -1481,6 +1746,7 @@
   }
 
   &__checkboard,
+  &__newsfeed,
   &__editor-panels {
     flex: 1 1 auto;
     min-height: 0;
@@ -1493,6 +1759,22 @@
   &__checkboard {
     padding-bottom: .5rem;
     overflow: scroll;
+  }
+
+  &__newsfeed {
+    padding-bottom: .5rem;
+
+    &-table {
+      border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+    }
+
+    &-message {
+      display: block;
+      max-width: 18rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 
   &__checkboard > .v-card:first-child,

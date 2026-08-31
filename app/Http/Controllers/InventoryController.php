@@ -15,6 +15,7 @@ use App\Models\Item;
 use App\Models\Itemexpiry;
 use App\Models\Itemsize;
 use App\Models\ItemsStats;
+use App\Models\Newsfeed;
 use App\Models\Order;
 use App\Models\Usage;
 use App\Services\StatisticService;
@@ -32,6 +33,7 @@ class InventoryController extends Controller
     $demands = Demand::all(['id', 'name']);
     return Inertia::render('Inventory', [
       'demands' => $demands,
+      'newsfeed' => Newsfeed::query()->orderByDesc('id')->get(),
     ]);
   }
 

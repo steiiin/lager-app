@@ -88,7 +88,7 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 1rem;
+  gap: .5rem;
 
   transition: background-color 0.3s ease, color 0.3s ease;
 

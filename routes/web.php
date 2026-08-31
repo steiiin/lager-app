@@ -7,6 +7,8 @@ use App\Http\Controllers\InventoryDemandsController;
 use App\Http\Controllers\InventoryUsagesController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\InventoryLabelsController;
+use App\Http\Controllers\NewsfeedController;
+use App\Models\Newsfeed;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
@@ -19,6 +21,7 @@ use Inertia\Inertia;
 Route::get('/', function (Request $request) {
   return Inertia::render('Welcome', [
     'isTouchMode' => Config::get('app.app_touchmode', false),
+    'newsfeed' => Newsfeed::active()->orderByDesc('id')->get(),
   ]);
 })->name('welcome');
 
@@ -50,6 +53,7 @@ Route::resource('/expiry', ExpiryController::class)->only(['index']);
 Route::resource('/inventory-usages', InventoryUsagesController::class);
 Route::resource('/inventory-demands', InventoryDemandsController::class);
 Route::resource('/inventory-labels', InventoryLabelsController::class);
+Route::resource('/newsfeed', NewsfeedController::class)->only(['store', 'update', 'destroy']);
 Route::resource('/inventory', InventoryController::class);
 
 #endregion
