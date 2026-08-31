@@ -71,6 +71,9 @@
   function openInventoryLabels() {
     router.get('/inventory-labels')
   }
+  function openExpiry() {
+    router.get('/expiry')
+  }
 
   // #region KeyboardShortcuts
 
@@ -955,19 +958,30 @@
             </v-card-text>
           </v-card>
 
-          <v-card class="mt-2" variant="outlined" v-show="expiringSoonItems.length>0">
+          <v-card class="mt-2" variant="outlined">
             <v-list-item class="px-6" height="88">
               <template v-slot:prepend>
                 <v-icon icon="mdi-timer-alert-outline"></v-icon>
               </template>
               <template v-slot:title> <b>Verfall in den nächsten 3 Monaten</b> </template>
+              <template v-slot:append>
+                <v-btn
+                  class="text-none"
+                  color="primary"
+                  text="Übersicht"
+                  variant="text"
+                  slim
+                  @click="openExpiry"
+                ></v-btn>
+              </template>
             </v-list-item>
             <v-divider></v-divider>
             <v-card-text>
               <v-data-table
                 :items="expiringSoonItems"
                 :headers="tableExpiringSoon"
-                :items-per-page="20">
+                :items-per-page="20"
+                no-data-text="Kein Verfall in den nächsten 3 Monaten">
                 <template v-slot:item.expiring_date="{ item }">
                   {{ getExpiryLabel(item.expiring_date) }}
                 </template>

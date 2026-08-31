@@ -56,6 +56,20 @@
     router.get('/')
   }
 
+  function openInventory() {
+    if (isDismissDialogVisible.value) {
+      cancelDismiss()
+      return
+    }
+
+    if (isAnnouncementMode.value) {
+      cancelAnnouncement()
+      return
+    }
+
+    router.get('/inventory')
+  }
+
 // #endregion
 // #region Table
 
@@ -246,7 +260,7 @@
 
   const handleEscape = () => {
     if (!isAnnouncementMode.value) {
-      openWelcome()
+      openInventory()
       return
     }
 
@@ -381,7 +395,7 @@
 
   <div class="page-expiry">
 
-    <LcPagebar title="Verfall" :disabled="isAnnouncementSaving" @back="openWelcome"></LcPagebar>
+    <LcPagebar title="Verfall" :disabled="isAnnouncementSaving" @back="openInventory"></LcPagebar>
 
     <!-- Announcement (Pickers) -->
     <section v-if="isAnnouncementMode" class="page-expiry__announcement">

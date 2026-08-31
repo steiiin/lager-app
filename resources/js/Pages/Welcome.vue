@@ -55,9 +55,6 @@
   function openBookIn() {
     router.get('/bookin')
   }
-  function openExpiry() {
-    router.get('/expiry')
-  }
 
   const handleIdle = () => {
     router.reload()
@@ -102,7 +99,6 @@
   onMounted(() => {
     InputService.registerK1(openBookOut)
     InputService.registerK2(openBookIn)
-    InputService.registerK3(openExpiry)
     InputService.registerKKiosk(openKioskSettings)
     InputService.registerIdle(handleIdle)
     inventoryStore.fetchStore()
@@ -110,7 +106,6 @@
   onUnmounted(() => {
     InputService.unregisterK1(openBookOut)
     InputService.unregisterK2(openBookIn)
-    InputService.unregisterK3(openExpiry)
     InputService.unregisterKKiosk(openKioskSettings)
     InputService.unregisterIdle(handleIdle)
   })
@@ -133,11 +128,6 @@
     <LcButton class="page-welcome__BookIn"
       type="primary" icon="mdi-basket-outline"
       @click="openBookIn">Lieferung<kbd v-if="!isTouchMode">2</kbd>
-    </LcButton>
-
-    <LcButton class="page-welcome__Expiry"
-      type="primary" icon="mdi-timer-sand-complete"
-      @click="openExpiry">Verfall<kbd v-if="!isTouchMode">3</kbd>
     </LcButton>
 
     <LcButton class="page-welcome__Inventory"
@@ -173,7 +163,7 @@
   gap: 1rem;
   grid-template-areas:
     "BookOut BookIn"
-    "BookOut Expiry"
+    "BookOut BookIn"
     "BookOut Inventory";
 
   &__BookIn {
@@ -186,10 +176,6 @@
 
   &__Inventory {
     grid-area: Inventory;
-  }
-
-  &__Expiry {
-    grid-area: Expiry;
   }
 
   & :deep(.lc-button) {
