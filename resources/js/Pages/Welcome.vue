@@ -193,14 +193,15 @@
   }
 
   &__News {
+
     grid-area: News;
     min-height: 0;
-    padding: 1.5rem;
+    padding: .75rem;
     overflow-y: auto;
     border: .5rem solid var(--main-dark);
 
     & > h1 {
-      margin: -1.5rem -1.5rem 1rem -1.5rem;
+      margin: -.9rem -.75rem .5rem -.75rem;
       padding: 1.5rem;
       font-size: 1.5rem;
       text-transform: uppercase;
@@ -211,7 +212,7 @@
     &-item {
 
       border-bottom: .2rem solid var(--main-dark);
-      padding: 1rem 0;
+      padding: 1rem 1rem;
 
       &:last-child {
         border-bottom: none;
