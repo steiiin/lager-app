@@ -53,9 +53,12 @@ class BookInController extends Controller
             'amount_delivered' => $delivered,
             'is_order_open' => false,
           ]);
-          $order->item->increment('current_quantity', $delivered);
 
           if ($delivered > 0) {
+            $order->item->update([
+              'current_quantity' => max(0, $order->item->current_quantity) + $delivered,
+            ]);
+
             $order->item->bookings()->create([
               'usage_id' => -4,
               'order_id' => $order->id,

@@ -14,6 +14,79 @@ class BookInExpiryModifiedTest extends TestCase
 {
   use RefreshDatabase;
 
+  public function test_booking_in_delivery_uses_zero_as_baseline_for_negative_stock(): void
+  {
+    $item = $this->createItem(['current_quantity' => -1]);
+    $order = $this->createOrder($item, ['amount_desired' => 3]);
+
+    $response = $this->post('/bookin', [
+      'orders' => [
+        [
+          'id' => $order->id,
+          'amount_delivered' => 3,
+        ],
+      ],
+    ]);
+
+    $response->assertRedirect(route('welcome'));
+    $this->assertSame(3, $item->fresh()->current_quantity);
+    $this->assertDatabaseHas('orders', [
+      'id' => $order->id,
+      'amount_delivered' => 3,
+      'is_order_open' => false,
+    ]);
+    $this->assertDatabaseHas('bookings', [
+      'item_id' => $item->id,
+      'order_id' => $order->id,
+      'usage_id' => -4,
+      'item_amount' => 3,
+    ]);
+  }
+
+  public function test_booking_in_delivery_is_added_to_non_negative_stock(): void
+  {
+    $item = $this->createItem(['current_quantity' => 2]);
+    $order = $this->createOrder($item, ['amount_desired' => 3]);
+
+    $response = $this->post('/bookin', [
+      'orders' => [
+        [
+          'id' => $order->id,
+          'amount_delivered' => 3,
+        ],
+      ],
+    ]);
+
+    $response->assertRedirect(route('welcome'));
+    $this->assertSame(5, $item->fresh()->current_quantity);
+  }
+
+  public function test_booking_in_zero_delivery_preserves_negative_stock(): void
+  {
+    $item = $this->createItem(['current_quantity' => -1]);
+    $order = $this->createOrder($item);
+
+    $response = $this->post('/bookin', [
+      'orders' => [
+        [
+          'id' => $order->id,
+          'amount_delivered' => 0,
+        ],
+      ],
+    ]);
+
+    $response->assertRedirect(route('welcome'));
+    $this->assertSame(-1, $item->fresh()->current_quantity);
+    $this->assertDatabaseHas('orders', [
+      'id' => $order->id,
+      'amount_delivered' => 0,
+      'is_order_open' => false,
+    ]);
+    $this->assertDatabaseMissing('bookings', [
+      'order_id' => $order->id,
+    ]);
+  }
+
   public function test_booking_in_delivered_amount_marks_stock_expiry_as_modified(): void
   {
     $item = $this->createItem();
