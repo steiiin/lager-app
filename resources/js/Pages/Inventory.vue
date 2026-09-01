@@ -1058,7 +1058,7 @@
           { label: 'Newsfeed', value: 'newsfeed' },
         ]"></LcButtonGroup>
       </div>
-      <div v-show="!isItemSelected && !inNewsfeedMode" class="page-inventory__item-select">
+      <div v-if="!isItemSelected && !inNewsfeedMode" class="page-inventory__item-select">
         <LcItemInput
           :result-specs="{ w: 850, i: 19.0 }" :allow-new="inEditMode" :disabled="isItemSelected"
           preserve-search-on-select
@@ -1109,7 +1109,6 @@
       </template>
 
       <template v-if="!isItemSelected && inCheckMode">
-
         <div class="page-inventory__checkboard">
 
           <!-- CheckBoard -->
@@ -1242,7 +1241,6 @@
         </div>
       </template>
       <template v-if="isItemSelected">
-
         <div class="page-inventory__editor">
 
           <LcItemInput @select-item="changeItem" hidden></LcItemInput>
@@ -1614,7 +1612,6 @@
           </v-card>
 
         </div>
-
       </template>
 
       <!-- DIALOGS -->
