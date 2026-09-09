@@ -31,6 +31,7 @@
   import LcItemExpiryDialog from '@/Dialogs/LcItemExpiryDialog.vue'
 
   import LcCheckTags from '@/Components/Inventory/LcCheckTags.vue'
+  import LcItemHistory from '@/Components/Inventory/LcItemHistory.vue'
   import LcStockAmount from '@/Components/Inventory/LcStockAmount.vue'
   import LcTrend from '@/Components/Inventory/LcTrend.vue'
 
@@ -1550,9 +1551,9 @@
                 </v-expansion-panel-text>
               </v-expansion-panel>
 
-              <v-expansion-panel class="mt-1" title="Statistik" color="black" v-if="itemStats.has_stats && inCheckMode">
+              <v-expansion-panel class="mt-1" title="Statistik" color="black" v-if="inCheckMode">
                 <v-expansion-panel-text>
-                  <v-container>
+                  <v-container v-if="itemStats.has_stats">
                     <v-row>
                       <v-col cols="3" class="page-inventory__table--result">Verbrauch/Woche</v-col>
                       <v-col cols="2">
@@ -1577,6 +1578,11 @@
                     </v-row>
 
                   </v-container>
+
+                  <LcItemHistory
+                    :item-id="itemForm.id"
+                    :base-unit="baseUnit"
+                  />
                 </v-expansion-panel-text>
               </v-expansion-panel>
 
