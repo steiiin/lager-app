@@ -87,7 +87,6 @@ class BookOutExpiryModifiedTest extends TestCase
   {
     $demandId = DB::table('demands')->insertGetId([
       'name' => $attributes['demand_name'] ?? 'Default',
-      'sp_name' => $attributes['demand_name'] ?? 'Default',
     ]);
 
     return Item::create([

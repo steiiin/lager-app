@@ -9,7 +9,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Booking;
 use App\Models\Itemexpiry;
 use App\Models\Order;
 use Illuminate\Http\Request;
@@ -33,31 +32,40 @@ class BookInController extends Controller
   public function store(Request $request)
   {
 
-    $request->validate([
+    $validated = $request->validate([
       'orders' => 'required|array',
-      'orders.*.id' => 'required|integer|exists:orders,id',
+      'orders.*.id' => 'required|integer|distinct|exists:orders,id',
       'orders.*.amount_delivered' => 'required|integer|min:0',
     ]);
 
     try
     {
-      DB::transaction(function () use ($request) {
+      $orders = collect($validated['orders'])->sortBy(fn ($order) => (int) $order['id']);
 
-        foreach ($request->orders as $openOrder)
+      DB::transaction(function () use ($orders) {
+
+        foreach ($orders as $openOrder)
         {
-          $id = $openOrder['id'];
-          $delivered = $openOrder['amount_delivered'];
+          $id = (int) $openOrder['id'];
+          $delivered = (int) $openOrder['amount_delivered'];
 
-          $order = Order::findOrFail($id);
-          $order->update([
+          // Claim before reading: only the request that closes an open order may book it.
+          $claimed = Order::whereKey($id)->open()->update([
             'amount_delivered' => $delivered,
             'is_order_open' => false,
           ]);
 
+          if ($claimed === 0) {
+            continue;
+          }
+
           if ($delivered > 0) {
-            $order->item->update([
-              'current_quantity' => max(0, $order->item->current_quantity) + $delivered,
-            ]);
+            $order = Order::findOrFail($id);
+            // Calculate against the database value, not an eager-loaded stock snapshot.
+            DB::update(
+              'UPDATE items SET current_quantity = CASE WHEN current_quantity < 0 THEN 0 ELSE current_quantity END + ?, updated_at = ? WHERE id = ?',
+              [$delivered, $order->item->freshTimestampString(), $order->item_id]
+            );
 
             $order->item->bookings()->create([
               'usage_id' => -4,
@@ -73,7 +81,7 @@ class BookInController extends Controller
 
         }
 
-      });
+      }, 3);
     }
     catch (\Throwable $e)
     {

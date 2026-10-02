@@ -37,6 +37,10 @@
       type: Boolean,
       default: false,
     },
+    disabled: {
+      type: Boolean,
+      default: false,
+    },
 
     icon: String,
     prependIcon: String,
@@ -57,7 +61,7 @@
 
 </script>
 <template>
-  <button class="lc-button" :class="buttonClasses">
+  <button class="lc-button" :class="buttonClasses" :disabled="disabled || loading">
     <div class="lc-button__icon" v-if="icon">
       <v-icon :icon="icon"></v-icon>
     </div>

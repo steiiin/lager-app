@@ -109,6 +109,8 @@
     // Post
     const finishOrders = () => {
 
+      if (bookinForm.processing) { return }
+
       bookinForm.orders = props.openOrders.map(oo => {
         return {
           id: oo.id,
