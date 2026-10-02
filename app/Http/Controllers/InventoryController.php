@@ -18,8 +18,6 @@ use App\Models\ItemsStats;
 use App\Models\Newsfeed;
 use App\Models\Order;
 use App\Models\Usage;
-use App\Services\StatisticService;
-use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -298,46 +296,6 @@ class InventoryController extends Controller
       'usages' => $usages,
       'items' => $items,
     ]);
-  }
-
-  public function jobs(): JsonResponse
-  {
-
-    $runId = (string) \Illuminate\Support\Str::uuid();
-    $now = CarbonImmutable::now();
-    $oldThreshold = $now->subMonths(6);
-
-    // clean old data
-    $del_orders = DB::table('orders')
-      ->where('is_order_open', false)
-      ->where('order_date', '<', $oldThreshold)
-      ->delete();
-
-    $del_bookings = DB::table('bookings')
-      ->where('created_at', '<', $oldThreshold)
-      ->delete();
-
-    $del_stats = DB::table('itemstats')
-      ->where('aggregated_at', '<', $oldThreshold)
-      ->delete();
-
-    DB::statement('VACUUM');
-
-    // run aggregator
-    $statisticService = new StatisticService();
-    $statisticService->runWeeklyAggregation();
-
-    return response()->json([
-      'ok'      => true,
-      'run_id'  => $runId,
-      'message' => 'cleaned old data, vacuumed db and aggregated stats.',
-      'counts'  => [
-        'orders_deleted' => $del_orders,
-        'bookings_deleted' => $del_bookings,
-        'stats_deleted' => $del_stats
-      ],
-    ], 200);
-
   }
 
 }

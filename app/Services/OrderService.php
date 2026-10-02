@@ -1,35 +1,33 @@
 <?php
 
 /**
- * ApiOrderController - controller
+ * OrderService
  *
- * Controller to handle order-api-endpoint.
+ * Creates restock orders and sends demand mail.
  * Check: to determine if something is to order
  * Prepare: Create necessary order-amounts
  * Execute: Execute order for prepared order-items.
  *
  */
 
-namespace App\Http\Controllers;
+namespace App\Services;
 
 use App\Mail\OrderMail;
 use App\Models\Booking;
 use App\Models\Item;
 use App\Models\Order;
-use App\Services\StatisticService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\CarbonImmutable;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
-class ApiOrderController extends Controller
+class OrderService
 {
 
-  public function create(): JsonResponse
+  public function create(): array
   {
 
     $runId = (string) \Illuminate\Support\Str::uuid();
@@ -42,12 +40,12 @@ class ApiOrderController extends Controller
       $items = $this->getItemsNeedingRestock();
       if ($items->isEmpty())
       {
-        return response()->json([
+        return [
           'ok'      => true,
           'run_id'  => $runId,
           'message' => 'no items need restock.',
           'counts'  => [ 'orders_opened' => 0, 'bookings_affected' => 0 ]
-        ], 200);
+        ];
       }
 
       // date metadata
@@ -106,7 +104,7 @@ class ApiOrderController extends Controller
 
       }, 3);
 
-      return response()->json([
+      return [
         'ok'      => true,
         'run_id'  => $runId,
         'message' => 'Demand mail sent and orders booked.',
@@ -114,23 +112,23 @@ class ApiOrderController extends Controller
           'orders_opened'     => $result['orders_opened'],
           'bookings_affected' => $result['bookings_affected'],
         ],
-      ], 200);
+      ];
 
     }
     catch (\Throwable $e)
     {
 
-      Log::error('Order.Create endpoint failed.', [
+      Log::error('Order.Create command failed.', [
         'run_id'    => $runId,
         'exception' => $e
       ]);
 
-      return response()->json([
+      return [
         'ok'         => false,
         'run_id'     => $runId,
         'error_code' => $this->classifyError($e),
         'message'    => $e->getMessage()
-      ], 500);
+      ];
 
     }
 

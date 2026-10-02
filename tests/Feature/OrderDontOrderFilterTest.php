@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Http\Controllers\ApiOrderController;
+use App\Services\OrderService;
 use App\Models\Item;
 use App\Models\Itemsize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,10 +19,10 @@ class OrderDontOrderFilterTest extends TestCase
     $orderable = $this->createRestockItem('Orderable item', false);
     $suspended = $this->createRestockItem('Suspended item', true);
 
-    $method = new ReflectionMethod(ApiOrderController::class, 'getItemsNeedingRestock');
+    $method = new ReflectionMethod(OrderService::class, 'getItemsNeedingRestock');
     $method->setAccessible(true);
 
-    $items = $method->invoke(new ApiOrderController());
+    $items = $method->invoke(new OrderService());
     $itemIds = $items->pluck('id');
 
     $this->assertTrue($itemIds->contains($orderable->id));
