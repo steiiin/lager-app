@@ -26,6 +26,7 @@
     bookout: { label: 'Entnahme', color: 'error' },
     order: { label: 'Bestellung', color: 'warning' },
     bookin: { label: 'Lieferung', color: 'success' },
+    check: { label: 'Prüfung', color: 'black' },
   }
 
   const events = ref([])
