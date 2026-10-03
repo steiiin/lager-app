@@ -65,6 +65,11 @@
   watch(currentExpiryMonth, updateExpiry)
   watch(currentExpiryYear, updateExpiry)
 
+  const calendarYear = new Date().getFullYear()
+  const expiryYears = [-1, 0, 1, 2, 3, 4].map(
+    offset => calendarYear + offset
+  )
+
   const create = async (itemId, usageId = null) => {
     const now = new Date()
     currentExpiryMonth.value = now.getMonth() + 1
@@ -169,7 +174,8 @@
 
       <v-card-text>
         <v-row>
-          <v-col cols="6">
+          <v-col cols="12" sm="6">
+
             <v-number-input
               v-model="currentExpiryMonth"
               label="Monat"
@@ -180,20 +186,60 @@
               :max="12"
               hide-details
             />
+
+            <div class="expiry-months mt-3" role="group" aria-label="Monat">
+              <v-btn
+                v-for="month in 12"
+                :key="month"
+                type="button"
+                height="48"
+                min-width="0"
+                color="primary"
+                :variant="currentExpiryMonth === month ? 'flat' : 'outlined'"
+                :aria-pressed="currentExpiryMonth === month"
+                @click="currentExpiryMonth = month"
+              >
+                {{ String(month).padStart(2, '0') }}
+              </v-btn>
+            </div>
           </v-col>
-          <v-col cols="6">
+
+          <v-col cols="12" sm="6">
             <v-number-input
               v-model="currentExpiryYear"
               label="Jahr"
-              controlVariant="split"
-              :hideInput="false"
+              control-variant="split"
+              inputmode="numeric"
+              :hide-input="false"
               :inset="false"
-              :min="(new Date()).getFullYear() - 1"
-              :max="(new Date()).getFullYear() + 99"
+              :min="calendarYear - 1"
+              :max="calendarYear + 99"
               hide-details
             />
+
+            <div
+              class="expiry-years mt-3"
+              role="group"
+              aria-label="Jahr auswählen"
+            >
+              <v-btn
+                v-for="year in expiryYears"
+                :key="year"
+                type="button"
+                height="48"
+                min-width="0"
+                color="primary"
+                :variant="currentExpiryYear === year ? 'flat' : 'outlined'"
+                :aria-pressed="currentExpiryYear === year"
+                @click="currentExpiryYear = year"
+              >
+                {{ year }}
+              </v-btn>
+            </div>
           </v-col>
         </v-row>
+
+        <v-divider class="mt-4"></v-divider>
 
         <v-number-input
           v-if="!isStockExpiry"
@@ -217,13 +263,13 @@
           hide-details
         />
 
-        <v-switch
+        <!--<v-switch
           v-model="currentEditExpiryItem.is_ordered"
           class="mt-2"
           color="primary"
           label="Bestellt"
           hide-details
-        />
+        />-->
 
         <v-alert
           class="mt-2"
@@ -261,3 +307,16 @@
     </v-card>
   </v-dialog>
 </template>
+<style scoped>
+.expiry-months {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.expiry-years {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 8px;
+}
+</style>
