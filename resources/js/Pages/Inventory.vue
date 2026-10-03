@@ -899,6 +899,7 @@
         { title: 'Verfall', key: 'expiryAt', minWidth: '15%' },
         { title: 'Menge', key: 'expiryQuantityLabel', minWidth: '15%' },
         { title: '', key: 'is_modified', align: 'center', width: '3rem', sortable: false },
+        { title: 'Notiz', key: 'note', minWidth: '20%' },
         { title: ' ', key: 'check', sortable: false },
         { title: 'Bearbeiten', key: 'action', sortable: false },
       ])
@@ -916,7 +917,7 @@
         return itemForm.expiry_entries.map(entry => ({
           ...entry,
           usage_name: getUsageName(entry),
-          expiryQuantityLabel: entry.usage_id === null ? 'Gesamtbestand' : entry.expiryQuantity,
+          expiryQuantityLabel: entry.usage_id === null ? ' ' : entry.expiryQuantity,
         }))
       })
       const expiryUsageOptions = computed(() => [
