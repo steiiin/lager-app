@@ -3,7 +3,7 @@
 /**
  * OrderService
  *
- * Creates restock orders and sends demand mail.
+ * Creates, lists and reverts restock orders and sends demand mail.
  * Check: to determine if something is to order
  * Prepare: Create necessary order-amounts
  * Execute: Execute order for prepared order-items.
@@ -26,6 +26,103 @@ use Illuminate\Support\Str;
 
 class OrderService
 {
+
+  public function open(): array
+  {
+    $runId = (string) Str::uuid();
+
+    try
+    {
+      $orders = Order::open()
+        ->withOnly('item:id,name')
+        ->orderBy('id')
+        ->get()
+        ->map(fn (Order $order) => [
+          'id'               => $order->id,
+          'item_id'          => $order->item_id,
+          'item_name'        => $order->item?->name,
+          'order_date'       => $order->order_date,
+          'amount_desired'   => $order->amount_desired,
+          'amount_delivered' => $order->amount_delivered,
+        ])
+        ->all();
+
+      return [
+        'ok'      => true,
+        'run_id'  => $runId,
+        'message' => empty($orders) ? 'No open orders.' : 'Open orders retrieved.',
+        'orders'  => $orders,
+      ];
+    }
+    catch (\Throwable $e)
+    {
+      Log::error('Order.Open command failed.', [
+        'run_id'    => $runId,
+        'exception' => $e,
+      ]);
+
+      return [
+        'ok'         => false,
+        'run_id'     => $runId,
+        'error_code' => 'UNEXPECTED_ERROR',
+        'message'    => $e->getMessage(),
+      ];
+    }
+  }
+
+  public function revert(): array
+  {
+    $runId = (string) Str::uuid();
+
+    try
+    {
+      $counts = DB::transaction(function () {
+        $orders = Order::open()->withoutEagerLoads()->orderBy('id')->lockForUpdate()->get();
+        $ordersReverted = 0;
+        $bookingsAffected = 0;
+
+        foreach ($orders as $order)
+        {
+          $bookingsAffected += Booking::query()
+            ->where('order_id', $order->id)
+            ->update(['order_id' => null]);
+
+          if (!$order->delete()) {
+            throw new \RuntimeException("Order {$order->id} could not be deleted.");
+          }
+          $ordersReverted++;
+        }
+
+        return [
+          'orders_reverted'   => $ordersReverted,
+          'bookings_affected' => $bookingsAffected,
+        ];
+      }, 3);
+
+      return [
+        'ok'      => true,
+        'run_id'  => $runId,
+        'message' => $counts['orders_reverted'] === 0 ? 'No open orders.' : 'Open orders reverted.',
+        'counts'  => $counts,
+      ];
+    }
+    catch (\Throwable $e)
+    {
+      Log::error('Order.Revert command failed.', [
+        'run_id'    => $runId,
+        'exception' => $e,
+      ]);
+
+      return [
+        'ok'         => false,
+        'run_id'     => $runId,
+        'error_code' => 'UNEXPECTED_ERROR',
+        'message'    => $e->getMessage(),
+      ];
+    }
+  }
+
+  // ####################################################################################
 
   public function create(): array
   {

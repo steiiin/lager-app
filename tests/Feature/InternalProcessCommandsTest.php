@@ -56,6 +56,8 @@ class InternalProcessCommandsTest extends TestCase
     $commands = $this->app->make(Kernel::class)->all();
     $this->assertArrayHasKey('inventory:jobs', $commands);
     $this->assertArrayHasKey('order:create', $commands);
+    $this->assertArrayHasKey('order:open', $commands);
+    $this->assertArrayHasKey('order:revert', $commands);
 
     $this->mock(InventoryMaintenanceService::class)->shouldNotReceive('run');
     $this->mock(OrderService::class)->shouldNotReceive('create');
@@ -223,6 +225,145 @@ class InternalProcessCommandsTest extends TestCase
     $this->assertDatabaseCount('orders', 0);
     $this->assertDatabaseHas('bookings', ['id' => $booking, 'order_id' => null]);
     $this->assertFailureLogged('Order.Create command failed.', $result);
+  }
+
+  public function test_order_open_lists_only_open_orders_in_id_order_without_changing_data(): void
+  {
+    $item = $this->createItem('Open <info>order</info>');
+    $first = $this->createOrder($item, '2026-10-02', true, 8);
+    $this->createOrder($item, '2026-09-01', false);
+    $second = $this->createOrder($item, '2026-10-01', true, 4);
+    DB::table('orders')->where('id', $second)->update(['amount_delivered' => 2]);
+    $this->createBooking($item, '2026-10-01 12:00:00', $first);
+    $ordersBefore = DB::table('orders')->orderBy('id')->get()->toArray();
+    $bookingsBefore = DB::table('bookings')->orderBy('id')->get()->toArray();
+    Mail::fake();
+    Pdf::shouldReceive('loadView')->never();
+
+    [$status, $result] = $this->runCommand('order:open');
+
+    $this->assertSame(0, $status);
+    $this->assertTrue($result['ok']);
+    $this->assertSame([
+      [
+        'id' => $first, 'item_id' => $item->id, 'item_name' => $item->name,
+        'order_date' => '2026-10-02', 'amount_desired' => 8, 'amount_delivered' => 0,
+      ],
+      [
+        'id' => $second, 'item_id' => $item->id, 'item_name' => $item->name,
+        'order_date' => '2026-10-01', 'amount_desired' => 4, 'amount_delivered' => 2,
+      ],
+    ], $result['orders']);
+    $this->assertEquals($ordersBefore, DB::table('orders')->orderBy('id')->get()->toArray());
+    $this->assertEquals($bookingsBefore, DB::table('bookings')->orderBy('id')->get()->toArray());
+    Mail::assertNothingSent();
+  }
+
+  public function test_order_commands_succeed_without_open_orders(): void
+  {
+    $item = $this->createItem('Closed only');
+    $closed = $this->createOrder($item, '2026-09-01', false);
+
+    [$status, $result] = $this->runCommand('order:open');
+    $this->assertSame(0, $status);
+    $this->assertTrue($result['ok']);
+    $this->assertSame([], $result['orders']);
+
+    [$status, $result] = $this->runCommand('order:revert');
+    $this->assertSame(0, $status);
+    $this->assertTrue($result['ok']);
+    $this->assertSame(['orders_reverted' => 0, 'bookings_affected' => 0], $result['counts']);
+    $this->assertDatabaseHas('orders', ['id' => $closed]);
+  }
+
+  public function test_order_revert_unlinks_all_open_orders_and_preserves_unrelated_data(): void
+  {
+    $item = $this->createItem('Revert', ['current_quantity' => 7]);
+    $otherItem = $this->createItem('Other', ['current_quantity' => 9]);
+    $first = $this->createOrder($item, '2026-10-01', true);
+    $second = $this->createOrder($otherItem, '2026-10-01', true);
+    $withoutBookings = $this->createOrder($item, '2026-10-02', true);
+    $closed = $this->createOrder($item, '2026-09-01', false);
+    $linkedBookings = [
+      $this->createBooking($item, '2026-10-01 10:00:00', $first),
+      $this->createBooking($item, '2026-10-01 11:00:00', $first),
+      $this->createBooking($otherItem, '2026-10-01 12:00:00', $second),
+    ];
+    $closedBooking = $this->createBooking($item, '2026-09-01 12:00:00', $closed);
+    $unlinkedBooking = $this->createBooking($item, '2026-10-02 12:00:00');
+    $closedBefore = DB::table('orders')->find($closed);
+    $closedBookingBefore = DB::table('bookings')->find($closedBooking);
+    $unlinkedBookingBefore = DB::table('bookings')->find($unlinkedBooking);
+    Mail::fake();
+    Pdf::shouldReceive('loadView')->never();
+
+    // Ensure explicit unlinking happens before deletion, rather than relying on the foreign key.
+    DB::unprepared("CREATE TRIGGER require_unlinked_bookings BEFORE DELETE ON orders
+      WHEN EXISTS (SELECT 1 FROM bookings WHERE order_id = OLD.id)
+      BEGIN SELECT RAISE(ABORT, 'Bookings still linked'); END");
+
+    [$status, $result] = $this->runCommand('order:revert');
+
+    $this->assertSame(0, $status);
+    $this->assertTrue($result['ok']);
+    $this->assertSame(['orders_reverted' => 3, 'bookings_affected' => 3], $result['counts']);
+    foreach ([$first, $second, $withoutBookings] as $id) {
+      $this->assertDatabaseMissing('orders', ['id' => $id]);
+    }
+    foreach ($linkedBookings as $id) {
+      $this->assertDatabaseHas('bookings', ['id' => $id, 'order_id' => null, 'item_amount' => 3]);
+    }
+    $this->assertDatabaseCount('orders', 1);
+    $this->assertDatabaseCount('bookings', 5);
+    $this->assertEquals($closedBefore, DB::table('orders')->find($closed));
+    $this->assertEquals($closedBookingBefore, DB::table('bookings')->find($closedBooking));
+    $this->assertEquals($unlinkedBookingBefore, DB::table('bookings')->find($unlinkedBooking));
+    $this->assertEquals(7, $item->fresh()->current_quantity);
+    $this->assertEquals(9, $otherItem->fresh()->current_quantity);
+
+    [$status, $result] = $this->runCommand('order:revert');
+    $this->assertSame(0, $status);
+    $this->assertTrue($result['ok']);
+    $this->assertSame(['orders_reverted' => 0, 'bookings_affected' => 0], $result['counts']);
+    Mail::assertNothingSent();
+  }
+
+  public function test_order_revert_failure_rolls_back_all_orders_and_booking_updates(): void
+  {
+    $item = $this->createItem('Rollback');
+    $first = $this->createOrder($item, '2026-10-01', true);
+    $second = $this->createOrder($item, '2026-10-02', true);
+    $this->createBooking($item, '2026-10-01 10:00:00', $first);
+    $this->createBooking($item, '2026-10-02 10:00:00', $second);
+    $ordersBefore = DB::table('orders')->orderBy('id')->get()->toArray();
+    $bookingsBefore = DB::table('bookings')->orderBy('id')->get()->toArray();
+    Log::spy();
+    DB::unprepared("CREATE TRIGGER fail_order_delete BEFORE DELETE ON orders
+      WHEN OLD.id = {$second}
+      BEGIN SELECT RAISE(ABORT, 'Deletion failed <error>detail</error>'); END");
+
+    [$status, $result] = $this->runCommand('order:revert');
+
+    $this->assertSame(1, $status);
+    $this->assertFalse($result['ok']);
+    $this->assertSame('UNEXPECTED_ERROR', $result['error_code']);
+    $this->assertStringContainsString('Deletion failed <error>detail</error>', $result['message']);
+    $this->assertEquals($ordersBefore, DB::table('orders')->orderBy('id')->get()->toArray());
+    $this->assertEquals($bookingsBefore, DB::table('bookings')->orderBy('id')->get()->toArray());
+    $this->assertFailureLogged('Order.Revert command failed.', $result);
+  }
+
+  public function test_order_open_failure_is_logged_and_returns_a_failure_exit_code(): void
+  {
+    Log::spy();
+    DB::statement('DROP TABLE orders');
+
+    [$status, $result] = $this->runCommand('order:open');
+
+    $this->assertSame(1, $status);
+    $this->assertFalse($result['ok']);
+    $this->assertSame('UNEXPECTED_ERROR', $result['error_code']);
+    $this->assertFailureLogged('Order.Open command failed.', $result);
   }
 
   private function runCommand(string $command): array
