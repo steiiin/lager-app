@@ -898,9 +898,7 @@
         { title: 'Verwendung', key: 'usage_name', minWidth: '25%' },
         { title: 'Verfall', key: 'expiryAt', minWidth: '15%' },
         { title: 'Menge', key: 'expiryQuantityLabel', minWidth: '15%' },
-        { title: 'Bestellt', key: 'is_ordered', minWidth: '12%' },
         { title: '', key: 'is_modified', align: 'center', width: '3rem', sortable: false },
-        { title: 'Notiz', key: 'note', minWidth: '20%' },
         { title: ' ', key: 'check', sortable: false },
         { title: 'Bearbeiten', key: 'action', sortable: false },
       ])
