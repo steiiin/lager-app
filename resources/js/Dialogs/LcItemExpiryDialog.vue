@@ -66,14 +66,16 @@
   watch(currentExpiryYear, updateExpiry)
 
   const calendarYear = new Date().getFullYear()
-  const expiryYears = [-1, 0, 1, 2, 3, 4].map(
-    offset => calendarYear + offset
-  )
+  const initialExpiryYear = ref(calendarYear)
+  const expiryYears = computed(() => [-1, 0, 1, 2, 3, 4].map(
+    offset => initialExpiryYear.value + offset
+  ))
 
   const create = async (itemId, usageId = null) => {
     const now = new Date()
     currentExpiryMonth.value = now.getMonth() + 1
     currentExpiryYear.value = now.getFullYear()
+    initialExpiryYear.value = currentExpiryYear.value
     currentEditExpiryItem.value = {
       id: null,
       item_id: itemId,
@@ -99,6 +101,7 @@
     const expiryAt = item?.expiryAt ? new Date(item.expiryAt) : new Date()
     currentExpiryMonth.value = expiryAt.getMonth() + 1
     currentExpiryYear.value = expiryAt.getFullYear()
+    initialExpiryYear.value = currentExpiryYear.value
 
     currentEditExpiryItem.value = {
       id: item?.id ?? null,
