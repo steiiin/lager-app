@@ -125,7 +125,7 @@
 
   // #region Modes
 
-    const inventoryMode = ref('edit')
+    const inventoryMode = ref('check')
     const inEditMode = computed(() => inventoryMode.value == 'edit')
     const inCheckMode = computed(() => inventoryMode.value == 'check')
     const inNewsfeedMode = computed(() => inventoryMode.value == 'newsfeed')
@@ -568,6 +568,7 @@
       }
 
       selectedItem.value = null
+      toCheckMode()
 
     }
 
@@ -755,7 +756,7 @@
       itemForm.expiry_entries = item.expiry_entries ?? []
       itemForm.stockchangeReason = -1
 
-      editorAccordionOpened.value = inCheckMode.value ? [ 4, 5, 6 ] : []
+      toCheckMode()
       selectedItem.value = { edit: true }
 
       itemStats.has_stats = item.has_stats
@@ -1053,14 +1054,13 @@
 
       <div v-if="!isItemSelected" class="page-inventory__controls" style="margin-top:-.5rem">
         <LcButtonGroup v-model="inventoryMode" :items="[
-          { label: 'Bearbeiten', value: 'edit' },
           { label: 'Prüfen', value: 'check' },
           { label: 'Newsfeed', value: 'newsfeed' },
         ]"></LcButtonGroup>
       </div>
       <div v-if="!isItemSelected && !inNewsfeedMode" class="page-inventory__item-select">
         <LcItemInput
-          :result-specs="{ w: 850, i: 19.0 }" :allow-new="inEditMode" :disabled="isItemSelected"
+          :result-specs="{ w: 850, i: 19.0 }" :allow-new="inCheckMode" :disabled="isItemSelected"
           preserve-search-on-select
           @create-new="createNew" @select-item="editItem">
         </LcItemInput>
