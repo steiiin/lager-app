@@ -61,6 +61,12 @@
   // Read native input too, so Enter cannot save the previous valid date instead.
   const readDateInput = (event) => event.target.value === '' ? null : Number(event.target.value)
 
+  const selectDayInput = (event) => {
+    if (event.target instanceof HTMLInputElement) {
+      event.target.select()
+    }
+  }
+
   const calendarYear = new Date().getFullYear()
   const initialExpiryYear = ref(calendarYear)
   const expiryYears = computed(() => [-1, 0, 1, 2, 3, 4].map(
@@ -170,6 +176,8 @@
             <v-number-input
               v-model="currentExpiryDay"
               @input="currentExpiryDay = readDateInput($event)"
+              @focus="selectDayInput"
+              @click="selectDayInput"
               label="Tag"
               control-variant="split"
               inputmode="numeric"
