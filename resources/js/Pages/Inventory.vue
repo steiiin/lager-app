@@ -1177,32 +1177,38 @@
                 <v-icon icon="mdi-clipboard-clock"></v-icon>
               </template>
               <template v-slot:title> <b>Checklisten</b> </template>
-              <template v-slot:append>
-                <v-btn v-if="inCheckMode"
-                  class="text-none"
-                  color="primary"
-                  text="VERFALL-MODS"
-                  variant="text"
-                  slim
-                  :disabled="!hasModifiedVehicleExpiryItems"
-                  @click="checkAllVehicleExpiryItems"
-                ></v-btn>
-                <v-btn v-if="inCheckMode"
-                  class="text-none"
-                  color="primary"
-                  text="GERING-BESTAND"
-                  variant="text"
-                  slim @click="checkAllLowStockItems"
-                ></v-btn>
-                <v-btn v-if="inCheckMode"
-                  class="text-none"
-                  color="primary"
-                  text="ALLES"
-                  variant="text"
-                  slim @click="checkAllItems"
-                ></v-btn>
-              </template>
             </v-list-item>
+            <v-divider></v-divider>
+            <v-card-text class="pa-0">
+              <v-list class="page-inventory__checklists" lines="two">
+                <v-list-item
+                  class="px-6 py-3"
+                  role="button"
+                  :tabindex="hasModifiedVehicleExpiryItems ? 0 : -1"
+                  :aria-disabled="!hasModifiedVehicleExpiryItems"
+                  :disabled="!hasModifiedVehicleExpiryItems"
+                  title="Geänderte Artikel"
+                  subtitle="Liste mit Artikeln, bei denen ein Verfall hinterlegt wurde und in letzter Zeit gescannt wurden"
+                  @click="hasModifiedVehicleExpiryItems && checkAllVehicleExpiryItems()"
+                ></v-list-item>
+                <v-list-item
+                  class="px-6 py-3"
+                  role="button"
+                  tabindex="0"
+                  title="Artikel mit niedrigem Lagerbestand"
+                  subtitle="Liste mit Artikeln, bei denen der Fahrzeugbestand den Lagerbestand übersteigt."
+                  @click="checkAllLowStockItems"
+                ></v-list-item>
+                <v-list-item
+                  class="px-6 py-3"
+                  role="button"
+                  tabindex="0"
+                  title="Komplette Inventur"
+                  subtitle="Sortierte Liste aller Artikel, die heute noch nicht überprüft wurden."
+                  @click="checkAllItems"
+                ></v-list-item>
+              </v-list>
+            </v-card-text>
           </v-card>
 
           <v-card class="mt-2" variant="outlined">
@@ -1761,6 +1767,17 @@
   &__checkboard {
     padding-bottom: .5rem;
     overflow: scroll;
+  }
+
+  &__checklists {
+    :deep(.v-list-item-title),
+    :deep(.v-list-item-subtitle) {
+      display: block;
+      white-space: normal;
+      overflow: visible;
+      overflow-wrap: anywhere;
+      -webkit-line-clamp: unset;
+    }
   }
 
   &__newsfeed {
