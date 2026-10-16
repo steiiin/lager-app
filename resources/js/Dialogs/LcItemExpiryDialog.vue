@@ -28,8 +28,17 @@
     reset: resetExpiryDate,
   } = useExpiryDate()
   const isDialogVisible = ref(false)
+  const dialogCard = ref(null)
+  const saveButton = ref(null)
+  let dayInputTimer = null
+
+  const clearDayInputTimer = () => {
+    clearTimeout(dayInputTimer)
+    dayInputTimer = null
+  }
 
   watch(isDialogVisible, (v) => {
+    if (!v) clearDayInputTimer()
     emit('update:visible', v)
   })
 
@@ -61,6 +70,24 @@
   // Read native input too, so Enter cannot save the previous valid date instead.
   const readDateInput = (event) => event.target.value === '' ? null : Number(event.target.value)
 
+  const focusDialogAction = () => {
+    clearDayInputTimer()
+    if (!isDialogVisible.value) return
+
+    const target = isValidExpiryEdit.value ? saveButton.value?.$el : dialogCard.value?.$el
+    target?.focus({ preventScroll: true })
+  }
+
+  const handleDayInput = (event) => {
+    currentExpiryDay.value = readDateInput(event)
+    clearDayInputTimer()
+    const input = event.target
+    dayInputTimer = setTimeout(() => {
+      dayInputTimer = null
+      if (document.activeElement === input) focusDialogAction()
+    }, 1000)
+  }
+
   const selectDayInput = (event) => {
     if (event.target instanceof HTMLInputElement) {
       event.target.select()
@@ -74,6 +101,7 @@
   ))
 
   const create = async (itemId, usageId = null) => {
+    clearDayInputTimer()
     resetExpiryDate()
     initialExpiryYear.value = currentExpiryYear.value
     currentEditExpiryItem.value = {
@@ -96,6 +124,7 @@
   }
 
   const edit = (item) => {
+    clearDayInputTimer()
     resetExpiryDate(item?.expiryAt)
     initialExpiryYear.value = currentExpiryYear.value
 
@@ -118,6 +147,7 @@
   })
 
   const cancel = () => {
+    clearDayInputTimer()
     currentEditExpiryItem.value = null
     isDialogVisible.value = false
   }
@@ -156,6 +186,7 @@
     InputService.registerEnter(handleEnter)
   })
   onUnmounted(() => {
+    clearDayInputTimer()
     InputService.unregisterEnter(handleEnter)
   })
 
@@ -164,18 +195,23 @@
   <v-dialog v-model="isDialogVisible" max-width="480px">
     <v-card
       v-if="currentEditExpiryItem"
+      ref="dialogCard"
+      tabindex="-1"
       class="rounded-0"
       prepend-icon="mdi-calendar-clock"
       :title="dialogTitle"
     >
       <v-divider />
 
-      <v-card-text>
-        <v-row>
-          <v-col cols="12">
+      <div class="expiry-focus-space" @click="focusDialogAction" />
+
+      <v-card-text class="pt-0">
+        <v-row class="mt-0">
+          <v-col cols="12" class="pt-0">
             <v-number-input
               v-model="currentExpiryDay"
-              @input="currentExpiryDay = readDateInput($event)"
+              @input="handleDayInput"
+              @blur="clearDayInputTimer"
               @focus="selectDayInput"
               @click="selectDayInput"
               label="Tag"
@@ -312,6 +348,7 @@
         <v-btn @click="cancel">Abbrechen</v-btn>
 
         <v-btn
+          ref="saveButton"
           color="primary"
           variant="tonal"
           :disabled="!isValidExpiryEdit"
@@ -324,6 +361,10 @@
   </v-dialog>
 </template>
 <style scoped>
+.expiry-focus-space {
+  flex: 0 0 48px;
+}
+
 .expiry-months {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
