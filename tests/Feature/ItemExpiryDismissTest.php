@@ -612,7 +612,6 @@ class ItemExpiryDismissTest extends TestCase
   {
     $demandId = DB::table('demands')->insertGetId([
       'name' => 'Default',
-      'sp_name' => 'Default',
     ]);
 
     return Item::create([

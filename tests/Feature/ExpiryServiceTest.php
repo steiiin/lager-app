@@ -192,6 +192,44 @@ class ExpiryServiceTest extends TestCase
     $this->assertSame('Kein MHD', $row['inventory_expiry_label']);
   }
 
+  public function test_labels_show_full_dates_except_at_month_end(): void
+  {
+    CarbonImmutable::setTestNow('2028-02-01');
+    $usage = $this->createUsage();
+    $item = $this->createItem(['current_quantity' => 10]);
+    $stock = $this->createExpiry($item, null, '2028-02-29');
+    $entry = $this->createExpiry($item, $usage, '2028-02-15');
+
+    $data = app(ExpiryService::class)->generate();
+    $groups = collect($data)->flatMap(fn($group) => $group['dates']);
+    $this->assertSame('15.02.2028', $groups->firstWhere('expiry_date', '2028-02-15')['expiry_label']);
+    $this->assertSame('02-2028', $this->findExpiryRow($data, $entry->id)['inventory_expiry_label']);
+
+    $stock->update(['expiryAt' => '2028-02-28']);
+    $data = app(ExpiryService::class)->generate();
+    $this->assertSame('28.02.2028', $this->findExpiryRow($data, $entry->id)['inventory_expiry_label']);
+
+    $entry->update(['expiryAt' => '2028-02-29']);
+    $stock->update(['expiryAt' => '2028-02-29']);
+    $groups = collect(app(ExpiryService::class)->generate())->flatMap(fn($group) => $group['dates']);
+    $this->assertSame('02-2028', $groups->firstWhere('expiry_date', '2028-02-29')['expiry_label']);
+  }
+
+  public function test_full_expiry_dates_round_trip_through_create_and_update(): void
+  {
+    $item = $this->createItem();
+    $payload = ['item_id' => $item->id, 'usage_id' => null, 'expiryAt' => '2026-01-15'];
+    $response = $this->postJson('/api/item-expiry', $payload)->assertCreated();
+    $entry = Itemexpiry::findOrFail($response->json('id'));
+    $this->assertSame('2026-01-15', $entry->expiryAt->toDateString());
+    $this->assertStringStartsWith('2026-01-15', $response->json('expiryAt'));
+
+    $payload['expiryAt'] = '2026-07-15';
+    $response = $this->putJson("/api/item-expiry/{$entry->id}", $payload)->assertOk();
+    $this->assertSame('2026-07-15', $entry->fresh()->expiryAt->toDateString());
+    $this->assertStringStartsWith('2026-07-15', $response->json('expiryAt'));
+  }
+
   private function createUsage(array $attributes = []): Usage
   {
     return Usage::create([
@@ -204,7 +242,6 @@ class ExpiryServiceTest extends TestCase
   {
     $demandId = DB::table('demands')->insertGetId([
       'name' => $attributes['demand_name'] ?? 'Default',
-      'sp_name' => $attributes['demand_name'] ?? 'Default',
     ]);
 
     $item = Item::create([

@@ -19,6 +19,7 @@
   import { useOptimalSize } from '@/Composables/useOptimalSize'
   import { useInventoryStore } from '@/Services/StoreService'
   import InputService from '@/Services/InputService'
+  import { formatExpiryDate, serializeExpiryDate } from '@/Utils/expiryDateUtils'
 
   import { useIsPwa } from '@/Composables/useIsPwa'
   const { isPwa } = useIsPwa()
@@ -825,13 +826,7 @@
         return `${day}.${month}.${year}`
       }
 
-      const getExpiryLabel = (dateString) => {
-        if (!dateString) { return 'Kein MHD' }
-        const date = new Date(dateString)
-        const month = (date.getMonth()+1).toString().padStart(2, '0')
-        const year = date.getFullYear()
-        return `${month}-${year}`
-      }
+      const getExpiryLabel = formatExpiryDate
 
       const getInventoryExpiryDate = (item) => {
         const stockExpiryEntry = [ ...(item.expiry_entries ?? []) ]
@@ -947,7 +942,7 @@
         const payload = {
           item_id: entry.item_id,
           usage_id: entry.usage_id,
-          expiryAt: entry.expiryAt,
+          expiryAt: serializeExpiryDate(entry.expiryAt),
           expiryQuantity: entry.expiryQuantity,
           status: entry.status,
           is_ordered: entry.is_ordered ?? false,

@@ -3,6 +3,7 @@
   import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
   import InputService from '@/Services/InputService'
+  import { useExpiryDate } from '@/Composables/useExpiryDate'
 
   const props = defineProps({
     usages: {
@@ -18,8 +19,14 @@
   const emit = defineEmits(['update:visible', 'save', 'delete'])
 
   const currentEditExpiryItem = ref(null)
-  const currentExpiryMonth = ref(null)
-  const currentExpiryYear = ref(null)
+  const {
+    month: currentExpiryMonth,
+    year: currentExpiryYear,
+    day: currentExpiryDay,
+    daysInMonth,
+    date: currentExpiryDate,
+    reset: resetExpiryDate,
+  } = useExpiryDate()
   const isDialogVisible = ref(false)
 
   watch(isDialogVisible, (v) => {
@@ -36,7 +43,7 @@
   const isEditExpiryEmpty = computed(() => {
     const cur = currentEditExpiryItem.value
     if (!cur) return true
-    return !cur.expiryAt || (!isStockExpiry.value && !cur.expiryQuantity)
+    return !currentExpiryDate.value || (!isStockExpiry.value && !cur.expiryQuantity)
   })
   const isValidExpiryEdit = computed(() => {
     const cur = currentEditExpiryItem.value
@@ -50,20 +57,9 @@
   })
   const dialogTitle = computed(() => `Verfall (${currentUsageName.value}) bearbeiten`)
 
-  const updateExpiry = () => {
-    const cur = currentEditExpiryItem.value
-    if (!cur) return
-
-    if (!currentExpiryMonth.value || !currentExpiryYear.value) {
-      cur.expiryAt = null
-      return
-    }
-
-    cur.expiryAt = new Date(currentExpiryYear.value, currentExpiryMonth.value, 0)
-  }
-
-  watch(currentExpiryMonth, updateExpiry)
-  watch(currentExpiryYear, updateExpiry)
+  // VNumberInput does not emit out-of-range text through v-model while typing.
+  // Read native input too, so Enter cannot save the previous valid date instead.
+  const readDateInput = (event) => event.target.value === '' ? null : Number(event.target.value)
 
   const calendarYear = new Date().getFullYear()
   const initialExpiryYear = ref(calendarYear)
@@ -72,21 +68,17 @@
   ))
 
   const create = async (itemId, usageId = null) => {
-    const now = new Date()
-    currentExpiryMonth.value = now.getMonth() + 1
-    currentExpiryYear.value = now.getFullYear()
+    resetExpiryDate()
     initialExpiryYear.value = currentExpiryYear.value
     currentEditExpiryItem.value = {
       id: null,
       item_id: itemId,
       usage_id: usageId,
-      expiryAt: null,
       expiryQuantity: 1,
       status: 'reserved',
       is_ordered: false,
       note: '',
     }
-    updateExpiry()
 
     isDialogVisible.value = true
 
@@ -98,9 +90,7 @@
   }
 
   const edit = (item) => {
-    const expiryAt = item?.expiryAt ? new Date(item.expiryAt) : new Date()
-    currentExpiryMonth.value = expiryAt.getMonth() + 1
-    currentExpiryYear.value = expiryAt.getFullYear()
+    resetExpiryDate(item?.expiryAt)
     initialExpiryYear.value = currentExpiryYear.value
 
     currentEditExpiryItem.value = {
@@ -108,7 +98,6 @@
       client_id: item?.client_id ?? null,
       item_id: item?.item_id ?? null,
       usage_id: item?.usage_id ?? null,
-      expiryAt,
       expiryQuantity: item?.expiryQuantity ?? 1,
       status: item?.status ?? 'reserved',
       is_ordered: item?.is_ordered ?? false,
@@ -143,7 +132,7 @@
       client_id: cur.client_id,
       item_id: cur.item_id,
       usage_id: cur.usage_id,
-      expiryAt: cur.expiryAt,
+      expiryAt: currentExpiryDate.value,
       expiryQuantity: isStockExpiry.value ? 1 : cur.expiryQuantity,
       status: cur.status ?? 'reserved',
       is_ordered: cur.is_ordered ?? false,
@@ -177,10 +166,25 @@
 
       <v-card-text>
         <v-row>
+          <v-col cols="12">
+            <v-number-input
+              v-model="currentExpiryDay"
+              @input="currentExpiryDay = readDateInput($event)"
+              label="Tag"
+              control-variant="split"
+              inputmode="numeric"
+              :hide-input="false"
+              :inset="false"
+              :min="1"
+              :max="daysInMonth ?? 31"
+              :precision="0" hide-details
+            />
+          </v-col>
           <v-col cols="12" sm="6">
 
             <v-number-input
               v-model="currentExpiryMonth"
+              @input="currentExpiryMonth = readDateInput($event)"
               label="Monat"
               controlVariant="split"
               :hideInput="false"
@@ -210,6 +214,7 @@
           <v-col cols="12" sm="6">
             <v-number-input
               v-model="currentExpiryYear"
+              @input="currentExpiryYear = readDateInput($event)"
               label="Jahr"
               control-variant="split"
               inputmode="numeric"

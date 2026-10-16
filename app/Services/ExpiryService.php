@@ -209,7 +209,7 @@ class ExpiryService
     if (!$date) {
       return 'Kein MHD';
     }
-    return $date->format('m-Y');
+    return $date->format($date->day === $date->daysInMonth ? 'm-Y' : 'd.m.Y');
   }
 
 }
