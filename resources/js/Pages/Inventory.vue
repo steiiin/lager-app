@@ -560,6 +560,7 @@
     const isItemSelected = computed(() => !!selectedItem.value)
 
     const clearSelectedItem = async (itemChanged = false) => {
+      if (isExpiryUpdating.value) { return }
 
       if (itemChanged) {
         const nextItem = nextItemToCheck()
@@ -696,6 +697,7 @@
 
     // OpenMethods
     const createNew = () => {
+      if (isExpiryUpdating.value) { return }
 
       inventoryMode.value = 'edit'
       itemForm.reset()
@@ -730,6 +732,7 @@
 
     }
     const editItem = (item) => {
+      if (isExpiryUpdating.value) { return }
 
       itemForm.reset()
 
@@ -782,12 +785,14 @@
 
     }
     const changeItem = (item) => {
+      if (isExpiryUpdating.value) { return }
       clearSelectedItem()
       editItem(item)
     }
 
     // ActionMethods
     const saveItem = async () => {
+      if (isExpiryUpdating.value) { return }
 
       if (isNewItem.value) {
         itemForm.post('/inventory', itemFormOptions)
@@ -797,6 +802,7 @@
 
     }
     const deleteItem = () => {
+      if (isExpiryUpdating.value) { return }
 
       if (confirm('Willst du das wirklich löschen?')) {
         itemForm.delete(`/inventory/${itemForm.id}`, itemFormOptions)
@@ -886,9 +892,16 @@
     // #endregion
     // #region Expiry-Group
 
+      const isExpiryUpdating = ref(false)
       const expiryDialog = ref(null)
-      const createExpiry = (usageId = null) => expiryDialog.value?.create(itemForm.id, usageId)
-      const editExpiry = (item) => expiryDialog.value?.edit(item)
+      const createExpiry = (usageId = null) => {
+        if (isExpiryUpdating.value) { return }
+        expiryDialog.value?.create(itemForm.id, usageId)
+      }
+      const editExpiry = (item) => {
+        if (isExpiryUpdating.value) { return }
+        expiryDialog.value?.edit(item)
+      }
 
       const expiryHeaders = ref([
         { title: 'Verwendung', key: 'usage_name', minWidth: '25%' },
@@ -938,7 +951,20 @@
         itemForm.expiry_entries = freshItem.expiry_entries ?? []
       }
 
-      const saveExpiry = async (entry) => {
+      const updateExpiry = async (request) => {
+        if (isExpiryUpdating.value) { return }
+
+        isExpiryUpdating.value = true
+        try {
+          await request()
+          await inventoryStore.fetchStore(true)
+          refreshCurrentItemFromStore()
+        } finally {
+          isExpiryUpdating.value = false
+        }
+      }
+
+      const saveExpiry = (entry) => updateExpiry(() => {
         const payload = {
           item_id: entry.item_id,
           usage_id: entry.usage_id,
@@ -951,27 +977,21 @@
         }
 
         if (entry.id) {
-          await axios.put(`/api/item-expiry/${entry.id}`, payload)
+          return axios.put(`/api/item-expiry/${entry.id}`, payload)
         } else {
-          await axios.post('/api/item-expiry', payload)
+          return axios.post('/api/item-expiry', payload)
         }
+      })
 
-        await inventoryStore.fetchStore(true)
-        refreshCurrentItemFromStore()
-      }
-
-      const checkExpiry = async (entry) => {
-        await axios.put(`/api/item-expiry/${entry.id}/check`)
-        await inventoryStore.fetchStore(true)
-        refreshCurrentItemFromStore()
-      }
+      const checkExpiry = (entry) => updateExpiry(() => (
+        axios.put(`/api/item-expiry/${entry.id}/check`)
+      ))
 
       const deleteExpiry = async (entry) => {
+        if (isExpiryUpdating.value) { return }
         if (!entry.id || !confirm('Willst du das wirklich löschen?')) { return }
 
-        await axios.delete(`/api/item-expiry/${entry.id}`)
-        await inventoryStore.fetchStore(true)
-        refreshCurrentItemFromStore()
+        await updateExpiry(() => axios.delete(`/api/item-expiry/${entry.id}`))
       }
 
     // #endregion
@@ -1248,7 +1268,7 @@
 
           <v-toolbar flat class="page-inventory__editor-toolbar">
             <v-app-bar-nav-icon
-              icon="mdi-arrow-left" :disabled="itemForm.processing"
+              icon="mdi-arrow-left" :disabled="itemForm.processing || isExpiryUpdating"
               @click="clearSelectedItem()"></v-app-bar-nav-icon>
             <v-toolbar-title>
               <div class="title-with-minmax">
@@ -1520,13 +1540,14 @@
                         <v-btn
                           v-if="item.is_modified"
                           small variant="outlined"
+                          :disabled="isExpiryUpdating"
                           @click="checkExpiry(item)"
                           v-tooltip:bottom="'Als geprüft markieren'">
                           <v-icon icon="mdi-check"></v-icon>
                         </v-btn>
                       </template>
                       <template v-slot:item.action="{ item }">
-                        <v-btn small variant="outlined" @click="editExpiry(item)">
+                        <v-btn small variant="outlined" :disabled="isExpiryUpdating" @click="editExpiry(item)">
                           <v-icon icon="mdi-cog"></v-icon>
                         </v-btn>
                       </template>
@@ -1541,6 +1562,7 @@
                         color="primary"
                         variant="outlined"
                         prepend-icon="mdi-plus"
+                        :disabled="isExpiryUpdating"
                         @click="createExpiry(usage.id)"
                       >
                         {{ usage.name }}
@@ -1590,13 +1612,13 @@
           </div>
 
           <!-- DIALOG BUTTONS -->
-          <v-card class="page-inventory__editor-actions mt-2 rounded-0" variant="outlined" :disabled="itemForm.processing">
+          <v-card class="page-inventory__editor-actions mt-2 rounded-0" variant="outlined" :disabled="itemForm.processing || isExpiryUpdating">
             <v-card-text class="pa-4">
 
               <v-form>
                 <v-row>
                   <v-col cols="3" v-if="!isNewItem && inEditMode">
-                    <v-btn color="error" variant="flat" block
+                    <v-btn color="error" variant="flat" block :disabled="isExpiryUpdating"
                       @click="deleteItem">
                       Löschen
                     </v-btn>
@@ -1606,7 +1628,7 @@
                       <b>{{currentLastCheckedLabel}}</b></v-chip>
                   </v-col>
                   <v-col :cols="isNewItem ? 12 : 9">
-                    <v-btn color="success" variant="flat" block :disabled="!isValidItem" :loading="itemForm.processing"
+                    <v-btn color="success" variant="flat" block :disabled="!isValidItem || isExpiryUpdating" :loading="itemForm.processing"
                       @click="saveItem">
                       {{ saveBtnLabel }}
                     </v-btn>

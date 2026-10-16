@@ -307,6 +307,8 @@
           hide-details
         />
 
+        <div class="expiry-focus-space" @click="focusDialogAction" />
+
         <v-textarea
           v-model="currentEditExpiryItem.note"
           class="mt-2"
